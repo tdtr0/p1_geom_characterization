@@ -71,16 +71,23 @@ class ActivationCollector:
 
         if not self.use_transformer_lens:
             from transformers import AutoModelForCausalLM, AutoTokenizer
+            # Use auto device mapping when device is "cuda" to handle memory efficiently
+            # This will split model across available GPU memory if needed
+            device_map_arg = "auto" if device == "cuda" else device
+
             self.model = AutoModelForCausalLM.from_pretrained(
                 model_name,
                 torch_dtype=dtype,
-                device_map=device,
+                device_map=device_map_arg,
+                low_cpu_mem_usage=True,  # Reduce CPU memory usage during loading
             )
             self.model.eval()
             self.tokenizer = AutoTokenizer.from_pretrained(model_name)
             self.n_layers = self.model.config.num_hidden_layers
             self.d_model = self.model.config.hidden_size
             print(f"✓ Loaded via transformers: {self.n_layers} layers, d_model={self.d_model}")
+            if device_map_arg == "auto":
+                print(f"  Device map: {self.model.hf_device_map}")
 
     def get_hook_names(self) -> List[str]:
         """Return hook names for residual stream at each layer."""
@@ -122,7 +129,7 @@ class ActivationCollector:
                 - "all_tokens": (n_texts, max_seq_len, d_model)
         """
         if not self.use_transformer_lens:
-            raise NotImplementedError("Activation collection currently requires TransformerLens")
+            return self._collect_with_hooks(texts, aggregation, batch_size, max_length)
 
         hook_names = self.get_hook_names()
         all_activations = {name: [] for name in hook_names}
@@ -180,6 +187,101 @@ class ActivationCollector:
             all_activations[name] = np.stack(all_activations[name])
 
         return all_activations
+
+    def _collect_with_hooks(
+        self,
+        texts: List[str],
+        aggregation: Literal["last_token", "mean", "all_tokens"],
+        batch_size: int,
+        max_length: Optional[int]
+    ) -> Dict[str, np.ndarray]:
+        """Collect activations using PyTorch hooks for transformers models."""
+        # Storage for all activations
+        all_layer_acts = {f"layer_{i}": [] for i in range(self.n_layers)}
+
+        with torch.no_grad():
+            for i in tqdm(range(0, len(texts), batch_size), desc="Collecting activations"):
+                batch_texts = texts[i:i+batch_size]
+
+                for text in batch_texts:
+                    # Tokenize
+                    tokens = self.tokenizer(
+                        text,
+                        return_tensors="pt",
+                        truncation=True if max_length else False,
+                        max_length=max_length
+                    )
+
+                    # Move to appropriate device (first device in device map)
+                    device = next(self.model.parameters()).device
+                    tokens = {k: v.to(device) for k, v in tokens.items()}
+
+                    # Hook storage for this sample
+                    layer_outputs = {}
+
+                    def make_hook(layer_idx):
+                        def hook(_module, _input, output):
+                            # Extract hidden states from output
+                            # For most models, output is either a tensor or tuple where first element is hidden states
+                            if isinstance(output, tuple):
+                                hidden_states = output[0]
+                            else:
+                                hidden_states = output
+
+                            # Move to CPU and store
+                            layer_outputs[f"layer_{layer_idx}"] = hidden_states.detach().cpu()
+                        return hook
+
+                    # Register hooks
+                    handles = []
+                    for layer_idx in range(self.n_layers):
+                        layer = self.model.model.layers[layer_idx]
+                        handle = layer.register_forward_hook(make_hook(layer_idx))
+                        handles.append(handle)
+
+                    try:
+                        # Forward pass
+                        _ = self.model(**tokens)
+
+                        # Aggregate and store activations
+                        for layer_idx in range(self.n_layers):
+                            key = f"layer_{layer_idx}"
+                            hidden = layer_outputs[key]
+
+                            if aggregation == "last_token":
+                                # Use last token
+                                act = hidden[0, -1, :].numpy().astype(np.float16)
+                            elif aggregation == "mean":
+                                # Mean across sequence
+                                act = hidden[0].mean(dim=0).numpy().astype(np.float16)
+                            else:  # all_tokens
+                                act = hidden[0].numpy().astype(np.float16)
+
+                            all_layer_acts[key].append(act)
+
+                    except Exception as e:
+                        print(f"Warning: Failed to process text: {e}")
+                        # Store NaN for failed samples
+                        for layer_idx in range(self.n_layers):
+                            if aggregation == "all_tokens":
+                                all_layer_acts[f"layer_{layer_idx}"].append(
+                                    np.full((max_length or 512, self.d_model), np.nan, dtype=np.float16)
+                                )
+                            else:
+                                all_layer_acts[f"layer_{layer_idx}"].append(
+                                    np.full(self.d_model, np.nan, dtype=np.float16)
+                                )
+
+                    finally:
+                        # Remove hooks
+                        for handle in handles:
+                            handle.remove()
+
+        # Convert to arrays
+        return {
+            name: np.stack(acts, axis=0)
+            for name, acts in all_layer_acts.items()
+        }
 
     def save_to_hdf5(
         self,

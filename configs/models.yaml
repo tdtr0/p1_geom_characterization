@@ -1,20 +1,26 @@
 # Model configurations for geometric analysis
 
-# Primary comparison (OLMo 3 family - cleanest controlled comparison)
+# Primary comparison (OLMo 3 Think family - perfect controlled progression)
+# Base → SFT → DPO → RLVR (all 7B models, same architecture)
 primary:
   olmo3_base:
-    model_name: "allenai/OLMo-3-7B"
-    description: "Base model (pretraining only)"
+    model_name: "allenai/Olmo-3-1025-7B"
+    description: "Base pretrained model (Oct 2025 checkpoint)"
     training_paradigm: "base"
 
-  olmo3_instruct:
-    model_name: "allenai/OLMo-3-7B-Instruct"
-    description: "Base + SFT"
+  olmo3_sft:
+    model_name: "allenai/Olmo-3-7B-Think-SFT"
+    description: "Base + SFT on Dolci-Think (math, code, chat, knowledge)"
     training_paradigm: "sft"
 
-  olmo3_rl_zero:
-    model_name: "allenai/OLMo-3-7B-RL-Zero"
-    description: "Base + RL (no SFT) - key model for isolating RL effect"
+  olmo3_dpo:
+    model_name: "allenai/Olmo-3-7B-Think-DPO"
+    description: "Base + SFT + DPO on preference data"
+    training_paradigm: "dpo"
+
+  olmo3_rlvr:
+    model_name: "allenai/Olmo-3-7B-Think"
+    description: "Base + SFT + DPO + RLVR (final model with verifiable rewards)"
     training_paradigm: "rlvr"
 
 # Secondary comparison (DeepSeek distilled)

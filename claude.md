@@ -10,10 +10,21 @@ This project investigates whether RLVR (Reinforcement Learning with Verifiable R
 
 ## Models Under Study
 
-### Primary (OLMo 3 Family - Cleanest Controlled Comparison)
-- `allenai/OLMo-3-7B` - Base (pretraining only)
-- `allenai/OLMo-3-7B-Instruct` - Base + SFT
-- `allenai/OLMo-3-7B-RL-Zero` - Base + RL (no SFT) - **Key model for isolating RL effect**
+### Primary (OLMo 3 Think Family - Perfect Controlled Progression)
+
+**Training Pipeline**: Base → SFT → DPO → RLVR (all 7B, same architecture)
+
+1. `allenai/Olmo-3-1025-7B` - Base pretrained model (Oct 2025 checkpoint)
+2. `allenai/Olmo-3-7B-Think-SFT` - Base + SFT on Dolci-Think dataset
+3. `allenai/Olmo-3-7B-Think-DPO` - Base + SFT + DPO (preference optimization)
+4. `allenai/Olmo-3-7B-Think` - **Final model**: Base + SFT + DPO + RLVR (verifiable rewards)
+
+**Why This Lineup**:
+- AllenAI released intermediate checkpoints (SFT, DPO) along with final RLVR model
+- Same architecture, same 7B size, same reasoning-focused training data
+- Clean comparison: SFT vs DPO vs RLVR geometric effects
+- RLVR uses verifiable rewards on math/code tasks (objective correctness)
+- DPO uses preference data (subjective quality)
 
 ### Secondary (DeepSeek Distilled)
 - `deepseek-ai/DeepSeek-R1-Distill-Llama-8B`

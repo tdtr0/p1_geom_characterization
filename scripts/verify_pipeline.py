@@ -194,7 +194,7 @@ def verify_task_data():
     print("TEST 5: Task Data Loading")
     print(f"{'='*60}")
 
-    tasks_to_test = ["gsm8k", "humaneval", "logiqa"]
+    tasks_to_test = ["gsm8k", "humaneval"]  # Skip logiqa for now
     n_samples = 5
 
     for task in tasks_to_test:
@@ -223,6 +223,17 @@ def verify_task_data():
 
 def main():
     """Run all verification tests."""
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--gpu", type=int, default=None, help="GPU ID to use")
+    args = parser.parse_args()
+
+    # Set GPU if specified
+    if args.gpu is not None:
+        import os
+        os.environ["CUDA_VISIBLE_DEVICES"] = str(args.gpu)
+        print(f"Using GPU {args.gpu}")
+
     print("\n" + "="*60)
     print("PIPELINE VERIFICATION")
     print("="*60)

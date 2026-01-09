@@ -3,7 +3,10 @@
     "allow": [
       "Bash(ssh:*)",
       "Bash(gh auth status:*)",
-      "Bash(rsync:*)"
+      "Bash(rsync:*)",
+      "Bash(chmod:*)",
+      "Bash(./sync.sh)",
+      "Bash(git add:*)"
     ]
   }
 }

@@ -100,7 +100,8 @@ def prepare_logiqa(
     Returns:
         List of (prompt, answer, metadata) tuples
     """
-    ds = load_dataset("lucasmccabe/logiqa", split=split)
+    # Use updated dataset path
+    ds = load_dataset("lucasmccabe-lmi/logiqa", split=split, trust_remote_code=True)
 
     if seed is not None:
         random.seed(seed)
