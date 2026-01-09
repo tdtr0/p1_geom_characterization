@@ -1,0 +1,75 @@
+# Model configurations for geometric analysis
+
+# Primary comparison (OLMo 3 family - cleanest controlled comparison)
+primary:
+  olmo3_base:
+    model_name: "allenai/OLMo-3-7B"
+    description: "Base model (pretraining only)"
+    training_paradigm: "base"
+
+  olmo3_instruct:
+    model_name: "allenai/OLMo-3-7B-Instruct"
+    description: "Base + SFT"
+    training_paradigm: "sft"
+
+  olmo3_rl_zero:
+    model_name: "allenai/OLMo-3-7B-RL-Zero"
+    description: "Base + RL (no SFT) - key model for isolating RL effect"
+    training_paradigm: "rlvr"
+
+# Secondary comparison (DeepSeek distilled)
+secondary:
+  deepseek_r1_8b:
+    model_name: "deepseek-ai/DeepSeek-R1-Distill-Llama-8B"
+    description: "DeepSeek R1 distilled to 8B"
+    training_paradigm: "rlvr_distilled"
+
+  # deepseek_v3_8b:
+  #   model_name: "deepseek-ai/DeepSeek-V3-8B"  # Check actual name
+  #   description: "DeepSeek V3 8B"
+  #   training_paradigm: "base"
+
+# Tertiary validation (Llama 3)
+tertiary:
+  llama3_base:
+    model_name: "meta-llama/Meta-Llama-3-8B"
+    description: "Llama 3 base"
+    training_paradigm: "base"
+
+  llama3_instruct:
+    model_name: "meta-llama/Meta-Llama-3-8B-Instruct"
+    description: "Llama 3 instruct"
+    training_paradigm: "sft"
+
+# Task configurations
+tasks:
+  gsm8k:
+    dataset: "gsm8k"
+    split: "test"
+    n_samples: 500
+    description: "Math word problems"
+
+  humaneval:
+    dataset: "openai_humaneval"
+    split: "test"
+    n_samples: 164
+    description: "Python coding problems"
+
+  logiqa:
+    dataset: "lucasmccabe/logiqa"
+    split: "test"
+    n_samples: 500
+    description: "Logical reasoning"
+
+# Analysis parameters
+analysis:
+  aggregation: "last_token"  # How to aggregate sequence-level representations
+  k_subspace: 100  # Number of top singular vectors for subspace preservation
+  layers_to_analyze: null  # null = all layers, or list like [0, 15, 31]
+  dtype: "float16"  # Storage dtype for efficiency
+
+# Compute settings
+compute:
+  batch_size: 4  # Adjust based on GPU memory
+  device: "cuda"
+  max_seq_length: 2048
