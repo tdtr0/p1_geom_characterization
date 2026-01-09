@@ -19,7 +19,6 @@ dependencies:
     - scikit-learn>=1.3.0
     - h5py>=3.8.0
     - pandas>=2.0.0
-    - signatory>=1.2.0
     - matplotlib>=3.7.0
     - seaborn>=0.12.0
     - datasets>=2.14.0
@@ -27,3 +26,5 @@ dependencies:
     - tqdm>=4.65.0
     - jupyter>=1.0.0
     - ipython>=8.12.0
+    # Note: signatory requires manual installation after environment creation:
+    # pip install signatory (needs torch installed first)

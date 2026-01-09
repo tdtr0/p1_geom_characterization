@@ -54,8 +54,8 @@ geometric_transfer/
 ## Compute Environment
 
 - **Primary Server**: eyecog (SSH: `ssh eyecog`)
-- **GPU**: A100 (estimated 25-35 GPU hours for Phase 1)
-- **Storage**: ~8GB total (activations + trajectories)
+- **GPU**: 2x RTX 3090 24GB (estimated 25-35 GPU hours for Phase 1)
+- **Storage**: ~50-100GB total (activations + trajectories + models)
 
 ## Dependencies
 
@@ -113,6 +113,36 @@ python scripts/collect_activations.py --output-dir data/activations
 python scripts/run_analysis.py
 ```
 
+## Development Workflow
+
+### Auto-sync Setup
+To keep local, eyecog, and GitHub in sync:
+
+```bash
+# On local machine - sync to eyecog
+rsync -av --exclude='.git' --exclude='__pycache__' --exclude='*.h5' --exclude='data/' . eyecog:~/p1_geom_characterization/
+
+# On eyecog - commit and push to GitHub
+ssh eyecog "cd ~/p1_geom_characterization && git add . && git commit -m 'Update: <description>' && git push"
+
+# On local machine - pull from GitHub
+git pull origin main
+```
+
+For continuous development:
+1. Edit code locally
+2. Sync to eyecog with rsync
+3. Test on eyecog
+4. Commit and push from eyecog
+5. Pull to local
+
+### File Sync Script
+Create `sync.sh` for easy syncing:
+```bash
+#!/bin/bash
+rsync -av --exclude='.git' --exclude='__pycache__' --exclude='*.h5' --exclude='data/' --exclude='wandb/' . eyecog:~/p1_geom_characterization/
+```
+
 ## Notes for Claude
 
 - Always use TransformerLens for activation extraction (not manual hooks)
@@ -120,3 +150,4 @@ python scripts/run_analysis.py
 - Use float16 for storage efficiency
 - Run quality checks after collection (no NaN/Inf, reasonable magnitudes)
 - Aggregation: "last_token" for sequence-level representations
+- Sync code changes to eyecog before running experiments
