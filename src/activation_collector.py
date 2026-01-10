@@ -8,6 +8,7 @@ Supports multiple aggregation strategies and efficient HDF5 storage.
 import torch
 import h5py
 import numpy as np
+import gc
 from typing import List, Dict, Optional, Literal
 from pathlib import Path
 from tqdm import tqdm
@@ -203,7 +204,8 @@ class ActivationCollector:
             for i in tqdm(range(0, len(texts), batch_size), desc="Collecting activations"):
                 batch_texts = texts[i:i+batch_size]
 
-                for text in batch_texts:
+                for text_idx_in_batch, text in enumerate(batch_texts):
+                    text_global_idx = i + text_idx_in_batch
                     # Tokenize
                     tokens = self.tokenizer(
                         text,
@@ -260,7 +262,14 @@ class ActivationCollector:
                             all_layer_acts[key].append(act)
 
                     except Exception as e:
-                        print(f"Warning: Failed to process text: {e}")
+                        import traceback
+                        print(f"\n⚠ FAILED sample {text_global_idx}:")
+                        print(f"  Error: {type(e).__name__}: {e}")
+                        print(f"  Text length: {len(text)} chars")
+                        print(f"  Text preview: {text[:100]}...")
+                        if len(text) > 1000:
+                            print(f"  (Long text warning)")
+                        print(f"  Traceback: {traceback.format_exc()}")
                         # Store NaN for failed samples
                         for layer_idx in range(self.n_layers):
                             if aggregation == "all_tokens":
