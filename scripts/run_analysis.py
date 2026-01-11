@@ -253,7 +253,7 @@ def main():
 
     # Models and tasks
     models = ['olmo3_base', 'olmo3_sft', 'olmo3_rl_zero', 'olmo3_think']
-    tasks = ['gsm8k', 'humaneval']
+    tasks = ['gsm8k', 'humaneval', 'logiqa']
 
     print("="*60)
     print("GEOMETRIC ANALYSIS PIPELINE")

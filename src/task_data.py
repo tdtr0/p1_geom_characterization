@@ -100,8 +100,13 @@ def prepare_logiqa(
     Returns:
         List of (prompt, answer, metadata) tuples
     """
-    # Use updated dataset path
-    ds = load_dataset("lucasmccabe-lmi/logiqa", split=split, trust_remote_code=True)
+    # Use fireworks-ai's LogiQA (properly formatted, no trust_remote_code needed)
+    try:
+        ds = load_dataset("fireworks-ai/logiqa", split=split)
+    except Exception as e:
+        print(f"⚠ Failed to load fireworks-ai/logiqa: {e}")
+        print("  Falling back to lucasmccabe-lmi/logiqa")
+        ds = load_dataset("lucasmccabe-lmi/logiqa", split=split)
 
     if seed is not None:
         random.seed(seed)

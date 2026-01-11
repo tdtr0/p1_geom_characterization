@@ -18,6 +18,11 @@ primary:
     description: "Base + RL-Zero (pure RL without SFT) - general mix"
     training_paradigm: "rl_zero"
 
+  olmo3_think:
+    model_name: "allenai/OLMo-3-7B-Think"
+    description: "Base + SFT + DPO + RLVR (full Think pipeline)"
+    training_paradigm: "rlvr"
+
 # Secondary comparison (DeepSeek distilled)
 secondary:
   deepseek_r1_8b:
