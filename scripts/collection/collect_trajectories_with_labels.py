@@ -232,7 +232,8 @@ class TrajectoryCollector:
         # Check available GPU memory
         if torch.cuda.is_available():
             free_mem = []
-            for i in range(torch.cuda.device_count()):
+            n_gpus = torch.cuda.device_count()
+            for i in range(n_gpus):
                 free, total = torch.cuda.mem_get_info(i)
                 free_mem.append(free / 1e9)
                 print(f"  GPU {i}: {free/1e9:.1f} GB free")
@@ -240,8 +241,15 @@ class TrajectoryCollector:
             total_free = sum(free_mem)
             print(f"  Total GPU memory: {total_free:.1f} GB free")
 
-            if total_free >= 14:  # 7B model needs ~14GB
-                # Use device_map="auto" to split across GPUs
+            # If only 1 GPU visible (parallel mode), use it directly
+            # Otherwise use device_map="auto" to split across GPUs
+            if n_gpus == 1:
+                print(f"  Loading model on single GPU (CUDA:0)")
+                self.model = AutoModelForCausalLM.from_pretrained(
+                    model_name,
+                    torch_dtype=torch.float16,
+                ).cuda()
+            elif total_free >= 14:  # 7B model needs ~14GB
                 print("  Using device_map='auto' to split model across GPUs")
                 self.model = AutoModelForCausalLM.from_pretrained(
                     model_name,
