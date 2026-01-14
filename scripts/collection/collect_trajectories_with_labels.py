@@ -40,6 +40,10 @@ BATCH_SIZE = 1  # Process one at a time for trajectory collection
 MAX_SEQ_LEN = 512  # Maximum sequence length for trajectories
 MAX_NEW_TOKENS = 512  # For generation (need long outputs for CoT)
 
+# Performance optimizations
+TORCH_COMPILE = False  # Set True to use torch.compile (slower startup, faster inference)
+USE_FLASH_ATTN = True  # Use Flash Attention 2 if available
+
 # Even layers only: [0, 2, 4, ..., 30] = 16 layers
 LAYERS_TO_COLLECT = list(range(0, 32, 2))
 
@@ -245,10 +249,23 @@ class TrajectoryCollector:
             # Otherwise use device_map="auto" to split across GPUs
             if n_gpus == 1:
                 print(f"  Loading model on single GPU (CUDA:0)")
-                self.model = AutoModelForCausalLM.from_pretrained(
-                    model_name,
-                    torch_dtype=torch.float16,
-                ).cuda()
+                # Try to use Flash Attention 2 for faster inference
+                try:
+                    if USE_FLASH_ATTN:
+                        self.model = AutoModelForCausalLM.from_pretrained(
+                            model_name,
+                            torch_dtype=torch.float16,
+                            attn_implementation="flash_attention_2",
+                        ).cuda()
+                        print("  Using Flash Attention 2")
+                    else:
+                        raise ImportError("Flash Attention disabled")
+                except (ImportError, ValueError) as e:
+                    print(f"  Flash Attention not available: {e}")
+                    self.model = AutoModelForCausalLM.from_pretrained(
+                        model_name,
+                        torch_dtype=torch.float16,
+                    ).cuda()
             elif total_free >= 14:  # 7B model needs ~14GB
                 print("  Using device_map='auto' to split model across GPUs")
                 self.model = AutoModelForCausalLM.from_pretrained(
