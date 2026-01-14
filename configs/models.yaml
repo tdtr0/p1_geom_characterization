@@ -25,10 +25,11 @@ primary:
 
 # Secondary comparison (DeepSeek distilled)
 secondary:
-  deepseek_r1_8b:
+  deepseek_r1:
     model_name: "deepseek-ai/DeepSeek-R1-Distill-Llama-8B"
-    description: "DeepSeek R1 distilled to 8B"
+    description: "DeepSeek R1 distilled to 8B (for verification)"
     training_paradigm: "rlvr_distilled"
+    vram_gb: 24  # Fits in 24GB
 
   # deepseek_v3_8b:
   #   model_name: "deepseek-ai/DeepSeek-V3-8B"  # Check actual name

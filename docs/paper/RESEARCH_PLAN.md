@@ -30,6 +30,53 @@ Phase 1 (complete) showed RLVR and SFT models have different static geometry:
 
 ---
 
+## Novelty and Prior Work
+
+### What Already Exists
+
+**Hidden states encode correctness** (Zhang et al. 2025, Afzal et al. 2025, Azaria & Mitchell 2023):
+- Probes can predict whether a model will answer correctly
+- This works even before the answer is generated
+- **Limitation**: Tested only within single domains (math, or QA, or code)
+
+**Truth has geometric structure** (Marks & Tegmark 2023):
+- Linear truth directions transfer across factual datasets
+- **Limitation**: All tests are on factual recall, not reasoning processes
+
+**Activation steering works** (Turner et al. 2023, Meng et al. 2022):
+- Can modify model behavior by editing activations
+- **Limitation**: Tested on simple attributes (honesty, toxicity), not complex reasoning
+
+### What's Novel in This Work
+
+**1. Cross-domain reasoning transfer (H2)**
+- **New**: Test if correctness geometry transfers math → code → logic
+- **Why it matters**: Prior work only tested within-domain or across similar factual tasks
+- **Risk**: This may fail (geometry could be domain-specific)
+
+**2. Trajectory-based analysis**
+- **New**: Analyze activation *flow* through layers, not just static representations
+- **Method**: Path signatures (reparameterization-invariant trajectory features)
+- **Why it matters**: Reasoning is a process; trajectories capture temporal dynamics
+
+**3. Causal intervention on reasoning (H4)**
+- **New**: Steer trajectories to improve reasoning accuracy
+- **Why it matters**: Tests whether geometry is causally relevant, not just correlational
+- **Risk**: Steering may break the model or only work within-domain
+
+**4. Systematic confound controls**
+- **New**: Explicit difficulty stratification, baseline comparisons, control tasks
+- **Why it matters**: Prior work often conflates correctness with difficulty/length
+
+### What We're NOT Claiming
+
+- ❌ That we've "solved" reasoning or interpretability
+- ❌ That geometry *causes* good reasoning (only that it correlates, unless H4 succeeds)
+- ❌ That this works on all models or all tasks
+- ✅ That we're testing a specific, falsifiable hypothesis about universal reasoning geometry
+
+---
+
 ## The Real Research Question
 
 > **Can we learn the geometry of correct reasoning from verifiable domains (where we know the right answer) and use it on non-verifiable domains (where we don't)?**
@@ -133,6 +180,50 @@ code_accuracy = clf.evaluate(code_correct, code_incorrect)
 logic_accuracy = clf.evaluate(logic_correct, logic_incorrect)
 ```
 
+### Confound Controls
+
+**Critical confounds to address**:
+
+**1. Problem Difficulty**
+- Easy problems may have shorter, more direct trajectories
+- Hard problems may exhibit more "wandering"
+- **Control**: Stratify by difficulty proxy (problem length, model perplexity)
+- **Test**: Train separate classifiers for easy/medium/hard problems
+- **Success**: Accuracy remains >60% within each difficulty stratum
+
+**2. Output Length**
+- Correct solutions may systematically differ in length
+- **Control**: Match correct/incorrect pairs by token count (±10%)
+- **Test**: Classification accuracy on length-matched pairs
+
+**3. Surface Format**
+- Different domains have different output formats
+- **Control**: Test within-format transfer (GSM8K → MATH, both math)
+- **Test**: If within-format transfer succeeds but cross-format fails, it's format not reasoning
+
+**4. Random Label Control** (Hewitt & Liang 2019)
+- Train classifier on shuffled labels
+- **Success criterion**: Control accuracy ≈50% (geometry encodes meaningful signal)
+- **Failure criterion**: Control accuracy >55% (classifier learns spurious features)
+
+### Baseline Comparisons
+
+Geometry-based methods should outperform or complement simpler baselines:
+
+**Baseline 1: Model Confidence**
+- Use model's own probability estimates: P(correct | logits)
+- Expected performance: 60-70% (Kadavath et al. 2022)
+
+**Baseline 2: Output Length**
+- Classify based on token count alone
+- Expected performance: 55-60%
+
+**Baseline 3: Semantic Entropy** (if compute allows)
+- Sample multiple outputs, measure semantic consistency
+- Expected performance: 70-75% (Farquhar et al. 2024)
+
+**Success criterion**: Trajectory geometry achieves >65% AND adds value beyond baselines (e.g., ensemble with confidence improves over either alone)
+
 ---
 
 ## Timeline
@@ -159,6 +250,74 @@ logic_accuracy = clf.evaluate(logic_correct, logic_incorrect)
 ### Weeks 11-12: Write-up
 - Document results (including negative results)
 - Prepare paper
+
+---
+
+## Anticipated Challenges and Mitigation Strategies
+
+### Challenge 1: The Decision-Before-Reasoning Problem
+
+**Issue**: Recent work (Afzal et al. 2025, David 2025) shows models commit to answers early in CoT generation. Trajectory geometry may capture elaboration quality, not decision-making.
+
+**Mitigation**:
+- Analyze layer-wise: Test if early layers (0-15) are more predictive than late layers (16-31)
+- If early layers dominate, we're capturing decision structure (valuable)
+- If late layers dominate, we're capturing elaboration (still potentially useful)
+
+**Implication**: Reframe findings accordingly—be explicit about what we're measuring.
+
+### Challenge 2: Confounds May Dominate Signal
+
+**Issue**: Geometry may distinguish difficulty/length/format rather than reasoning quality.
+
+**Mitigation**:
+- **Difficulty stratification**: Mandatory for all analyses
+- **Length matching**: Compare correct/incorrect of similar token count
+- **Within-format transfer**: Test GSM8K → MATH before GSM8K → HumanEval
+- **Control tasks**: Random label baseline must fail (≈50% accuracy)
+
+**Decision point**: If controls show confounds dominate, pivot to understanding what geometry actually captures.
+
+### Challenge 3: H2 May Fail (Critical Risk)
+
+**Issue**: Cross-domain transfer is the linchpin hypothesis. If it fails, the "universal geometry" premise fails.
+
+**Mitigation**:
+- **Hierarchical transfer**: Test closer domains first (GSM8K → MATH)
+- **Asymmetric transfer**: Check if math → code works better than code → math
+- **Feature decomposition**: Identify which geometric features transfer vs which don't
+
+**Pivot strategies** (if H2 fails):
+1. Characterize domain-specific vs shared geometric features
+2. Measure transfer as function of domain similarity
+3. Focus on within-domain applications (still useful)
+
+### Challenge 4: Sample Size for Transfer Tests
+
+**Issue**: 500 samples per task may yield imbalanced classes (e.g., 350 correct, 150 incorrect).
+
+**Mitigation**:
+- Monitor class balance during collection
+- If model is too accurate (>80%), sample harder problems
+- Ensure minimum 100 samples per class for robust classification
+
+### Challenge 5: HumanEval Correctness is Expensive
+
+**Issue**: Running test cases for every sample is slow and potentially unsafe (code execution).
+
+**Mitigation**:
+- Use sandboxed execution environment (Docker container with timeouts)
+- Collect HumanEval last (after GSM8K and LogiQA validate the approach)
+- Consider using pass@1 from existing benchmarks if available
+
+### Challenge 6: Path Signatures May Be Brittle
+
+**Issue**: Signatures require dimensionality reduction (4096 → 64 dims). Choice of projection may affect results.
+
+**Mitigation**:
+- Test multiple projection methods (PCA, random projection, UMAP)
+- Test multiple signature depths (2, 3, 4)
+- Report robustness across choices
 
 ---
 

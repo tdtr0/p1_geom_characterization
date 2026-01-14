@@ -6,7 +6,26 @@
       "Bash(rsync:*)",
       "Bash(chmod:*)",
       "Bash(./sync.sh)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(timeout 30 ssh:*)",
+      "Bash(python scripts/check_layer_smoothness.py:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(./sync.sh:*)",
+      "Bash(pip install:*)",
+      "Bash(b2 authorize-account:*)",
+      "Bash(b2 list-buckets:*)",
+      "Bash(b2 upload-file:*)",
+      "Bash(curl:*)",
+      "Bash(dig:*)",
+      "Bash(nslookup:*)",
+      "Bash(python scripts/b2_upload.py:*)",
+      "Bash(python scripts/b2_download.py:*)",
+      "Bash(b2 get-account-info:*)",
+      "Bash(ls:*)",
+      "Bash(tree:*)",
+      "Bash(bash:*)",
+      "Bash(vastai show:*)"
     ]
   }
 }
