@@ -11,6 +11,9 @@ cd "$PROJECT_ROOT"
 # Ensure PYTHONPATH includes src/
 export PYTHONPATH="${PROJECT_ROOT}/src:${PYTHONPATH}"
 
+# CRITICAL: Disable HDF5 file locking to prevent conflicts between processes
+export HDF5_USE_FILE_LOCKING=FALSE
+
 echo "========================================================================"
 echo "Phase 2 Collection - PARALLEL Mode (4 GPUs)"
 echo "========================================================================"
@@ -38,16 +41,24 @@ declare -A MODEL_TO_GPU=(
     ["olmo3_think"]="3"
 )
 
-# Start collection for each model in parallel
+# Start collection for each model in parallel (staggered to avoid HDF5 conflicts)
 PIDS=()
+delay=0
 for model in olmo3_base olmo3_sft olmo3_rl_zero olmo3_think; do
     gpu=${MODEL_TO_GPU[$model]}
     log_file="data/logs/${model}_collection_$(date +%Y%m%d_%H%M%S).log"
 
+    # Stagger starts by 10 seconds to avoid HDF5 file creation conflicts
+    if [ $delay -gt 0 ]; then
+        echo "[$(date +%T)] Waiting ${delay}s before starting $model..."
+        sleep $delay
+    fi
+
     echo "[$(date +%T)] Starting $model on GPU $gpu (log: $log_file)"
 
     # Run collection for this model on its assigned GPU
-    CUDA_VISIBLE_DEVICES=$gpu python3 scripts/collection/collect_trajectories_with_labels.py \
+    CUDA_VISIBLE_DEVICES=$gpu HDF5_USE_FILE_LOCKING=FALSE \
+        python3 scripts/collection/collect_trajectories_with_labels.py \
         --models $model \
         --tasks gsm8k logiqa humaneval \
         --n_samples 500 \
@@ -55,6 +66,7 @@ for model in olmo3_base olmo3_sft olmo3_rl_zero olmo3_think; do
         > "$log_file" 2>&1 &
 
     PIDS+=($!)
+    delay=10  # 10 second delay between starts
 done
 
 echo ""

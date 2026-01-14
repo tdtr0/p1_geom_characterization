@@ -27,7 +27,7 @@ MIN_BANDWIDTH_MBPS = 200
 MIN_VRAM_GB = 24
 MIN_DISK_GB = 300
 PREFERRED_REGION = "US"
-GIT_REPO = "https://github.com/YOUR_USERNAME/ManiVer.git"  # TODO: Update
+GIT_REPO = "https://github.com/tdtr0/p1_geom_characterization.git"
 WORKSPACE_DIR = "/workspace/maniver"
 
 # On-start script for vast.ai instance
@@ -49,12 +49,12 @@ else
 fi
 
 # Create data directories
-mkdir -p data/trajectories data/checkpoints logs
+mkdir -p data/trajectories data/checkpoints data/logs
 
 # Setup B2 CLI automatically
 if [ -f "configs/b2-configs.txt" ]; then
     echo "Setting up Backblaze B2 CLI..."
-    bash scripts/setup_b2_on_vastai.sh
+    bash scripts/storage/setup_b2_on_vastai.sh
 fi
 
 # Show GPU info
@@ -64,10 +64,10 @@ echo ""
 echo "=== Ready to run Phase 2 collection ==="
 echo ""
 echo "Commands:"
-echo "  Full pipeline (collect + upload): bash scripts/run_phase2_pipeline.sh"
-echo "  Collection only:                  python scripts/collect_trajectories_with_labels.py"
-echo "  Upload existing data:             python scripts/b2_upload.py"
-echo "  Download from B2:                 python scripts/b2_download.py --list-only"
+echo "  Full pipeline (collect + upload): bash scripts/collection/run_phase2_pipeline.sh"
+echo "  Collection only:                  python scripts/collection/collect_trajectories_with_labels.py"
+echo "  Upload existing data:             python scripts/storage/b2_upload.py"
+echo "  Download from B2:                 python scripts/storage/b2_download.py --list-only"
 echo ""
 '''.format(workspace=WORKSPACE_DIR, repo=GIT_REPO)
 
@@ -213,7 +213,7 @@ def confirm_instance(offer: dict) -> bool:
 
 def create_instance(offer_id: str, disk_gb: int = 300):
     """Create a vast.ai instance."""
-    print(f"Creating instance from offer {offer_id}...")
+    print(f"Creating instance from offer {offer_id} with {disk_gb} GB disk...")
 
     # Create on-start script file
     onstart_path = Path("/tmp/maniver_onstart.sh")

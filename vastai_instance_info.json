@@ -1,0 +1,14 @@
+{
+  "instance_id": "30008731",
+  "ssh_host": "ssh9.vast.ai",
+  "ssh_port": "18730",
+  "gpu": "4x RTX 5090",
+  "location": "Czechia",
+  "cost_per_hour": 1.76,
+  "workspace": "/workspace/maniver",
+  "estimated_duration_hours": 5.5,
+  "estimated_total_cost": 10.14,
+  "created_at": "2026-01-14T21:00:00Z",
+  "ssh_command": "ssh root@ssh9.vast.ai -p 18730",
+  "destroy_command": "vastai destroy instance 30008731 --api-key $(cat ~/.config/vastai/vast_api_key)"
+}

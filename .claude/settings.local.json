@@ -25,7 +25,15 @@
       "Bash(ls:*)",
       "Bash(tree:*)",
       "Bash(bash:*)",
-      "Bash(vastai show:*)"
+      "Bash(vastai show:*)",
+      "Bash(vastai --version:*)",
+      "Bash(vastai search:*)",
+      "Bash(python scripts/deployment/vast_launcher.py launch:*)",
+      "Bash(vastai create instance:*)"
     ]
+  },
+  "sandbox": {
+    "enabled": true,
+    "autoAllowBashIfSandboxed": true
   }
 }
