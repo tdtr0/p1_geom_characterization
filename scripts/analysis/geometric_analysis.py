@@ -116,12 +116,43 @@ def aggregate_to_layer(trajectories: np.ndarray, layer_idx: int) -> np.ndarray:
 # Analysis Functions
 # =============================================================================
 
+def analyze_layer(args) -> Tuple[int, Dict]:
+    """Analyze a single layer (for parallel execution)."""
+    layer_idx, layer_acts, labels = args
+
+    # Overall metrics
+    eff_rank = compute_effective_rank(layer_acts)
+    spectral_alpha, _ = compute_spectral_decay(layer_acts)
+
+    layer_results = {
+        'effective_rank': eff_rank,
+        'spectral_decay_alpha': spectral_alpha,
+    }
+
+    # Compare correct vs incorrect (if enough samples)
+    if labels.sum() >= 10 and (~labels).sum() >= 10:
+        correct_acts = layer_acts[labels]
+        incorrect_acts = layer_acts[~labels]
+
+        eff_rank_correct = compute_effective_rank(correct_acts)
+        eff_rank_incorrect = compute_effective_rank(incorrect_acts)
+
+        layer_results['eff_rank_correct'] = eff_rank_correct
+        layer_results['eff_rank_incorrect'] = eff_rank_incorrect
+        layer_results['eff_rank_diff'] = eff_rank_correct - eff_rank_incorrect
+
+    return layer_idx, layer_results
+
+
 def analyze_single_model(
     trajectories: np.ndarray,
     labels: np.ndarray,
-    model_name: str
+    model_name: str,
+    n_jobs: int = 8
 ) -> Dict:
-    """Compute geometric metrics for a single model."""
+    """Compute geometric metrics for a single model (parallelized)."""
+    from joblib import Parallel, delayed
+
     n_samples, seq_len, n_layers, d_model = trajectories.shape
 
     results = {
@@ -132,33 +163,21 @@ def analyze_single_model(
         'layers': {}
     }
 
-    for layer_idx in range(n_layers):
-        layer_acts = aggregate_to_layer(trajectories, layer_idx)
+    print(f"    Analyzing {n_layers} layers with {n_jobs} workers...", flush=True)
 
-        # Overall metrics
-        eff_rank = compute_effective_rank(layer_acts)
-        spectral_alpha, _ = compute_spectral_decay(layer_acts)
+    # Prepare layer data
+    layer_data = [
+        (layer_idx, aggregate_to_layer(trajectories, layer_idx), labels)
+        for layer_idx in range(n_layers)
+    ]
 
-        layer_results = {
-            'effective_rank': eff_rank,
-            'spectral_decay_alpha': spectral_alpha,
-        }
+    # Parallel SVD computation
+    layer_results = Parallel(n_jobs=n_jobs, verbose=0)(
+        delayed(analyze_layer)(args) for args in layer_data
+    )
 
-        # Compare correct vs incorrect (if enough samples)
-        if labels.sum() >= 10 and (~labels).sum() >= 10:
-            correct_acts = layer_acts[labels]
-            incorrect_acts = layer_acts[~labels]
-
-            eff_rank_correct = compute_effective_rank(correct_acts)
-            eff_rank_incorrect = compute_effective_rank(incorrect_acts)
-
-            # Statistical test: Mann-Whitney U for effective rank difference
-            # Compute per-sample metrics for statistical test
-            layer_results['eff_rank_correct'] = eff_rank_correct
-            layer_results['eff_rank_incorrect'] = eff_rank_incorrect
-            layer_results['eff_rank_diff'] = eff_rank_correct - eff_rank_incorrect
-
-        results['layers'][layer_idx] = layer_results
+    for layer_idx, layer_result in layer_results:
+        results['layers'][layer_idx] = layer_result
 
     return results
 
