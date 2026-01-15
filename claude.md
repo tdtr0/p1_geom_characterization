@@ -137,6 +137,7 @@ ManiVer/
 
 ### For vast.ai Setup
 - **vast.ai Guide**: [VASTAI_GUIDE.md](VASTAI_GUIDE.md) - **Login, costs, GPU selection**
+- **Collection Guide**: [docs/guides/VASTAI_COLLECTION_GUIDE.md](docs/guides/VASTAI_COLLECTION_GUIDE.md) - **Practical pitfalls & solutions**
 - **GPU Optimization**: [GPU_OPTIMIZATION.md](GPU_OPTIMIZATION.md) - **Detailed pareto analysis**
 - **GPU Finder**: [scripts/deployment/find_optimal_gpu.sh](scripts/deployment/find_optimal_gpu.sh) - Find best available GPU
 - **Launcher**: [scripts/deployment/vast_launcher.py](scripts/deployment/vast_launcher.py)
