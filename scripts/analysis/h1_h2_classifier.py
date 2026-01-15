@@ -41,6 +41,8 @@ def extract_trajectory_features(trajectory: np.ndarray) -> Dict[str, np.ndarray]
     Returns:
         Dict of feature arrays, total ~124 features
     """
+    # Convert to float32 to avoid overflow with float16 data
+    trajectory = trajectory.astype(np.float32)
     seq_len, n_layers, d_model = trajectory.shape
 
     # 1. Mean activation norm per layer
@@ -160,28 +162,31 @@ def load_trajectories_with_labels(filepath: str) -> Tuple[np.ndarray, np.ndarray
     return trajectories, labels.astype(bool), indices
 
 
-def extract_features_batch(trajectories: np.ndarray, n_jobs: int = -1) -> np.ndarray:
+def extract_features_batch(trajectories: np.ndarray, n_jobs: int = 32) -> np.ndarray:
     """Extract features for all trajectories with parallel processing."""
     from joblib import Parallel, delayed
     import multiprocessing
 
     n_samples = trajectories.shape[0]
+    max_workers = multiprocessing.cpu_count()
+    n_jobs = min(n_jobs, max_workers)
 
-    if n_jobs == -1:
-        n_jobs = min(multiprocessing.cpu_count(), 8)
-
-    print(f"  Extracting features with {n_jobs} workers...")
+    print(f"  Extracting features with {n_jobs} workers (max: {max_workers})...", flush=True)
 
     def extract_single(i):
         features = extract_trajectory_features(trajectories[i])
         return features_to_vector(features)
 
     # Parallel feature extraction
-    features_list = Parallel(n_jobs=n_jobs, verbose=1)(
+    features_list = Parallel(n_jobs=n_jobs, verbose=1, backend='loky')(
         delayed(extract_single)(i) for i in range(n_samples)
     )
 
-    return np.array(features_list)
+    # Convert to array and clean up any NaN/Inf values
+    X = np.array(features_list)
+    X = np.nan_to_num(X, nan=0.0, posinf=1e10, neginf=-1e10)
+
+    return X
 
 
 # =============================================================================
