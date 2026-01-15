@@ -139,13 +139,14 @@ def load_trajectories_with_labels(filepath: str) -> Tuple[np.ndarray, np.ndarray
         trajectories = f['trajectories'][:]  # (n_samples, seq_len, n_layers, d_model)
 
         # Get correctness labels
-        if 'correct' in f:
+        if 'is_correct' in f:
+            labels = f['is_correct'][:]
+        elif 'correct' in f:
             labels = f['correct'][:]
         elif 'labels' in f:
             labels = f['labels'][:]
         else:
-            # Try to find in metadata
-            raise KeyError(f"No correctness labels found in {filepath}")
+            raise KeyError(f"No correctness labels found in {filepath}. Keys: {list(f.keys())}")
 
         # Get indices if available
         if 'indices' in f:
