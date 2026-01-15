@@ -132,7 +132,7 @@ def load_trajectories_with_labels(filepath: str) -> Tuple[np.ndarray, np.ndarray
         labels: (n_samples,) boolean array
         indices: (n_samples,) sample indices
     """
-    print(f"  Loading {filepath}...")
+    print(f"  Loading {filepath}...", flush=True)
 
     with h5py.File(filepath, 'r') as f:
         # Get trajectories
@@ -154,20 +154,32 @@ def load_trajectories_with_labels(filepath: str) -> Tuple[np.ndarray, np.ndarray
         else:
             indices = np.arange(len(labels))
 
-    print(f"    Shape: {trajectories.shape}")
-    print(f"    Correct: {labels.sum()}/{len(labels)} ({100*labels.mean():.1f}%)")
+    print(f"    Shape: {trajectories.shape}", flush=True)
+    print(f"    Correct: {labels.sum()}/{len(labels)} ({100*labels.mean():.1f}%)", flush=True)
 
     return trajectories, labels.astype(bool), indices
 
 
-def extract_features_batch(trajectories: np.ndarray) -> np.ndarray:
-    """Extract features for all trajectories."""
-    n_samples = trajectories.shape[0]
-    features_list = []
+def extract_features_batch(trajectories: np.ndarray, n_jobs: int = -1) -> np.ndarray:
+    """Extract features for all trajectories with parallel processing."""
+    from joblib import Parallel, delayed
+    import multiprocessing
 
-    for i in range(n_samples):
+    n_samples = trajectories.shape[0]
+
+    if n_jobs == -1:
+        n_jobs = min(multiprocessing.cpu_count(), 8)
+
+    print(f"  Extracting features with {n_jobs} workers...")
+
+    def extract_single(i):
         features = extract_trajectory_features(trajectories[i])
-        features_list.append(features_to_vector(features))
+        return features_to_vector(features)
+
+    # Parallel feature extraction
+    features_list = Parallel(n_jobs=n_jobs, verbose=1)(
+        delayed(extract_single)(i) for i in range(n_samples)
+    )
 
     return np.array(features_list)
 
