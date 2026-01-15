@@ -207,11 +207,11 @@ def train_and_evaluate(
     X_train_scaled = scaler.fit_transform(X_train)
     X_test_scaled = scaler.transform(X_test)
 
-    # Create classifier
+    # Create classifier with class balancing
     if classifier_type == 'logistic':
-        clf = LogisticRegression(max_iter=1000, C=0.1, random_state=42)
+        clf = LogisticRegression(max_iter=1000, C=0.1, class_weight='balanced', random_state=42)
     elif classifier_type == 'rf':
-        clf = RandomForestClassifier(n_estimators=100, max_depth=10, random_state=42)
+        clf = RandomForestClassifier(n_estimators=100, max_depth=10, class_weight='balanced', random_state=42)
     else:
         raise ValueError(f"Unknown classifier: {classifier_type}")
 
@@ -250,9 +250,9 @@ def cross_validate(X: np.ndarray, y: np.ndarray, classifier_type: str = 'logisti
     X_scaled = scaler.fit_transform(X)
 
     if classifier_type == 'logistic':
-        clf = LogisticRegression(max_iter=1000, C=0.1, random_state=42)
+        clf = LogisticRegression(max_iter=1000, C=0.1, class_weight='balanced', random_state=42)
     else:
-        clf = RandomForestClassifier(n_estimators=100, max_depth=10, random_state=42)
+        clf = RandomForestClassifier(n_estimators=100, max_depth=10, class_weight='balanced', random_state=42)
 
     cv = StratifiedKFold(n_splits=n_folds, shuffle=True, random_state=42)
     scores = cross_val_score(clf, X_scaled, y, cv=cv, scoring='accuracy')
@@ -383,9 +383,9 @@ def test_h2(
 
             # Train classifier
             if clf_type == 'logistic':
-                clf = LogisticRegression(max_iter=1000, C=0.1, random_state=42)
+                clf = LogisticRegression(max_iter=1000, C=0.1, class_weight='balanced', random_state=42)
             else:
-                clf = RandomForestClassifier(n_estimators=100, max_depth=10, random_state=42)
+                clf = RandomForestClassifier(n_estimators=100, max_depth=10, class_weight='balanced', random_state=42)
 
             clf.fit(X_train_scaled, y_train)
 
@@ -454,7 +454,7 @@ def analyze_feature_importance(
     # Train logistic regression on all data
     scaler = StandardScaler()
     X_scaled = scaler.fit_transform(X)
-    clf = LogisticRegression(max_iter=1000, C=0.1, random_state=42)
+    clf = LogisticRegression(max_iter=1000, C=0.1, class_weight='balanced', random_state=42)
     clf.fit(X_scaled, y)
 
     # Get importance
