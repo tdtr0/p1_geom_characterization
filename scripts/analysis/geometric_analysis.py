@@ -182,33 +182,43 @@ def analyze_single_model(
     return results
 
 
+def compute_base_layer_svd(trajectories: np.ndarray, n_jobs: int = 8) -> Dict[int, np.ndarray]:
+    """
+    Compute and store Vt matrices for base model (for subspace preservation).
+    Returns dict of layer_idx -> Vt matrix (top-k right singular vectors).
+    """
+    from joblib import Parallel, delayed
+
+    n_samples, seq_len, n_layers, d_model = trajectories.shape
+    k = 50  # Keep top-k singular vectors
+
+    def get_layer_vt(layer_idx):
+        layer_acts = aggregate_to_layer(trajectories, layer_idx)
+        _, _, Vt = svd(layer_acts.astype(np.float32), full_matrices=False)
+        return layer_idx, Vt[:k, :]  # Only keep top-k
+
+    results = Parallel(n_jobs=n_jobs, verbose=0)(
+        delayed(get_layer_vt)(i) for i in range(n_layers)
+    )
+
+    return {layer_idx: vt for layer_idx, vt in results}
+
+
 def compare_models(
     data_dir: str,
     models: List[str],
-    task: str = 'gsm8k'
+    task: str = 'gsm8k',
+    n_jobs: int = 8
 ) -> Dict:
     """
     Compare geometric properties across models.
-    Key comparison: subspace preservation (RLVR vs SFT vs base).
+    Memory-efficient: processes one model at a time.
     """
+    import gc
+
     print("\n" + "="*70)
     print("GEOMETRIC ANALYSIS: Model Comparison")
     print("="*70)
-
-    # Load all data
-    model_data = {}
-    for model in models:
-        filepath = Path(data_dir) / model / f"{task}_trajectories.h5"
-        if not filepath.exists():
-            print(f"⚠ {model}: File not found")
-            continue
-
-        trajectories, labels = load_trajectories(str(filepath))
-        model_data[model] = {'trajectories': trajectories, 'labels': labels}
-
-    if 'olmo3_base' not in model_data:
-        print("⚠ Base model required for subspace preservation analysis")
-        return {}
 
     results = {
         'task': task,
@@ -217,39 +227,67 @@ def compare_models(
         'effective_rank_comparison': {}
     }
 
-    # Analyze each model
-    for model, data in model_data.items():
+    # First pass: analyze base model and cache its SVD
+    base_path = Path(data_dir) / 'olmo3_base' / f"{task}_trajectories.h5"
+    if not base_path.exists():
+        print("⚠ Base model required for subspace preservation analysis")
+        return {}
+
+    print(f"\n{'─'*70}")
+    print("Analyzing: olmo3_base (caching SVD for subspace comparison)")
+    print(f"{'─'*70}")
+
+    base_trajs, base_labels = load_trajectories(str(base_path))
+    n_layers = base_trajs.shape[2]
+
+    # Analyze base model
+    base_results = analyze_single_model(base_trajs, base_labels, 'olmo3_base', n_jobs)
+    results['models']['olmo3_base'] = base_results
+
+    # Cache base Vt matrices
+    print("    Caching base model SVD matrices...", flush=True)
+    base_vt = compute_base_layer_svd(base_trajs, n_jobs)
+
+    # Free base trajectories
+    del base_trajs, base_labels
+    gc.collect()
+    print("    Base model processed, memory freed.", flush=True)
+
+    # Second pass: analyze other models one at a time
+    for model in models:
+        if model == 'olmo3_base':
+            continue
+
+        filepath = Path(data_dir) / model / f"{task}_trajectories.h5"
+        if not filepath.exists():
+            print(f"⚠ {model}: File not found")
+            continue
+
         print(f"\n{'─'*70}")
         print(f"Analyzing: {model}")
         print(f"{'─'*70}")
 
-        model_results = analyze_single_model(
-            data['trajectories'],
-            data['labels'],
-            model
-        )
+        trajectories, labels = load_trajectories(str(filepath))
+
+        # Analyze model
+        model_results = analyze_single_model(trajectories, labels, model, n_jobs)
         results['models'][model] = model_results
 
-    # Subspace preservation vs base
-    print(f"\n{'─'*70}")
-    print("Subspace Preservation vs Base Model")
-    print(f"{'─'*70}")
-
-    base_trajs = model_data['olmo3_base']['trajectories']
-    n_layers = base_trajs.shape[2]
-
-    for model in models:
-        if model == 'olmo3_base' or model not in model_data:
-            continue
-
-        other_trajs = model_data[model]['trajectories']
+        # Compute subspace preservation vs base
+        print(f"    Computing subspace preservation vs base...", flush=True)
         preservations = []
 
         for layer_idx in range(n_layers):
-            base_acts = aggregate_to_layer(base_trajs, layer_idx)
-            other_acts = aggregate_to_layer(other_trajs, layer_idx)
+            other_acts = aggregate_to_layer(trajectories, layer_idx)
+            _, _, Vt_other = svd(other_acts.astype(np.float32), full_matrices=False)
 
-            preservation, _ = compute_subspace_preservation(base_acts, other_acts, k=50)
+            # Compare with cached base Vt
+            k = min(50, base_vt[layer_idx].shape[0], Vt_other.shape[0])
+            V_base_k = base_vt[layer_idx][:k, :].T
+            V_other_k = Vt_other[:k, :].T
+
+            angles = subspace_angles(V_base_k, V_other_k)
+            preservation = float(np.cos(angles).mean())
             preservations.append(preservation)
 
         mean_preservation = np.mean(preservations)
@@ -257,10 +295,14 @@ def compare_models(
             'per_layer': preservations,
             'mean': float(mean_preservation)
         }
+        print(f"    Subspace preservation: {mean_preservation:.3f}")
 
-        print(f"  {model}: {mean_preservation:.3f} (mean across layers)")
+        # Free memory
+        del trajectories, labels
+        gc.collect()
+        print(f"    {model} processed, memory freed.", flush=True)
 
-    # Effective rank comparison
+    # Summary: Effective rank comparison
     print(f"\n{'─'*70}")
     print("Effective Rank Comparison")
     print(f"{'─'*70}")
@@ -272,6 +314,14 @@ def compare_models(
         ])
         results['effective_rank_comparison'][model] = float(mean_eff_rank)
         print(f"  {model}: {mean_eff_rank:.1f} (mean effective rank)")
+
+    # Summary: Subspace preservation
+    print(f"\n{'─'*70}")
+    print("Subspace Preservation vs Base Model")
+    print(f"{'─'*70}")
+
+    for model, data in results.get('subspace_preservation', {}).items():
+        print(f"  {model}: {data['mean']:.3f} (mean across layers)")
 
     return results
 
