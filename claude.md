@@ -5,8 +5,30 @@
 
 ## 🔄 Current Phase: Phase 2 - Trajectory Collection with Correctness Labels
 
-**Status**: Ready to Launch
+**Status**: Collection 92% Complete (11/12 files)
 **Objective**: Collect activation trajectories with correctness labels to test H1 (distinguishable trajectories) and H2 (domain-invariant signatures)
+
+### Phase 2 Collection Results (2026-01-15)
+
+**Completed**: 11/12 trajectory files uploaded to Backblaze B2 (~52GB total)
+
+| Model | GSM8K | HumanEval | LogiQA | Status |
+|-------|-------|-----------|--------|--------|
+| olmo3_base | ⚠️ 7.5KB (corrupted) | ✅ 2.71GB | ✅ 13.05GB | 2/3 |
+| olmo3_sft | ✅ 4.16GB | ✅ 2.71GB | ✅ 6.22GB | 3/3 |
+| olmo3_rl_zero | ✅ 4.16GB | ✅ 4.97GB | ✅ 4.97GB | 3/3 |
+| olmo3_think | ✅ 4.16GB | ✅ 2.71GB | ✅ 4.72GB | 3/3 |
+
+**B2 Location**: `b2://ml-activations-store/trajectories/`
+
+**Missing Data**: `olmo3_base/gsm8k` - corrupted due to HDF5 gzip filter error on sample 1. Need to recollect.
+
+**Collection Details**:
+- 500 samples per task (GSM8K, LogiQA), 164 samples (HumanEval)
+- 16 layers collected (even layers 0-30)
+- Trajectory shape: (n_samples, 512, 16, 4096)
+- All models used same prompts (seed=42)
+- Runtime: ~8 hours on 4× RTX 5090 ($1.43/hr)
 
 ---
 
@@ -351,13 +373,24 @@ When creating new files:
 1. ✅ **Project reorganization** - Clean folder structure
 2. ✅ **B2 storage setup** - Backblaze + Cloudflare CDN
 3. ✅ **Pipeline scripts** - Automated collect + upload
-4. 🔄 **Phase 2 collection** - Launch vast.ai, collect data
-5. ⏳ **H1 testing** - Within-domain classification
-6. ⏳ **H2 testing** - Cross-domain transfer (critical test)
+4. ✅ **Phase 2 collection** - 11/12 files collected and uploaded to B2
+5. 🔄 **Recollect olmo3_base/gsm8k** - Need GPU server (eyecog/box1 unavailable)
+6. ⏳ **H1 testing** - Within-domain classification (can start with 11 files)
+7. ⏳ **H2 testing** - Cross-domain transfer (critical test)
 
 ---
 
 ## File Update Log
+
+**2026-01-15**:
+- **Phase 2 collection completed** (11/12 files, ~52GB) on vast.ai 4× RTX 5090
+- Uploaded all trajectories to Backblaze B2 (`b2://ml-activations-store/trajectories/`)
+- Fixed HDF5 file locking issues with `HDF5_USE_FILE_LOCKING=FALSE`
+- Added `run_phase2_parallel.sh` for 4-GPU parallel collection
+- Added `auto_complete_and_upload.sh` for automated monitoring
+- Added `monitor_and_restart.sh` for crash recovery
+- **Known issue**: `olmo3_base/gsm8k` corrupted (HDF5 gzip filter error) - needs recollection
+- Total cost: ~$12 (8 hours × $1.43/hr)
 
 **2026-01-14**:
 - Reorganized project structure (new folders: docs/, scripts/{collection,analysis,storage,deployment}/)
