@@ -1,19 +1,21 @@
 #!/usr/bin/env python3
 """
-Phase 2b: Collect 8-shot trajectories for GSM8K
+Phase 2b: Collect 8-shot trajectories for GSM8K and LogiQA
 
 This script collects activation trajectories using standard 8-shot CoT prompting
 to match OLMo benchmark evaluation setup (lm-evaluation-harness format).
 
 Key differences from 0-shot collection:
-- Uses 8 exemplars from GSM8K train split
+- Uses 8 exemplars with chain-of-thought reasoning
 - Base models: raw text format
 - Instruct models: multi-turn chat template
-- Answer format: "#### <number>" (GSM8K standard)
+- GSM8K: "#### <number>" format
+- LogiQA: "Answer: A/B/C/D" format
 
 Usage:
     python collect_8shot_trajectories.py --model olmo3_base --task gsm8k
-    python collect_8shot_trajectories.py --all  # Run all models
+    python collect_8shot_trajectories.py --model olmo3_base --task logiqa
+    python collect_8shot_trajectories.py --all --task logiqa  # Run all models
 """
 
 import os
@@ -32,7 +34,7 @@ import argparse
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
-from task_data import prepare_gsm8k
+from task_data import prepare_gsm8k, prepare_logiqa
 
 # Configuration
 OUTPUT_DIR = Path("data/trajectories_8shot")
@@ -124,6 +126,51 @@ def check_gsm8k_correct(model_output: str, ground_truth: str) -> bool:
         return abs(gt_val - model_val) < 1e-6
     except (ValueError, TypeError):
         return gt_answer == model_answer
+
+
+def extract_logiqa_answer(text: str) -> str:
+    """Extract A/B/C/D answer from LogiQA response."""
+    # Try "Answer: X" pattern first
+    match = re.search(r'(?:Answer|ANSWER|answer)[:\s]+([A-Da-d])', text)
+    if match:
+        return match.group(1).upper()
+
+    # Try standalone letter at end
+    match = re.search(r'\b([A-Da-d])\s*[.\):]?\s*$', text)
+    if match:
+        return match.group(1).upper()
+
+    # Try "The answer is X" pattern
+    match = re.search(r'(?:the answer is|I (?:choose|select|pick))\s*([A-Da-d])', text, re.IGNORECASE)
+    if match:
+        return match.group(1).upper()
+
+    # Look for letter followed by period or parenthesis in last line
+    lines = text.strip().split('\n')
+    if lines:
+        last_line = lines[-1]
+        match = re.search(r'\b([A-Da-d])[.\):]', last_line)
+        if match:
+            return match.group(1).upper()
+
+    # Fallback: first A/B/C/D found
+    match = re.search(r'\b([A-Da-d])\b', text)
+    if match:
+        return match.group(1).upper()
+
+    return ""
+
+
+def check_logiqa_correct(model_output: str, ground_truth: str) -> bool:
+    """Check if LogiQA answer is correct."""
+    # ground_truth is the index (0, 1, 2, 3) or letter (A, B, C, D)
+    if isinstance(ground_truth, int) or ground_truth.isdigit():
+        gt_answer = chr(65 + int(ground_truth))  # 0->A, 1->B, etc.
+    else:
+        gt_answer = ground_truth.upper().strip()
+
+    model_answer = extract_logiqa_answer(model_output)
+    return model_answer == gt_answer
 
 
 class TrajectoryCollector:
@@ -266,6 +313,7 @@ class TrajectoryCollector:
 def collect_for_model(
     model_key: str,
     model_config: dict,
+    task_name: str = 'gsm8k',
     n_samples: int = 500
 ):
     """Collect 8-shot trajectories for a model."""
@@ -273,7 +321,7 @@ def collect_for_model(
     model_type = MODEL_TYPES.get(model_key, 'base')
 
     # Load checkpoint
-    checkpoint = load_checkpoint(model_key, 'gsm8k', 8)
+    checkpoint = load_checkpoint(model_key, task_name, 8)
     start_idx = checkpoint["completed_samples"]
     n_correct = checkpoint["n_correct"]
     n_incorrect = checkpoint["n_incorrect"]
@@ -284,7 +332,7 @@ def collect_for_model(
         return
 
     # Output file
-    output_file = OUTPUT_DIR / model_key / "gsm8k_trajectories_8shot.h5"
+    output_file = OUTPUT_DIR / model_key / f"{task_name}_trajectories_8shot.h5"
     output_file.parent.mkdir(parents=True, exist_ok=True)
 
     # Initialize collector
@@ -294,14 +342,28 @@ def collect_for_model(
     )
 
     # Prepare task data with 8-shot
-    task_data = prepare_gsm8k(
-        n_samples=n_samples,
-        split='test',
-        seed=42,  # Same seed as 0-shot for same problems
-        n_shot=8,
-        model_type=model_type,
-        tokenizer=collector.tokenizer if model_type == 'instruct' else None
-    )
+    if task_name == 'gsm8k':
+        task_data = prepare_gsm8k(
+            n_samples=n_samples,
+            split='test',
+            seed=42,  # Same seed as 0-shot for same problems
+            n_shot=8,
+            model_type=model_type,
+            tokenizer=collector.tokenizer if model_type == 'instruct' else None
+        )
+        check_correct = check_gsm8k_correct
+    elif task_name == 'logiqa':
+        task_data = prepare_logiqa(
+            n_samples=n_samples,
+            split='test',
+            seed=42,  # Same seed as 0-shot for same problems
+            n_shot=8,
+            model_type=model_type,
+            tokenizer=collector.tokenizer if model_type == 'instruct' else None
+        )
+        check_correct = check_logiqa_correct
+    else:
+        raise ValueError(f"Unknown task: {task_name}")
 
     # Create or open HDF5 file
     if start_idx == 0:
@@ -320,7 +382,7 @@ def collect_for_model(
             f.create_dataset('ground_truth', shape=(n_samples,), dtype=h5py.string_dtype(encoding='utf-8'))
 
             f.attrs['model'] = model_key
-            f.attrs['task'] = 'gsm8k'
+            f.attrs['task'] = task_name
             f.attrs['n_shot'] = 8
             f.attrs['model_type'] = model_type
             f.attrs['n_samples'] = n_samples
@@ -334,7 +396,7 @@ def collect_for_model(
     print(f"  Current: {n_correct} correct, {n_incorrect} incorrect")
 
     with h5py.File(output_file, 'a') as f:
-        pbar = tqdm(range(start_idx, n_samples), desc=f"  {model_key}/gsm8k-8shot")
+        pbar = tqdm(range(start_idx, n_samples), desc=f"  {model_key}/{task_name}-8shot")
 
         for i in pbar:
             prompt, answer, metadata = task_data[i]
@@ -346,7 +408,7 @@ def collect_for_model(
                     max_seq_len=MAX_SEQ_LEN
                 )
 
-                is_correct = check_gsm8k_correct(model_output, answer)
+                is_correct = check_correct(model_output, answer)
                 seq_len = trajectory.shape[0]
 
                 # Pad or truncate
@@ -390,10 +452,10 @@ def collect_for_model(
 
             # Checkpoint every 25 samples
             if (i + 1) % 25 == 0:
-                save_checkpoint(model_key, 'gsm8k', 8, i + 1, n_correct, n_incorrect)
+                save_checkpoint(model_key, task_name, 8, i + 1, n_correct, n_incorrect)
 
     # Final checkpoint
-    save_checkpoint(model_key, 'gsm8k', 8, n_samples, n_correct, n_incorrect)
+    save_checkpoint(model_key, task_name, 8, n_samples, n_correct, n_incorrect)
 
     # Clean up
     del collector
@@ -406,20 +468,23 @@ def collect_for_model(
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Collect 8-shot GSM8K trajectories")
+    parser = argparse.ArgumentParser(description="Collect 8-shot trajectories for GSM8K or LogiQA")
     parser.add_argument('--model', type=str, help='Specific model to run')
+    parser.add_argument('--task', type=str, default='gsm8k', choices=['gsm8k', 'logiqa'],
+                       help='Task to collect (gsm8k or logiqa)')
     parser.add_argument('--all', action='store_true', help='Run all models')
     parser.add_argument('--n-samples', type=int, default=500, help='Number of samples')
 
     args = parser.parse_args()
 
     print("=" * 80)
-    print("PHASE 2b: 8-Shot Trajectory Collection (GSM8K)")
+    print(f"PHASE 2b: 8-Shot Trajectory Collection ({args.task.upper()})")
     print("=" * 80)
     print()
+    print(f"Task: {args.task}")
     print(f"Layers: Even only [0, 2, ..., 30] = {len(LAYERS_TO_COLLECT)} layers")
     print(f"Samples: {args.n_samples}")
-    print(f"Format: lm-evaluation-harness standard 8-shot CoT")
+    print(f"Format: 8-shot CoT prompting")
     print()
 
     models = load_models_config()
@@ -447,6 +512,7 @@ def main():
             collect_for_model(
                 model_key=model_key,
                 model_config=model_config,
+                task_name=args.task,
                 n_samples=args.n_samples
             )
         except Exception as e:

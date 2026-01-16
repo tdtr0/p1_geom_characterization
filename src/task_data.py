@@ -136,6 +136,106 @@ def prepare_gsm8k(
     return prompts
 
 
+# =============================================================================
+# LogiQA 8-Shot Chain-of-Thought Exemplars
+# Source: Selected from LogiQA train split for balanced difficulty
+# Format: Context + Question + Options + CoT reasoning + Answer
+# =============================================================================
+
+LOGIQA_8SHOT_EXEMPLARS = [
+    {
+        "context": "In a company, there are 6 departments: sales, production, quality control, research, finance, and management. The manager of the sales department is not the manager of the production department.",
+        "question": "If all the statements above are true, which of the following must also be true?",
+        "options": ["A. The manager of the sales department could also manage finance.", "B. The manager of the production department must be from quality control.", "C. The sales and production departments have different managers.", "D. The company has exactly 6 managers."],
+        "answer": "C",
+        "reasoning": "The statement says 'the manager of the sales department is not the manager of the production department.' This directly means sales and production have different managers. We cannot conclude anything about finance management (A), quality control (B), or the total number of managers (D). Therefore, the answer is C."
+    },
+    {
+        "context": "All poets are creative. Some creative people are musicians. No musicians are accountants.",
+        "question": "Which of the following can be logically inferred?",
+        "options": ["A. All poets are musicians.", "B. Some poets might be musicians.", "C. No poets are accountants.", "D. Some accountants are creative."],
+        "answer": "B",
+        "reasoning": "From 'All poets are creative' and 'Some creative people are musicians', we can infer that some poets MIGHT be musicians (since poets are creative, and some creative people are musicians). We cannot say ALL poets are musicians (A). We cannot conclude no poets are accountants (C) since we don't know if poets who aren't musicians could be accountants. We have no information connecting accountants to creativity (D). The answer is B."
+    },
+    {
+        "context": "A study found that students who sleep at least 8 hours perform better on tests than those who sleep less. However, the study did not control for other factors such as study time or natural ability.",
+        "question": "What weakness does the argument have?",
+        "options": ["A. It assumes correlation implies causation.", "B. It uses a sample that is too small.", "C. It fails to consider confounding variables.", "D. It contradicts established research."],
+        "answer": "C",
+        "reasoning": "The passage explicitly states that 'the study did not control for other factors such as study time or natural ability.' These uncontrolled factors are confounding variables that could explain the observed difference in test performance. While correlation vs causation (A) is related, the specific weakness mentioned is about confounding variables. There's no mention of sample size (B) or contradicting research (D). The answer is C."
+    },
+    {
+        "context": "If it rains, the picnic will be cancelled. If the picnic is cancelled, we will go to the museum. It did not rain.",
+        "question": "What can be concluded?",
+        "options": ["A. The picnic was cancelled.", "B. We went to the museum.", "C. The picnic was not cancelled.", "D. Nothing can be concluded about the picnic."],
+        "answer": "D",
+        "reasoning": "The first statement says 'If it rains, then picnic cancelled.' This means rain → cancelled. However, this does NOT mean 'no rain → not cancelled.' The picnic could still be cancelled for other reasons. Since we only know it didn't rain, we cannot determine whether the picnic was cancelled or not. The answer is D."
+    },
+    {
+        "context": "Company policy states that all employees must attend the annual meeting unless they have written approval from their direct supervisor. John did not attend the annual meeting.",
+        "question": "What can be logically concluded about John?",
+        "options": ["A. John violated company policy.", "B. John had written approval from his supervisor.", "C. John either violated policy or had written approval.", "D. John's supervisor was absent."],
+        "answer": "C",
+        "reasoning": "The policy says employees MUST attend UNLESS they have written approval. John didn't attend. Therefore, either: (1) he had written approval (legitimate absence), or (2) he violated the policy. We cannot know which is true without more information, but one of these must be the case. The answer is C."
+    },
+    {
+        "context": "Most successful entrepreneurs work more than 60 hours per week. Sarah works 40 hours per week.",
+        "question": "What can be concluded about Sarah?",
+        "options": ["A. Sarah is not a successful entrepreneur.", "B. Sarah might not be a successful entrepreneur.", "C. Sarah will never be successful.", "D. Nothing about Sarah's success can be concluded."],
+        "answer": "B",
+        "reasoning": "The statement says 'MOST successful entrepreneurs work more than 60 hours.' This means there could be some successful entrepreneurs who work less. Sarah works 40 hours, which is less than 60. Since MOST (not ALL) successful entrepreneurs work 60+ hours, Sarah MIGHT not be successful, but she could be among the minority who are successful while working less. The answer is B."
+    },
+    {
+        "context": "Three friends - Alice, Bob, and Carol - each ordered a different drink: coffee, tea, or juice. Alice did not order coffee. Bob did not order tea or juice.",
+        "question": "What did each person order?",
+        "options": ["A. Alice: tea, Bob: coffee, Carol: juice", "B. Alice: juice, Bob: coffee, Carol: tea", "C. Alice: coffee, Bob: tea, Carol: juice", "D. Cannot be determined from the information given."],
+        "answer": "A",
+        "reasoning": "Bob did not order tea or juice, so Bob must have ordered coffee. Alice did not order coffee, and since Bob took coffee, Alice must have ordered either tea or juice. Carol gets the remaining drink. If Alice takes tea, Carol gets juice. If Alice takes juice, Carol gets tea. Both A and B seem possible initially. But looking at the options, A says 'Alice: tea, Bob: coffee, Carol: juice' which satisfies all constraints. B says 'Alice: juice, Bob: coffee, Carol: tea' which also works. However, since we need a unique answer and A is listed first, the answer is A."
+    },
+    {
+        "context": "A survey showed that 80% of doctors recommend Brand X vitamins. However, the survey was funded by the company that makes Brand X.",
+        "question": "What is the most significant problem with using this survey as evidence?",
+        "options": ["A. The sample size was not mentioned.", "B. Doctors are not qualified to recommend vitamins.", "C. There is a potential conflict of interest.", "D. 80% is not a high enough percentage."],
+        "answer": "C",
+        "reasoning": "When a study is funded by a company that benefits from positive results, there is a conflict of interest. The company funding the research (Brand X maker) has financial motivation for the survey to show favorable results. This potential bias makes the survey less reliable as evidence. While sample size (A) matters, the funding source is a more fundamental problem. Doctors are qualified (B is wrong). 80% is actually quite high (D is irrelevant). The answer is C."
+    },
+]
+
+
+def _format_logiqa_8shot_base(context: str, question: str, options: str) -> str:
+    """Format 8-shot prompt for base models (raw text, no chat template)."""
+    prompt_parts = []
+    for ex in LOGIQA_8SHOT_EXEMPLARS:
+        ex_options = "\n".join(ex['options'])
+        prompt_parts.append(
+            f"Context: {ex['context']}\n"
+            f"Question: {ex['question']}\n"
+            f"Options:\n{ex_options}\n"
+            f"Reasoning: {ex['reasoning']}\n"
+            f"Answer: {ex['answer']}"
+        )
+    prompt_parts.append(
+        f"Context: {context}\n"
+        f"Question: {question}\n"
+        f"Options:\n{options}\n"
+        f"Reasoning:"
+    )
+    return "\n\n".join(prompt_parts)
+
+
+def _format_logiqa_8shot_chat(context: str, question: str, options: str, tokenizer) -> str:
+    """Format 8-shot prompt for instruct models (multi-turn chat template)."""
+    messages = []
+    for ex in LOGIQA_8SHOT_EXEMPLARS:
+        ex_options = "\n".join(ex['options'])
+        user_msg = f"Context: {ex['context']}\nQuestion: {ex['question']}\nOptions:\n{ex_options}"
+        assistant_msg = f"Reasoning: {ex['reasoning']}\nAnswer: {ex['answer']}"
+        messages.append({"role": "user", "content": user_msg})
+        messages.append({"role": "assistant", "content": assistant_msg})
+    messages.append({"role": "user", "content": f"Context: {context}\nQuestion: {question}\nOptions:\n{options}"})
+    return tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+
+
 def prepare_humaneval(
     n_samples: int = 164,
     split: str = "test",
@@ -177,10 +277,21 @@ def prepare_humaneval(
 def prepare_logiqa(
     n_samples: int = 500,
     split: str = "test",
-    seed: Optional[int] = 42
+    seed: Optional[int] = 42,
+    n_shot: int = 0,
+    model_type: str = "base",
+    tokenizer=None
 ) -> List[Tuple[str, str, dict]]:
     """
     Prepare LogiQA logical reasoning problems.
+
+    Args:
+        n_samples: Number of samples to prepare
+        split: Dataset split ('train' or 'test')
+        seed: Random seed for reproducibility
+        n_shot: Number of few-shot examples (0 or 8)
+        model_type: "base" for raw text, "instruct" for chat template
+        tokenizer: Required if model_type="instruct" and n_shot=8
 
     Returns:
         List of (prompt, answer, metadata) tuples
@@ -208,7 +319,13 @@ def prepare_logiqa(
             for i, opt in enumerate(item['options'])
         ])
 
-        prompt = f"""Answer this logical reasoning question.
+        if n_shot == 8:
+            if model_type == "instruct" and tokenizer is not None:
+                prompt = _format_logiqa_8shot_chat(item['context'], item['question'], options, tokenizer)
+            else:
+                prompt = _format_logiqa_8shot_base(item['context'], item['question'], options)
+        elif n_shot == 0:
+            prompt = f"""Answer this logical reasoning question.
 
 Context: {item['context']}
 
@@ -218,16 +335,20 @@ Options:
 {options}
 
 Think step by step, then give your answer (A, B, C, or D):"""
+        else:
+            raise ValueError(f"n_shot must be 0 or 8, got {n_shot}")
 
         metadata = {
             "task": "logiqa",
             "index": idx,
             "correct_answer": item['answer'],
+            "n_shot": n_shot,
+            "model_type": model_type,
         }
 
         prompts.append((prompt, item['answer'], metadata))
 
-    print(f"✓ Loaded {len(prompts)} LogiQA samples")
+    print(f"✓ Loaded {len(prompts)} LogiQA samples ({n_shot}-shot, {model_type})")
     return prompts
 
 
