@@ -71,3 +71,12 @@ echo "=============================================="
 
 # Show results
 ls -lh data/trajectories_8shot/*/
+
+# Auto-upload to B2
+echo ""
+echo "=== UPLOADING TO B2 ==="
+if [ -f scripts/storage/auto_upload_8shot.sh ]; then
+    bash scripts/storage/auto_upload_8shot.sh
+else
+    echo "Upload script not found. Run manually: bash scripts/storage/auto_upload_8shot.sh"
+fi
