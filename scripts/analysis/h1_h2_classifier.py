@@ -125,9 +125,16 @@ def get_feature_names(n_layers: int = 16) -> List[str]:
 # Data Loading
 # =============================================================================
 
-def load_trajectories_with_labels(filepath: str) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+def load_trajectories_with_labels(
+    filepath: str,
+    max_samples: int = None
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Load trajectories and correctness labels from HDF5 file.
+
+    Args:
+        filepath: Path to HDF5 file
+        max_samples: If set, load first N samples (fast contiguous read)
 
     Returns:
         trajectories: (n_samples, seq_len, n_layers, d_model)
@@ -137,24 +144,33 @@ def load_trajectories_with_labels(filepath: str) -> Tuple[np.ndarray, np.ndarray
     print(f"  Loading {filepath}...", flush=True)
 
     with h5py.File(filepath, 'r') as f:
-        # Get trajectories
-        trajectories = f['trajectories'][:]  # (n_samples, seq_len, n_layers, d_model)
+        total_samples = f['trajectories'].shape[0]
+
+        # Determine how many samples to load
+        if max_samples is not None and max_samples < total_samples:
+            n_load = max_samples
+            print(f"    Using first {n_load}/{total_samples} samples", flush=True)
+        else:
+            n_load = total_samples
+
+        # Get trajectories (contiguous slice for speed)
+        trajectories = f['trajectories'][:n_load]
 
         # Get correctness labels
         if 'is_correct' in f:
-            labels = f['is_correct'][:]
+            labels = f['is_correct'][:n_load]
         elif 'correct' in f:
-            labels = f['correct'][:]
+            labels = f['correct'][:n_load]
         elif 'labels' in f:
-            labels = f['labels'][:]
+            labels = f['labels'][:n_load]
         else:
             raise KeyError(f"No correctness labels found in {filepath}. Keys: {list(f.keys())}")
 
         # Get indices if available
         if 'indices' in f:
-            indices = f['indices'][:]
+            indices = f['indices'][:n_load]
         else:
-            indices = np.arange(len(labels))
+            indices = np.arange(n_load)
 
     print(f"    Shape: {trajectories.shape}", flush=True)
     print(f"    Correct: {labels.sum()}/{len(labels)} ({100*labels.mean():.1f}%)", flush=True)
@@ -162,25 +178,21 @@ def load_trajectories_with_labels(filepath: str) -> Tuple[np.ndarray, np.ndarray
     return trajectories, labels.astype(bool), indices
 
 
-def extract_features_batch(trajectories: np.ndarray, n_jobs: int = 32) -> np.ndarray:
-    """Extract features for all trajectories with parallel processing."""
-    from joblib import Parallel, delayed
-    import multiprocessing
-
+def extract_features_batch(trajectories: np.ndarray, n_jobs: int = 1) -> np.ndarray:
+    """
+    Extract features for all trajectories.
+    Uses sequential processing to avoid memory issues with large arrays.
+    """
     n_samples = trajectories.shape[0]
-    max_workers = multiprocessing.cpu_count()
-    n_jobs = min(n_jobs, max_workers)
 
-    print(f"  Extracting features with {n_jobs} workers (max: {max_workers})...", flush=True)
+    print(f"  Extracting features for {n_samples} samples...", flush=True)
 
-    def extract_single(i):
+    features_list = []
+    for i in range(n_samples):
+        if (i + 1) % 50 == 0:
+            print(f"    Processed {i+1}/{n_samples}", flush=True)
         features = extract_trajectory_features(trajectories[i])
-        return features_to_vector(features)
-
-    # Parallel feature extraction
-    features_list = Parallel(n_jobs=n_jobs, verbose=1, backend='loky')(
-        delayed(extract_single)(i) for i in range(n_samples)
-    )
+        features_list.append(features_to_vector(features))
 
     # Convert to array and clean up any NaN/Inf values
     X = np.array(features_list)
@@ -274,7 +286,8 @@ def cross_validate(X: np.ndarray, y: np.ndarray, classifier_type: str = 'logisti
 def test_h1(
     data_dir: str,
     model: str,
-    tasks: List[str] = ['gsm8k', 'humaneval', 'logiqa']
+    tasks: List[str] = ['gsm8k', 'humaneval', 'logiqa'],
+    max_samples: int = None
 ) -> Dict:
     """
     H1: Can we distinguish correct vs incorrect within each domain?
@@ -284,6 +297,8 @@ def test_h1(
     print("\n" + "="*70)
     print("H1 TEST: Within-Domain Classification")
     print("="*70)
+    if max_samples:
+        print(f"Using max {max_samples} samples per task")
 
     results = {}
 
@@ -298,7 +313,7 @@ def test_h1(
         print(f"{'─'*70}")
 
         # Load data
-        trajectories, labels, _ = load_trajectories_with_labels(str(filepath))
+        trajectories, labels, _ = load_trajectories_with_labels(str(filepath), max_samples=max_samples)
 
         # Check class balance
         n_correct = labels.sum()
@@ -336,7 +351,8 @@ def test_h1(
 def test_h2(
     data_dir: str,
     model: str,
-    tasks: List[str] = ['gsm8k', 'humaneval', 'logiqa']
+    tasks: List[str] = ['gsm8k', 'humaneval', 'logiqa'],
+    max_samples: int = None
 ) -> Dict:
     """
     H2: Does a classifier trained on one domain transfer to another?
@@ -346,6 +362,8 @@ def test_h2(
     print("\n" + "="*70)
     print("H2 TEST: Cross-Domain Transfer")
     print("="*70)
+    if max_samples:
+        print(f"Using max {max_samples} samples per task")
 
     # Load all data
     data = {}
@@ -355,7 +373,7 @@ def test_h2(
             print(f"⚠ {task}: File not found")
             continue
 
-        trajectories, labels, _ = load_trajectories_with_labels(str(filepath))
+        trajectories, labels, _ = load_trajectories_with_labels(str(filepath), max_samples=max_samples)
         X = extract_features_batch(trajectories)
         y = labels.astype(int)
         data[task] = {'X': X, 'y': y}
@@ -434,7 +452,8 @@ def test_h2(
 def analyze_feature_importance(
     data_dir: str,
     model: str,
-    task: str = 'gsm8k'
+    task: str = 'gsm8k',
+    max_samples: int = None
 ) -> Dict:
     """Analyze which features are most predictive."""
 
@@ -443,7 +462,7 @@ def analyze_feature_importance(
     print("="*70)
 
     filepath = Path(data_dir) / model / f"{task}_trajectories.h5"
-    trajectories, labels, _ = load_trajectories_with_labels(str(filepath))
+    trajectories, labels, _ = load_trajectories_with_labels(str(filepath), max_samples=max_samples)
     X = extract_features_batch(trajectories)
     y = labels.astype(int)
 
@@ -489,6 +508,8 @@ def main():
                        help='Comma-separated tasks')
     parser.add_argument('--output', type=str, default='results/h1_h2_results.json',
                        help='Output file for results')
+    parser.add_argument('--max-samples', type=int, default=None,
+                       help='Max samples per task (for memory efficiency)')
     parser.add_argument('--skip-h1', action='store_true', help='Skip H1 test')
     parser.add_argument('--skip-h2', action='store_true', help='Skip H2 test')
 
@@ -501,25 +522,28 @@ def main():
     print(f"Model: {args.model}")
     print(f"Tasks: {tasks}")
     print(f"Data dir: {args.data_dir}")
+    if args.max_samples:
+        print(f"Max samples: {args.max_samples}")
 
     results = {
         'model': args.model,
         'tasks': tasks,
+        'max_samples': args.max_samples,
     }
 
     # H1 Test
     if not args.skip_h1:
-        h1_results = test_h1(args.data_dir, args.model, tasks)
+        h1_results = test_h1(args.data_dir, args.model, tasks, max_samples=args.max_samples)
         results['h1'] = h1_results
 
     # H2 Test
     if not args.skip_h2:
-        h2_results = test_h2(args.data_dir, args.model, tasks)
+        h2_results = test_h2(args.data_dir, args.model, tasks, max_samples=args.max_samples)
         results['h2'] = h2_results
 
     # Feature importance
     if 'gsm8k' in tasks:
-        importance_results = analyze_feature_importance(args.data_dir, args.model, 'gsm8k')
+        importance_results = analyze_feature_importance(args.data_dir, args.model, 'gsm8k', max_samples=args.max_samples)
         results['feature_importance'] = importance_results
 
     # Save results
