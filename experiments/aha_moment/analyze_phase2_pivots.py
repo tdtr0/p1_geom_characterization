@@ -398,7 +398,7 @@ def process_file(
                 continue
 
             # Get trajectory (Phase 2 format: n_samples, seq_len, n_layers, hidden)
-            trajectory = trajectories[i]  # (seq_len, n_layers, hidden)
+            trajectory = trajectories[i].astype(np.float32)  # Convert from float16 for SVD
 
             # Analyze
             result = analyze_sample(trajectory, pivot_indices, window=window)
@@ -546,7 +546,7 @@ def main():
             trajectories = f['trajectories'][:]
             for i, result in enumerate(combined_results[:args.plot_examples]):
                 sample_idx = result['sample_idx']
-                traj = trajectories[sample_idx]
+                traj = trajectories[sample_idx].astype(np.float32)
                 # Get pivot indices from pivot data
                 key = Path(args.trajectories[0]).name
                 pivots = all_pivot_data[key]['samples'][sample_idx]['pivots']
