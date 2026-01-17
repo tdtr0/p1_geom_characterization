@@ -40,7 +40,9 @@ from task_data import prepare_gsm8k, prepare_logiqa
 OUTPUT_DIR = Path("data/trajectories_8shot")
 CHECKPOINT_DIR = Path("data/checkpoints")
 N_SAMPLES = 500
-MAX_SEQ_LEN = 512  # Note: 8-shot prompts are longer, will truncate from left
+# CRITICAL: 8-shot prompts are ~1600-2000 tokens, must accommodate full prompt!
+# OLMo-3 context is 4096. Using 2048 for trajectories + 512 for generation = safe.
+MAX_SEQ_LEN = 2048
 MAX_NEW_TOKENS = 512
 USE_FLASH_ATTN = True
 
@@ -237,13 +239,14 @@ class TrajectoryCollector:
         max_seq_len: int = 512
     ) -> tuple:
         """Generate response and collect trajectory."""
-        # Tokenize - for 8-shot, prompt is long, truncate from left
+        # Tokenize - for 8-shot, prompt is long, must keep the END (actual question)
+        # Set truncation_side='left' so if truncation happens, we keep the question
+        self.tokenizer.truncation_side = 'left'
         inputs = self.tokenizer(
             prompt,
             return_tensors="pt",
             truncation=True,
             max_length=max_seq_len,
-            # For long prompts, keep the end (the actual question)
         )
         inputs = {k: v.to(self.device) for k, v in inputs.items()}
 
