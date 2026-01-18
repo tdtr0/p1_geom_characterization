@@ -38,7 +38,7 @@ cd $WORK_DIR
 # Clone repository (if not already cloned)
 if [ ! -d "ManiVer" ]; then
     echo "Cloning repository..."
-    git clone https://github.com/yourusername/ManiVer.git
+    git clone https://github.com/tdtr0/p1_geom_characterization.git ManiVer
     cd ManiVer
 else
     echo "Repository already exists, pulling latest..."
