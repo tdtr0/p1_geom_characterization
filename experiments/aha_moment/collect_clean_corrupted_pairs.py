@@ -346,7 +346,7 @@ def collect_wynroe_data(
     gen_model = AutoModelForCausalLM.from_pretrained(
         gen_model_name,
         torch_dtype=torch.float16,
-        device_map=device,
+        device_map="auto",  # Distribute across all GPUs
         trust_remote_code=True,
     )
     gen_model.eval()
@@ -426,7 +426,7 @@ def collect_wynroe_data(
             model = AutoModelForCausalLM.from_pretrained(
                 model_name,
                 torch_dtype=torch.float16,
-                device_map=device,
+                device_map="auto",  # Distribute across all GPUs
                 trust_remote_code=True,
             )
             model.eval()
