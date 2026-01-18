@@ -1,7 +1,26 @@
 # Aha Moment Experiment: Error Detection & Phase Transitions
 
-**Status**: Ready to Execute
+**Status**: Experiment A ✅ Complete | Experiment B 🔄 Needs Recollection
 **Objective**: Test whether OLMo 3 models have error-detection features (Wynroe-style) and whether natural self-correction points show phase transition signatures.
+
+---
+
+## Results Summary (2026-01-18)
+
+### Experiment A: Wynroe Replication ✅ SUCCESS
+| Model | Pairs | Best Layer | Effect Size (d) | p-value |
+|-------|-------|------------|-----------------|---------|
+| **rl_zero** | 92 | Layer 14 | **1.70** | < 10⁻¹⁵ |
+| **think** | 92 | Layer 14 | **1.65** | < 10⁻¹⁵ |
+
+**Finding**: Strong error-detection signal exists in OLMo 3 models (Cohen's d > 1.5).
+
+### Experiment B: Natural Pivot Detection ❌ BLOCKED
+**Issue**: Phase 2 data only contains **prompt trajectories** (66 tokens), not generation trajectories.
+- Pivots occur in generation (positions 100+), which are zero-padded in Phase 2 data
+- Need to recollect with generation trajectories
+
+**Fix**: Created new collection script `collect_pivot_trajectories.py` that captures full generation.
 
 ---
 
@@ -81,16 +100,17 @@ python experiments/aha_moment/analyze_wynroe_direction.py \
 
 ### For Experiment B: Natural Pivot Detection
 ```
-1. Download Phase 2 HDF5 files from B2 (already have model_outputs)
-2. Detect pivot locations using:
-   a) Rule-based: regex patterns on text
-   b) Classifier: train small model on labeled pivot examples
-   c) Small LLM: use Phi-3-mini or similar to identify semantic pivots
-3. Re-tokenize to align text → trajectory positions
-4. Analyze trajectory at pivot token vs surrounding tokens
+⚠️ CANNOT reuse Phase 2 data - it only has prompt trajectories!
+
+NEW APPROACH:
+1. Generate text from olmo3_think model on GSM8K (N=200)
+2. Collect activations at EACH generation step (not just prompt)
+3. Detect pivot positions in generated text
+4. Analyze trajectory dynamics at pivot vs random tokens
 ```
 
-**GPU Time**: 0 hours (reuse Phase 2 data, CPU-only analysis)
+**GPU Time**: ~2-3 hours (must collect generation trajectories)
+**Script**: `collect_pivot_trajectories.py`
 
 ---
 
@@ -200,44 +220,48 @@ Thinking models sometimes self-correct mid-generation with phrases like "BUT wai
 2. Is there a direction change (trajectory bending) at pivots?
 3. Does Lyapunov exponent spike at pivots (instability → new basin)?
 
-### Key Insight: Reuse Phase 2 Data
+### ⚠️ CRITICAL: Why Phase 2 Data Doesn't Work
 
-Phase 2 HDF5 files contain `model_outputs` dataset with full generated text! We can:
-1. Load existing trajectories + text from B2
-2. Detect pivots in text
-3. Align to token positions
-4. Analyze dynamics — **zero additional GPU time**
-
-### Data Flow (Using Existing Phase 2 Data)
+Phase 2 data has a fundamental limitation:
 ```
-Step 1: Load Phase 2 HDF5 from B2
+Phase 2 HDF5 structure:
+  - trajectories: (500, 512, 16, 4096)  ← BUT only first 66 positions are non-zero!
+  - model_outputs: Full generation text (500+ tokens)
+  - prompts: Input prompts (~66 tokens)
+
+Problem:
+  - Trajectories only contain PROMPT activations (positions 0-65)
+  - Positions 66-511 are ZERO-PADDED (no generation data)
+  - Pivots occur in GENERATION (positions 100+) → all zeros!
+```
+
+**This is why Experiment B failed initially** — we were analyzing zeros, not actual pivot dynamics.
+
+### Data Flow (NEW: Collect Generation Trajectories)
+```
+Step 1: Generate with Activation Collection
 ┌─────────────────────────────────────────────────────────────────┐
-│ b2://ml-activations-store/trajectories/olmo3_think/*.h5         │
-│                                                                 │
-│ Contents:                                                       │
-│   - trajectories: (500, 512, 16, 4096)                         │
-│   - model_outputs: ["<think>...BUT WAIT...</think>", ...]      │
-│   - correctness: [True, False, ...]                            │
+│ For each GSM8K problem:                                         │
+│   1. Encode prompt → input_ids                                  │
+│   2. For each generation step:                                  │
+│      a. Forward pass through model                              │
+│      b. Extract hidden states at all layers                     │
+│      c. Store: trajectory[sample, token_idx, layer, hidden]    │
+│      d. Sample next token, append to input_ids                  │
+│   3. Store generated text + full trajectory                     │
 └─────────────────────────────────────────────────────────────────┘
 
-Step 2: Detect Pivots in model_outputs
+Step 2: Detect Pivots in Generated Text
 ┌─────────────────────────────────────────────────────────────────┐
-│ model_outputs[42] = "<think>9.11 > 9.9? BUT WAIT .9>0.11</>"   │
-│                                         ↑                       │
-│ Pivot detected at char position 23                              │
+│ generated_text = "Let me calculate... BUT WAIT, I made an error"│
+│                                        ↑                        │
+│ Pivot at token position 47 (in generation, not prompt)         │
 └─────────────────────────────────────────────────────────────────┘
 
-Step 3: Align Text → Tokens
+Step 3: Analyze Trajectory at Pivot
 ┌─────────────────────────────────────────────────────────────────┐
-│ Re-tokenize with same tokenizer:                                │
-│   tokens = tokenizer(model_outputs[42])                         │
-│   token_positions = align_char_to_token(23) → token_idx=47     │
-└─────────────────────────────────────────────────────────────────┘
-
-Step 4: Analyze Trajectory at Pivot
-┌─────────────────────────────────────────────────────────────────┐
-│ trajectory[42, 47, :, :] ← activation at pivot token            │
-│ Compare to trajectory[42, random_idx, :, :]                    │
+│ trajectory[sample, pivot_idx, :, :] ← actual generation dynamics│
+│ Compare velocity/direction to surrounding tokens                │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -420,26 +444,23 @@ python experiments/aha_moment/analyze_wynroe_direction.py \
     --output experiments/aha_moment/results/
 ```
 
-### Phase 2: Experiment B (Natural Pivots) — 0 GPU hours (CPU only)
+### Phase 2: Experiment B (Natural Pivots) — 2-3 GPU hours
 
 ```bash
-# Step 1: Download Phase 2 data from B2
-python scripts/storage/b2_download.py \
-    --remote-prefix trajectories/olmo3_think \
-    --local-dir experiments/aha_moment/data/phase2/
+# Step 1: Collect generation trajectories (GPU required)
+python experiments/aha_moment/collect_pivot_trajectories.py \
+    --n_samples 200 \
+    --model olmo3_think \
+    --max_tokens 512 \
+    --output experiments/aha_moment/data/pivot_collection/
 
-# Step 2: Detect pivots in model_outputs (CPU only)
-python experiments/aha_moment/detect_pivots.py \
-    --input experiments/aha_moment/data/phase2/*.h5 \
-    --method regex  # or "zero-shot" or "llm"
-    --output experiments/aha_moment/data/pivot_labels.json
-
-# Step 3: Analyze pivot dynamics (CPU only)
-python experiments/aha_moment/analyze_pivot_dynamics.py \
-    --trajectories experiments/aha_moment/data/phase2/*.h5 \
-    --pivots experiments/aha_moment/data/pivot_labels.json \
-    --output experiments/aha_moment/results/
+# Step 2: Detect pivots and analyze (CPU only)
+python experiments/aha_moment/analyze_pivot_trajectories.py \
+    --input experiments/aha_moment/data/pivot_collection/pivot_trajectories.h5 \
+    --output experiments/aha_moment/results/pivot_analysis/
 ```
+
+**Note**: Cannot reuse Phase 2 data because it only contains prompt trajectories.
 
 ---
 
@@ -462,28 +483,30 @@ python experiments/aha_moment/analyze_pivot_dynamics.py \
 
 ---
 
-## Files to Create
+## Files
 
 | File | Purpose | Status |
 |------|---------|--------|
-| `collect_clean_corrupted_pairs.py` | Generate and collect Wynroe-style data | DONE |
-| `analyze_wynroe_direction.py` | Extract direction, test phase transition | DONE |
-| `detect_pivots.py` | Detect pivot positions in Phase 2 text | DONE |
-| `analyze_pivot_dynamics.py` | Analyze velocity/direction at pivots | EXISTS |
-| `analyze_phase2_pivots.py` | Analysis wrapper for Phase 2 format | DONE |
-| `run_experiment_b.sh` | Runner script for Experiment B | DONE |
+| `collect_clean_corrupted_pairs.py` | Generate and collect Wynroe-style data | ✅ DONE |
+| `analyze_wynroe_direction.py` | Extract direction, test phase transition | ✅ DONE |
+| `collect_pivot_trajectories.py` | Collect generation trajectories for pivot analysis | ✅ DONE |
+| `analyze_pivot_trajectories.py` | Detect pivots and analyze dynamics | ✅ DONE |
+| `run_experiment_a.sh` | Runner script for Experiment A | ✅ DONE |
+| `run_experiment_b.sh` | Runner script for Experiment B | ✅ DONE |
+| `detect_pivots.py` | (Legacy) Detect pivots in Phase 2 - doesn't work | ⚠️ DEPRECATED |
+| `analyze_phase2_pivots.py` | (Legacy) Phase 2 analysis - doesn't work | ⚠️ DEPRECATED |
 
 ---
 
 ## GPU Time Summary
 
-| Experiment | Data Collection | Analysis | Total |
-|------------|-----------------|----------|-------|
-| A: Wynroe replication | 3-5 hrs (GPU) | 0.5 hrs (CPU) | **3-6 hrs GPU** |
-| B: Natural pivots | 0 hrs (reuse Phase 2) | 1 hr (CPU) | **0 hrs GPU** |
-| **Combined** | | | **3-6 hrs GPU** |
+| Experiment | Data Collection | Analysis | Total | Status |
+|------------|-----------------|----------|-------|--------|
+| A: Wynroe replication | ~20 min (GPU) | ~1 min (CPU) | **~20 min** | ✅ Complete |
+| B: Natural pivots | 2-3 hrs (GPU) | ~5 min (CPU) | **2-3 hrs** | 🔄 Running |
+| **Combined** | | | **~3 hrs GPU** | |
 
-**Note**: Experiment B is now CPU-only. We reuse Phase 2 trajectories + model_outputs.
+**Note**: Experiment B requires new data collection because Phase 2 only captured prompt trajectories.
 
 ---
 
