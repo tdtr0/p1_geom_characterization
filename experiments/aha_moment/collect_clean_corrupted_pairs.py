@@ -119,23 +119,26 @@ def generate_cot(
 
 def parse_annotations(text: str) -> list[dict]:
     """
-    Parse <<expr=result>> annotations in CoT trace.
+    Parse calculation patterns in CoT trace.
+
+    Supports two formats:
+    1. <<expr=result>> (DeepSeek style)
+    2. expr = result (OLMo natural language style, e.g., "$430 + $320 = $750")
 
     Returns list of dicts with:
-        - expr: the expression (e.g., "5*3")
-        - result: the result (e.g., "15")
+        - expr: the expression (e.g., "5*3" or "$430 + $320")
+        - result: the result (e.g., "15" or "$750")
         - start: char position of start of annotation
         - end: char position of end of annotation
         - result_start: char position of result within annotation
     """
     annotations = []
-    # Pattern: <<expr=result>>
-    pattern = r'<<([^=]+)=([^>]+)>>'
 
-    for match in re.finditer(pattern, text):
+    # Pattern 1: <<expr=result>> (DeepSeek style)
+    pattern1 = r'<<([^=]+)=([^>]+)>>'
+    for match in re.finditer(pattern1, text):
         expr = match.group(1)
         result = match.group(2)
-
         annotations.append({
             'expr': expr,
             'result': result,
@@ -143,7 +146,42 @@ def parse_annotations(text: str) -> list[dict]:
             'end': match.end(),
             'result_start': match.start() + len('<<') + len(expr) + len('='),
             'full_match': match.group(0),
+            'format': 'deepseek',
         })
+
+    # Pattern 2: Natural language calculations (OLMo style)
+    # Match patterns like: $430 + $320 = $750 or 4 + 2 = 6 or 360 / 6 = 60
+    # The result is the number after the = sign
+    pattern2 = r'([\$]?[\d,]+(?:\.\d+)?\s*[\+\-\*\/×÷]\s*[\$]?[\d,]+(?:\.\d+)?)\s*=\s*([\$]?[\d,]+(?:\.\d+)?)'
+    for match in re.finditer(pattern2, text):
+        expr = match.group(1).strip()
+        result_with_dollar = match.group(2).strip()
+        # Extract just the number from result (remove $ and commas)
+        result = result_with_dollar.replace('$', '').replace(',', '')
+
+        # Find where the result number starts in the match
+        eq_pos = match.group(0).find('=')
+        result_offset = eq_pos + 1
+        # Skip whitespace after =
+        while result_offset < len(match.group(0)) and match.group(0)[result_offset] in ' \t':
+            result_offset += 1
+        # Skip $ if present
+        if result_offset < len(match.group(0)) and match.group(0)[result_offset] == '$':
+            result_offset += 1
+
+        annotations.append({
+            'expr': expr,
+            'result': result,
+            'result_with_format': result_with_dollar,  # Keep original format
+            'start': match.start(),
+            'end': match.end(),
+            'result_start': match.start() + result_offset,
+            'full_match': match.group(0),
+            'format': 'natural',
+        })
+
+    # Sort by position in text
+    annotations.sort(key=lambda x: x['start'])
 
     return annotations
 
@@ -165,7 +203,7 @@ def create_corrupted_trace(text: str, annotations: list[dict]) -> tuple[str, int
 
     # Parse result as number and corrupt it
     try:
-        orig_num = float(last_ann['result'])
+        orig_num = float(last_ann['result'].replace(',', ''))
         # Add small offset to corrupt
         if orig_num == 0:
             corrupt_num = 1
@@ -177,21 +215,37 @@ def create_corrupted_trace(text: str, annotations: list[dict]) -> tuple[str, int
         # Not a number, can't corrupt
         return None, None, None
 
-    # Create corrupted text
-    prefix = text[:last_ann['result_start']]
-    suffix = text[last_ann['result_start'] + len(last_ann['result']):]
+    # For natural format, preserve the $ if present
+    if last_ann.get('format') == 'natural' and last_ann.get('result_with_format', '').startswith('$'):
+        corrupt_str = '$' + corrupt_str
 
-    # Also need to update the result after >> if it appears
-    # Pattern: <<expr=result>>result
-    suffix_pattern = r'^>>' + re.escape(last_ann['result'])
-    suffix_match = re.match(suffix_pattern, suffix)
-    if suffix_match:
-        suffix = f'>>{corrupt_str}' + suffix[suffix_match.end():]
+    # Create corrupted text
+    # For natural format, we need to replace the full result including $ sign
+    if last_ann.get('format') == 'natural':
+        result_to_replace = last_ann.get('result_with_format', last_ann['result'])
+        result_len = len(result_to_replace)
+        # Find where the result starts (after = and whitespace)
+        eq_pos = last_ann['full_match'].find('=')
+        after_eq = last_ann['full_match'][eq_pos+1:]
+        ws_len = len(after_eq) - len(after_eq.lstrip())
+        result_start_in_text = last_ann['start'] + eq_pos + 1 + ws_len
+        prefix = text[:result_start_in_text]
+        suffix = text[result_start_in_text + result_len:]
+    else:
+        # DeepSeek format
+        prefix = text[:last_ann['result_start']]
+        suffix = text[last_ann['result_start'] + len(last_ann['result']):]
+        # Also need to update the result after >> if it appears
+        suffix_pattern = r'^>>' + re.escape(last_ann['result'])
+        suffix_match = re.match(suffix_pattern, suffix)
+        if suffix_match:
+            suffix = f'>>{corrupt_str}' + suffix[suffix_match.end():]
+        result_start_in_text = last_ann['result_start']
 
     corrupted_text = prefix + corrupt_str + suffix
 
     # Error is at the result position
-    error_char_pos = last_ann['result_start']
+    error_char_pos = result_start_in_text
 
     return corrupted_text, error_char_pos, last_ann['result']
 
