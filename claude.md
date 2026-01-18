@@ -1,7 +1,26 @@
-# ManiVer: Geometric Signatures of Reasoning in LLMs
+# ManiVer: Geometric Signatures of Correct Computation in LLMs
 
 **Project**: ManiVer (Manifold Verification)
-**Core Question**: Can we learn the geometry of correct reasoning from verifiable domains and use it on non-verifiable domains?
+**Core Question**: Do correct solutions have distinguishable dynamical signatures, and do these signatures share structure across verifiable domains?
+
+## Theoretical Framework (Updated 2026-01-17)
+
+We adopt an **interpolation-centric view** (Allen-Zhu & Li, 2024):
+
+- Transformers compute smooth functions — no "reasoning mode" vs "recall mode"
+- All computation is interpolation through the representation manifold
+- What differs is the *region* and *dynamics* of manifold traversal
+
+**We avoid cognitive framing.** We don't detect "reasoning" — we characterize the geometry of correct solutions.
+
+**Key theoretical connections**:
+| Concept | Source | Our Application |
+|---------|--------|-----------------|
+| Everything is interpolation | Allen-Zhu & Li (2024) | Don't detect "reasoning" — characterize interpolation geometry |
+| Curvature regimes | Merullo et al. (2025) | High-SV = distributed; low-SV = localized (proxy for curvature) |
+| Attractor dynamics | Ren & Liu (2026) | Correct solutions find right attractors; incorrect get trapped |
+| Belief state geometry | Shai et al. (2024) | Residual stream represents belief states |
+| Menger curvature | Zhou et al. (Oct 2025) | Curvature captures logical structure beyond surface semantics |
 
 ## 🔄 Current Phase: Phase 2 - Trajectory Collection with Correctness Labels
 
@@ -48,6 +67,7 @@ ManiVer/
 │   │   └── archive_transfer_correlation_plan.md
 │   ├── guides/                    # Setup and usage guides
 │   │   ├── PHASE2_PIPELINE.md    # Complete Phase 2 pipeline guide
+│   │   ├── VLLM_GPU_GUIDE.md     # **vLLM GPU compatibility & testing**
 │   │   ├── B2_SETUP.md           # Backblaze B2 + Cloudflare setup
 │   │   └── B2_QUICKSTART.md      # Quick command reference
 │   └── paper/                     # Research paper materials
@@ -57,11 +77,22 @@ ManiVer/
 │       ├── TRAJECTORY_GEOMETRY_CRITIQUE.md
 │       └── geometric_compression_research_plan.md
 │
+├── experiments/                   # Subexperiments (self-contained)
+│   └── aha_moment/               # Phase transition at correction points
+│       ├── README.md             # Experiment overview
+│       ├── collect_thinking_traces.py
+│       ├── analyze_pivot_points.py
+│       └── data/                 # Local data for this experiment
+│
 ├── scripts/                       # Executable scripts
 │   ├── collection/                # Data collection scripts
 │   │   ├── collect_trajectories_with_labels.py  # Main Phase 2 script
+│   │   ├── collect_logiqa_vllm.py               # **vLLM batched inference (3-5x faster)**
+│   │   ├── test_vllm_quick.sh                   # Quick vLLM test (10 samples)
 │   │   ├── collect_activations.py
 │   │   ├── collect_single_model.py
+│   │   ├── collect_single_logiqa.py             # Single-model LogiQA collection
+│   │   ├── test_logiqa_collection.py            # Test LogiQA (3 samples)
 │   │   ├── collect_trajectories_half_layers.py
 │   │   ├── run_phase2_pipeline.sh               # **MAIN PIPELINE**
 │   │   ├── test_phase2_pipeline.sh              # Test with 2 samples
@@ -79,6 +110,10 @@ ManiVer/
 │   │   └── setup_b2_on_vastai.sh # Auto B2 setup
 │   ├── deployment/                # vast.ai management
 │   │   ├── vast_launcher.py      # Search/launch/destroy instances
+│   │   ├── check_collection_status.sh
+│   │   ├── connect_and_collect.sh
+│   │   ├── monitor_collection.sh
+│   │   ├── run_collection_on_vastai.sh
 │   │   └── cleanup_smallworld.sh
 │   └── reorganize_project.sh      # This script reorganized everything
 │
@@ -136,13 +171,16 @@ ManiVer/
 - **Collection Script**: [scripts/collection/collect_trajectories_with_labels.py](scripts/collection/collect_trajectories_with_labels.py)
 
 ### For vast.ai Setup
-- **vast.ai Guide**: [VASTAI_GUIDE.md](VASTAI_GUIDE.md) - **Login, costs, GPU selection**
+- **vast.ai Guide**: [docs/guides/VASTAI_GUIDE.md](docs/guides/VASTAI_GUIDE.md) - **Login, costs, GPU selection**
 - **Collection Guide**: [docs/guides/VASTAI_COLLECTION_GUIDE.md](docs/guides/VASTAI_COLLECTION_GUIDE.md) - **Practical pitfalls & solutions**
-- **GPU Optimization**: [GPU_OPTIMIZATION.md](GPU_OPTIMIZATION.md) - **Detailed pareto analysis**
+- **GPU Optimization**: [docs/guides/GPU_OPTIMIZATION.md](docs/guides/GPU_OPTIMIZATION.md) - **Detailed pareto analysis**
 - **GPU Finder**: [scripts/deployment/find_optimal_gpu.sh](scripts/deployment/find_optimal_gpu.sh) - Find best available GPU
 - **Launcher**: [scripts/deployment/vast_launcher.py](scripts/deployment/vast_launcher.py)
 - **B2 Setup**: [docs/guides/B2_SETUP.md](docs/guides/B2_SETUP.md)
 - **B2 Quick Reference**: [docs/guides/B2_QUICKSTART.md](docs/guides/B2_QUICKSTART.md)
+
+### For Subexperiments
+- **Aha Moment Analysis**: [experiments/aha_moment/](experiments/aha_moment/) - Phase transition at correction points
 
 ### For Results
 - **Phase 1 Results**: [docs/plans/phase1_implementation_plan.md](docs/plans/phase1_implementation_plan.md) lines 21-73
@@ -309,9 +347,9 @@ See [docs/guides/B2_SETUP.md](docs/guides/B2_SETUP.md) for detailed setup.
 
 ## Notes for Claude
 
-### Folder Structure Rules
+### ⚠️ CRITICAL: File Generation Rules
 
-When creating new files:
+**NEVER generate files directly in `/main/` (the project root).** Always use the appropriate subdirectory:
 
 1. **Plans/Specs** → `docs/plans/`
 2. **Setup Guides** → `docs/guides/`
@@ -324,6 +362,9 @@ When creating new files:
 9. **Config Files** → `configs/`
 10. **Data** → `data/` (gitignored)
 11. **Results** → `results/`
+12. **Subexperiments** → `experiments/<experiment_name>/` (self-contained)
+
+**For subexperiments**: Create a folder under `experiments/` with its own README.md, scripts, and data folder. Keep experiments self-contained.
 
 **IMPORTANT**: Update this file (`claude.md`) when you create new files!
 
@@ -351,21 +392,39 @@ When creating new files:
 
 ---
 
-## Core Hypotheses (H1-H5)
+## Core Hypotheses (H1-H5) — Reframed
 
-**H1**: Correct vs incorrect reasoning have distinguishable trajectories (within-domain)
-**H2**: The signature is domain-invariant (math → code → logic) - **CRITICAL TEST**
-**H3**: Detector works on non-verifiable domains (validated by human judgment)
-**H4**: Trajectories can be steered toward correct reasoning (causal intervention)
-**H5**: Correct reasoning has lower curvature (exploratory)
+**H1**: Correct vs incorrect solutions have distinguishable trajectory dynamics (within-domain)
+**H2**: Dynamical signatures share structure across domains (math → code → logic) - **CRITICAL TEST**
+**H3**: Signatures correlate with human judgments on non-verifiable domains
+**H4**: Trajectory interventions can improve task performance (causality test)
+**H5**: Correct solutions have more stable dynamics (lower Lyapunov exponents)
 
-### Key Concepts
+### Original Concepts
 
 - **Trajectory**: Activation path through layers (seq_len, n_layers, d_model)
 - **Path signature**: Reparameterization-invariant trajectory features
 - **Correctness label**: Boolean (model answer matches ground truth)
 - **Verifiable domains**: Math (GSM8K), Code (HumanEval), Logic (LogiQA)
 - **Non-verifiable domains**: Philosophy, ethics, strategy (no ground truth)
+
+### New Dynamical Systems Concepts (Phase 3)
+
+- **Vector field**: Layer transition dynamics v(x) = x_{l+1} - x_l
+- **Helmholtz decomposition**: Split into potential (gradient) + rotational (curl) flow
+- **Lyapunov exponent**: Rate of trajectory divergence/convergence (stability)
+- **Attractor basin**: Region of state space converging to fixed point
+- **Activation regime**: High-SV (distributed) vs low-SV (localized) — proxy for curvature
+
+### Phase 3 Analysis Methods
+
+| Method | What it Measures | Hypothesis |
+|--------|------------------|------------|
+| MARBLE vector field | Flow structure (potential vs rotational) | Correct = more potential (direct) flow |
+| Lyapunov exponents | Trajectory stability | Correct = more stable (λ < 0) |
+| Attractor analysis | Convergence targets | Correct/incorrect = different basins |
+| Activation regime | Weight direction usage | Correct = more distributed (high-SV) |
+| Path signatures | Trajectory shape (invariant) | Correct = more structured paths |
 
 ---
 
@@ -375,13 +434,87 @@ When creating new files:
 2. ✅ **B2 storage setup** - Backblaze + Cloudflare CDN
 3. ✅ **Pipeline scripts** - Automated collect + upload
 4. ✅ **Phase 2 collection** - 11/12 files collected and uploaded to B2
-5. 🔄 **Recollect olmo3_base/gsm8k** - Need GPU server (eyecog/box1 unavailable)
-6. ⏳ **H1 testing** - Within-domain classification (can start with 11 files)
-7. ⏳ **H2 testing** - Cross-domain transfer (critical test)
+5. ✅ **GPU bottleneck analysis** - Identified 4 critical bottlenecks, documented fixes
+6. 🔄 **Optimized collection script** - Created, testing on 10 samples
+7. 🔄 **Rerun LogiQA collection** - Using optimized script (2-3 hrs vs 8-10 hrs)
+8. ⏳ **Recollect olmo3_base/gsm8k** - After LogiQA completes
+9. ⏳ **H1 testing** - Within-domain classification (can start with 11 files)
+10. ⏳ **H2 testing** - Cross-domain transfer (critical test)
 
 ---
 
 ## File Update Log
+
+**2026-01-18** (afternoon):
+- **Added Menger curvature analysis to Phase 3** (Zhou et al., 2025)
+  - Added Section 6 to PHASE3_DETAILED_PLAN.md: "Menger Curvature Analysis"
+  - Reference: Zhou et al. "The Geometry of Reasoning" (arXiv:2510.09782)
+  - Key finding: Curvature (2nd order) captures logical structure > surface semantics
+  - Tests: cross-domain curvature correlation, curvature profiles for correct vs incorrect
+  - Updated Week 6 timeline: Days 5-6 for Menger curvature analysis
+  - Added deliverables: `h2_menger_curvature.csv`, `h2_menger_correlation.csv`
+- **Updated aha_moment experiment** to reuse Phase 2 data for Experiment B
+  - Phase 2 HDF5 files contain `model_outputs` — no new collection needed
+  - Experiment B now CPU-only (0 GPU hours)
+  - Added pivot detection options: regex, zero-shot classifier, free LLM API
+
+**2026-01-18** (morning):
+- **Discovered and documented 4 GPU bottlenecks** during batched collection
+  - Bottleneck 1: GPU→CPU transfer during generation (25% idle time)
+  - Bottleneck 2: Sequential forward passes for activation collection (75% of batch time)
+  - Bottleneck 3: Blocking HDF5 writes (15-20% idle time)
+  - Bottleneck 4: Memory fragmentation causing slowdown over time
+  - Documented in `docs/plans/master_algorithm.md` - Section "GPU Optimization Lessons"
+- **Created optimized collection script** (fixes all 4 bottlenecks)
+  - Added `scripts/collection/collect_logiqa_optimized.py` - GPU-optimized with pipelined execution
+  - Added `scripts/collection/test_optimized_quick.sh` - Quick 10-sample test
+  - Expected speedup: 4-5x vs sequential (2-3 hours vs 12.5 hours for 500 samples)
+  - Key changes: GPU-only tensors, batched activation collection, async I/O, memory cleanup
+  - Will rerun collection after testing completes
+- **Created vLLM acceleration pipeline** (NOT USED - memory constraints)
+  - Added `scripts/collection/collect_logiqa_vllm.py` - Batched inference with vLLM
+  - Added `scripts/collection/test_vllm_quick.sh` - Quick 10-sample test script
+  - Added `docs/guides/VLLM_GPU_GUIDE.md` - Complete GPU compatibility guide
+  - Issue: Requires 28GB (vLLM + HF model), doesn't fit on 24GB RTX 4090s
+  - Abandoned in favor of optimized HF batching
+- **Batched LogiQA collection in progress** (inefficient, will be replaced)
+  - Running: olmo3_sft (box1 GPU 0), olmo3_rl_zero (box1 GPU 1)
+  - Started: ~1:15 AM, Batch 5/125 each
+  - ETA: ~8-10 hours (but GPU utilization only 0-10%!)
+  - Will stop and rerun with optimized script after testing
+
+**2026-01-17** (night):
+- **Integrated error-detection direction analysis into Phase 3** (Wynroe-style)
+  - Added Section 5 to PHASE3_DETAILED_PLAN.md: "Error-Detection Direction Analysis"
+  - Uses existing Phase 2 data (correct vs incorrect labels) — zero additional GPU time
+  - Tests: direction existence, layer profile, model comparison, cross-domain transfer
+  - Updated Week 7 timeline to include direction analysis (Days 1-4)
+  - Added new deliverables: `h2_error_direction.csv`, `h2_direction_transfer.csv`
+- Updated `experiments/aha_moment/README.md` to reflect Option C (Phase 3 integration)
+  - Primary: Wynroe replication on OLMo 3 family using Phase 2 data
+  - Secondary (future): Pivot token dynamics if primary analysis is promising
+
+**2026-01-17** (evening):
+- **Directory cleanup**: Moved loose files from /main/ to proper subdirectories
+  - GPU_OPTIMIZATION.md, VASTAI_GUIDE.md, etc. → docs/guides/
+  - PHASE2_EXECUTION_PLAN.md → docs/plans/
+  - Shell scripts → scripts/deployment/
+- Added `experiments/` folder for self-contained subexperiments
+- Created `experiments/aha_moment/` for phase transition analysis
+- Updated CLAUDE.md with explicit rule: NEVER generate files in /main/ root
+
+**2026-01-17** (morning):
+- **Major theoretical reframing**: Adopted interpolation-centric view (Allen-Zhu)
+- Updated RESEARCH_PLAN.md with new theoretical framework and reframed hypotheses
+- Updated PHASE3_DETAILED_PLAN.md with dynamical systems analyses:
+  - MARBLE-style vector field decomposition
+  - Lyapunov exponent analysis
+  - Attractor analysis
+  - Activation regime analysis (proxy for Goodfire curvature)
+- Updated master_algorithm.md with new concepts and references
+- Added connections to: Allen-Zhu (interpolation), Merullo et al. (curvature regimes), Ren & Liu (attractor dynamics), Shai et al. (belief states)
+- Clarified that Goodfire K-FAC requires gradient statistics — we use structural proxies instead
+- Phase 3 now spans 4 weeks (was 2 weeks)
 
 **2026-01-15**:
 - **Phase 2 collection completed** (11/12 files, ~52GB) on vast.ai 4× RTX 5090
@@ -425,11 +558,16 @@ When creating new files:
 - ❌ Don't confuse geometric_compression_research_plan.md (background) with main focus
 - ❌ Don't focus on RLVR vs SFT (Phase 1 already done)
 - ❌ Don't forget to update this file
+- ❌ Don't claim we detect "reasoning" — use "correct solution signatures" instead
+- ❌ Don't claim true K-FAC curvature analysis — we use structural proxies
 
 ### What TO Do
 
-- ✅ Focus on **correct vs incorrect reasoning geometry** (H1-H5)
+- ✅ Focus on **correct vs incorrect solution geometry** (H1-H5)
+- ✅ Use **interpolation-centric framing** (Allen-Zhu view)
+- ✅ Implement **dynamical systems analyses** (vector field, Lyapunov, attractors)
 - ✅ Implement **confound controls** (difficulty, length, format)
 - ✅ Compare to **baselines** (model confidence, semantic entropy)
 - ✅ Test **causal interventions** (H4 steering)
+- ✅ Be honest about **limitations** (proxy analyses, what we can/can't claim)
 - ✅ Document everything clearly in proper folders

@@ -1,16 +1,18 @@
-# Geometric Signatures of Reasoning in LLMs
+# Geometric Signatures of Correct Computation in LLMs
 
 **Project: ManiVer (Manifold Verification)**
 
 ## Executive Summary
 
-This research investigates whether correct reasoning has a characteristic geometric signature in the flow of activations through transformer layers. If such signatures exist and transfer across domains, we can:
+This research investigates whether *correct* task completion has distinguishable geometric signatures in activation trajectories, and whether these signatures transfer across domains. We take an explicitly **interpolation-centric view** (Allen-Zhu & Li, 2024): transformers compute smooth functions over their representation manifold, and what we observe as "reasoning" is traversal through this space.
 
-1. **Detect** bad reasoning on non-verifiable domains (where we can't check answers)
-2. **Steer** models toward correct reasoning trajectories
-3. **Understand** what distinguishes correct from incorrect reasoning at the representation level
+**We deliberately avoid cognitive framing.** We do not claim to detect "reasoning" vs "recall" — these may not be separable computational modes. Instead, we ask:
 
-**Core insight**: Reasoning is a *process*, not a static representation. The trajectory of activations through layers IS the computation. We should analyze flow geometry, not just static subspaces.
+1. **Can we characterize** the geometry of correct vs incorrect solutions within verifiable domains?
+2. **Do these geometric signatures share structure** across domains (math → code → logic)?
+3. **Can interventions on trajectory geometry** improve task performance?
+
+**Core framework**: The residual stream is the locus of computation. Each layer transforms representations via interpolation through the learned manifold. Correct solutions may traverse this manifold differently than incorrect ones — not because of different "cognitive modes," but because of different dynamical properties (attractor basins, stability, curvature regimes).
 
 ---
 
@@ -26,7 +28,69 @@ Phase 1 (complete) showed RLVR and SFT models have different static geometry:
 
 **Key finding**: RL-Zero preserves base model subspace structure. SFT variants do not.
 
-**Limitation**: This tells us models *differ*, but not whether geometry captures *reasoning quality*.
+**Limitation**: This tells us models *differ*, but not whether geometry captures *task performance quality*.
+
+---
+
+## Theoretical Framework: Interpolation, Attractors, and Belief Dynamics
+
+### The Allen-Zhu View: Everything is Interpolation
+
+Following Allen-Zhu & Li (2024), we treat the transformer as computing a smooth function:
+
+```
+f: input_embedding → output_logits
+```
+
+There is no "reasoning mode" vs "recall mode." The forward pass is identical regardless of task difficulty. What differs is the *region* of the representation manifold being traversed:
+
+- **Dense regions** (familiar inputs): Short, direct paths to outputs
+- **Sparse regions** (novel inputs): Longer, more complex traversals
+
+**Implication**: Apparent "reasoning" signatures might reflect input regime differences, not computational mode differences. Our controls must address this.
+
+### Curvature Regimes (Merullo et al., 2025)
+
+Recent work on loss curvature shows that weight directions separate by function:
+
+| Curvature | Interpretation | Example |
+|-----------|----------------|---------|
+| **High** | Used by many examples; general computation | Shared reasoning circuits |
+| **Low** | Used by few examples; memorization-like | Lookup tables, specific facts |
+
+**Critical finding**: Math/arithmetic relies heavily on low-curvature (memorization-like) structure. The model can reason about problem structure but looks up arithmetic facts.
+
+**Implication for us**: If correct solutions use more high-curvature (general) computation, trajectory geometry might capture this. We can validate by checking curvature regime activation.
+
+### Attractor Dynamics (Ren & Liu, 2026)
+
+The Hierarchical Reasoning Model analysis shows that even explicit iterative reasoning involves:
+
+- **Multiple fixed points** in latent space (some correct, some wrong)
+- **Grokking transitions**: Loss stays flat then drops suddenly (finding right attractor)
+- **Attractor trapping**: Incorrect solutions get stuck in wrong basins
+
+**Implication**: Correct vs incorrect solutions may differ in attractor dynamics — not "quality of reasoning" but "which basin you land in." Our Lyapunov analysis can test this.
+
+### Belief State Geometry (Shai et al., 2024; Bigelow et al., 2025)
+
+The residual stream linearly represents belief states over latent generative structure:
+
+- **In-context learning**: Bayesian evidence accumulation
+- **Activation steering**: Prior modification
+- Both operate on the same belief representation
+
+**Implication**: Correct solutions might show different belief update trajectories — evidence-responsive updates leading to correct posteriors vs prior-dominated updates leading to errors.
+
+### Synthesis: What We're Actually Testing
+
+We're not detecting "reasoning" as a cognitive category. We're testing:
+
+1. **Do correct solutions have different dynamical signatures?** (stability, attractor basins, curvature profiles)
+2. **Are these signatures domain-general?** (shared structure across math, code, logic)
+3. **Are they causal?** (can interventions improve performance)
+
+This is pure function approximation analysis dressed in geometric language.
 
 ---
 
@@ -49,89 +113,130 @@ Phase 1 (complete) showed RLVR and SFT models have different static geometry:
 
 ### What's Novel in This Work
 
-**1. Cross-domain reasoning transfer (H2)**
-- **New**: Test if correctness geometry transfers math → code → logic
-- **Why it matters**: Prior work only tested within-domain or across similar factual tasks
-- **Risk**: This may fail (geometry could be domain-specific)
+**1. Cross-domain transfer of correctness signatures (H2)**
+- **New**: Test if geometric features that predict correctness on math also work on code and logic
+- **Why it matters**: Prior work only tested within-domain; we test whether signatures are domain-general
+- **Honest expectation**: This may fail. Different domains may occupy different manifold regions with different dynamics.
 
-**2. Trajectory-based analysis**
-- **New**: Analyze activation *flow* through layers, not just static representations
-- **Method**: Path signatures (reparameterization-invariant trajectory features)
-- **Why it matters**: Reasoning is a process; trajectories capture temporal dynamics
+**2. Dynamical systems analysis of trajectories**
+- **New**: Apply MARBLE-style vector field decomposition, Lyapunov stability analysis, and attractor characterization
+- **Method**: Treat layer transitions as a discrete dynamical system; analyze its structure
+- **Why it matters**: Connects to theoretical framework (interpolation, attractors, belief dynamics)
 
-**3. Causal intervention on reasoning (H4)**
-- **New**: Steer trajectories to improve reasoning accuracy
-- **Why it matters**: Tests whether geometry is causally relevant, not just correlational
-- **Risk**: Steering may break the model or only work within-domain
+**3. Curvature regime analysis**
+- **New**: Test whether correct solutions activate more high-curvature (general) vs low-curvature (memorization) weight directions
+- **Method**: Inspired by Merullo et al. (2025); project trajectories onto weight singular vectors
+- **Why it matters**: Directly tests the "reasoning vs memorization" distinction at the weight level
 
-**4. Systematic confound controls**
-- **New**: Explicit difficulty stratification, baseline comparisons, control tasks
-- **Why it matters**: Prior work often conflates correctness with difficulty/length
+**4. Causal intervention (H4)**
+- **New**: Steer trajectories toward "correct solution" manifold regions
+- **Why it matters**: Tests whether geometry is causal, not just correlational
+- **Honest expectation**: May not work; geometry might be epiphenomenal
+
+**5. Systematic confound controls**
+- **New**: Difficulty stratification, length matching, input regime controls
+- **Why it matters**: The main critique is that we might detect "easy vs hard" not "correct vs incorrect"
 
 ### What We're NOT Claiming
 
-- ❌ That we've "solved" reasoning or interpretability
-- ❌ That geometry *causes* good reasoning (only that it correlates, unless H4 succeeds)
+- ❌ That we detect "reasoning" as a cognitive category
+- ❌ That there's a separable "reasoning mode" vs "recall mode"
+- ❌ That geometry *causes* correct solutions (only that it correlates, unless H4 succeeds)
 - ❌ That this works on all models or all tasks
-- ✅ That we're testing a specific, falsifiable hypothesis about universal reasoning geometry
+- ✅ That correct and incorrect solutions may have different dynamical signatures
+- ✅ That these signatures might share structure across domains (testable, may fail)
 
 ---
 
-## The Real Research Question
+## The Research Question (Reframed)
 
-> **Can we learn the geometry of correct reasoning from verifiable domains (where we know the right answer) and use it on non-verifiable domains (where we don't)?**
+> **Do correct solutions have distinguishable dynamical signatures in activation trajectories, and do these signatures share structure across verifiable domains?**
 
-This is fundamentally different from "transfer prediction":
-- Transfer asks: "Does training on A help with B?"
-- We ask: "Does CORRECT reasoning have universal geometric signatures?"
+We explicitly drop the cognitive framing. We're not asking "what is reasoning?" We're asking:
 
-**Why this matters**: Verifiable domains (math, code) provide ground truth. Non-verifiable domains (open-ended reasoning, ethics, strategy) are where we *need* a reasoning quality detector.
+1. **Descriptive**: Can we characterize geometric differences between correct and incorrect solution trajectories?
+2. **Transferable**: Do these differences generalize across domains (math, code, logic)?
+3. **Causal**: Can we improve task performance by intervening on trajectory geometry?
+
+**Why this matters**: If signatures transfer, we have a domain-general correctness predictor. If they don't, we learn that task performance is geometrically domain-specific — also valuable.
 
 ---
 
-## Hypotheses
+## Hypotheses (Reframed)
 
-### H1: Correct vs Incorrect Reasoning Have Distinguishable Trajectories
+### H1: Correct vs Incorrect Solutions Have Distinguishable Trajectory Dynamics
 
-On verifiable tasks, trajectories for problems solved correctly vs incorrectly should be geometrically distinguishable.
+On verifiable tasks, activation trajectories for correct vs incorrect solutions should be geometrically distinguishable via dynamical features.
 
-**Test**: Train classifier on trajectory signatures (correct vs incorrect). Cross-validate within domain.
+**What we measure**:
+- Vector field structure (MARBLE decomposition): potential vs rotational flow
+- Stability (Lyapunov exponents): convergence vs divergence
+- Path signatures: reparameterization-invariant trajectory features
+- Frenet-Serret curvature: trajectory bending
 
-**Success criterion**: >65% accuracy (significantly above 50% chance)
+**Test**: Train classifier on dynamical features (correct vs incorrect). Cross-validate within domain.
 
-**Risk**: May just learn problem difficulty, not reasoning quality.
+**Success criterion**: >65% balanced accuracy (significantly above 50% chance)
 
-### H2: The Correct Reasoning Signature is Domain-Invariant
+**Controls**:
+- Difficulty-matched pairs (to avoid detecting "easy vs hard")
+- Length-matched pairs (to avoid detecting output length)
+- Random label baseline (must fail, ≈50%)
 
-If correct reasoning has universal geometry, a classifier trained on math should work on code.
+**Risk**: May learn input regime (dense vs sparse manifold regions) rather than solution quality.
 
-**Test**: Train on GSM8K correct/incorrect, test on HumanEval correct/incorrect (zero-shot).
+### H2: Correctness Signatures Share Structure Across Domains (Critical Test)
 
-**Success criterion**: >55% transfer accuracy
+If correct solutions have domain-general dynamical properties, features learned on one domain should partially transfer to others.
 
-**This is the critical test**. If it fails, "reasoning" may be domain-specific.
+**Reframed question**: Does successful interpolation through the representation manifold have shared geometric properties regardless of what's being computed?
 
-### H3: Detector Works on Non-Verifiable Domains
+**Test**: Train on GSM8K correct/incorrect, test on HumanEval and LogiQA (zero-shot).
 
-Apply the trained detector to domains without ground truth. Validate against human judgments.
+**Success criterion**: >55% transfer accuracy (above 50% chance)
 
-**Test**: Compute geometric "reasoning quality" scores on philosophical questions. Correlate with human ratings.
+**What would success mean**:
+- Correct solutions across domains share dynamical properties (e.g., similar stability profiles, curvature patterns)
+- The "correct solution" manifold region has domain-general structure
+
+**What would failure mean**:
+- Task performance is geometrically domain-specific
+- Each domain has its own "correct solution" signature
+- This is still a valuable negative result
+
+**This is the critical test.** We expect partial success at best.
+
+### H3: Signatures Correlate with Human Judgments on Non-Verifiable Domains
+
+Apply trained detector to domains without ground truth. Validate against human quality judgments.
+
+**Test**: Compute geometric scores on open-ended responses. Correlate with human ratings.
 
 **Success criterion**: r > 0.25 correlation with human judgments
 
-### H4: Trajectories Can Be Steered Toward Correct Reasoning
+**Honest assessment**: This is exploratory. Human judgments on non-verifiable domains are noisy.
 
-If we know the geometry of correct reasoning, can we constrain generation to stay in that manifold?
+### H4: Trajectory Interventions Can Improve Task Performance (Causality Test)
 
-**Test**: Project activations onto "correct reasoning" manifold during inference. Measure accuracy change.
+If geometry correlates with correctness, can we improve performance by steering trajectories?
+
+**Test**: Project activations toward "correct solution" manifold region during inference.
 
 **Success criterion**: >2% accuracy improvement on held-out verifiable problems
 
-### H5: Correct Reasoning Has Lower Curvature
+**What would success mean**: Geometry is causally relevant, not just epiphenomenal
 
-Correct reasoning may follow straighter paths (model knows where it's going). Incorrect reasoning may wander.
+**What would failure mean**: Geometry reflects correctness but doesn't cause it; read-only signal
 
-**Test**: Compare path curvature for correct vs incorrect trajectories.
+### H5: Correct Solutions Have More Stable Dynamics (Exploratory)
+
+Hypothesis: Correct solutions show lower Lyapunov exponents (more stable attractor convergence).
+
+**Rationale**: From HRM analysis — correct solutions find the right attractor quickly; incorrect solutions wander or get trapped in wrong basins.
+
+**Test**: Compare Lyapunov spectra for correct vs incorrect trajectories.
+
+**Alternative hypothesis**: Correct solutions might show *controlled* instability (exploration) followed by convergence (exploitation).
 
 ---
 
@@ -147,20 +252,84 @@ Correct reasoning may follow straighter paths (model knows where it's going). In
 
 **Storage**: ~56 GB total on eyecog
 
-### Geometric Features
+### Geometric and Dynamical Features
+
+#### Original Features
 
 **Path Signatures** (via signatory library):
 - Reparameterization-invariant trajectory features
 - Captures curvature, winding, self-intersection
 - Project to 64 dims before computing (d=4096 too large)
 
-**Curvature Measures**:
+**Frenet-Serret Curvature**:
 - Local turning angles between consecutive layers
 - Aggregate statistics (mean, variance, max)
 
-**Trajectory Distance**:
-- Wasserstein distance between correct/incorrect distributions
-- DTW distance between individual trajectories
+#### New Dynamical Systems Features (Phase 3)
+
+**1. MARBLE-style Vector Field Decomposition**
+
+Treat layer transitions as a dynamical system and decompose via Helmholtz:
+
+```python
+# Layer transition dynamics
+v(x) = x_{l+1} - x_l  # Velocity field
+
+# Helmholtz decomposition
+v = ∇φ + ∇×A
+  = potential (gradient) + rotational (curl)
+```
+
+- **Potential component**: Gradient-following flow toward attractors
+- **Rotational component**: Cycling, oscillatory dynamics
+- **Hypothesis**: Correct solutions have higher potential/rotational ratio (more direct paths)
+
+**2. Lyapunov Exponent Analysis**
+
+Measure trajectory stability/instability:
+
+```python
+# Local Jacobian of layer transition
+J_l = ∂x_{l+1}/∂x_l
+
+# Lyapunov exponent
+λ = lim (1/L) Σ_l log(σ_max(J_l))
+```
+
+- λ > 0: Divergent (chaotic, sensitive)
+- λ < 0: Convergent (stable, attractor)
+- λ ≈ 0: Neutral
+
+**Hypothesis**: Correct solutions show more stable dynamics (λ < 0) or controlled instability-then-convergence.
+
+**3. Attractor Analysis**
+
+Characterize fixed points and basins:
+
+- **Fixed point detection**: Where does v(x) ≈ 0?
+- **Basin estimation**: Which initial conditions converge to which fixed points?
+- **Hypothesis**: Correct/incorrect solutions converge to different attractor basins
+
+**4. Activation Regime Analysis (Proxy for Curvature)**
+
+Inspired by Merullo et al. (2025), but using structural proxies (we lack gradient statistics for true K-FAC):
+
+- Project trajectories onto weight singular value regimes
+- Measure activation of high-singular-value (distributed) vs low-singular-value (localized) directions
+- Compute effective dimensionality of activations
+- **Hypothesis**: Correct solutions use more distributed (high-SV) computation
+- **Caveat**: This is NOT true curvature analysis — it's a structural proxy
+
+#### Feature Summary
+
+| Feature | What it Captures | Hypothesis for Correct Solutions |
+|---------|------------------|----------------------------------|
+| Path signature | Trajectory shape (invariant) | More structured, less chaotic |
+| Frenet-Serret curvature | Local bending | Lower curvature (straighter paths) |
+| Vector field potential/curl | Flow structure | Higher potential ratio (direct paths) |
+| Lyapunov exponent | Stability | More stable (λ < 0) |
+| Attractor basin | Convergence target | Different basin than incorrect |
+| Activation regime (proxy) | Weight direction usage (structural proxy) | More distributed (high-SV) activation |
 
 ### Classification Pipeline
 
@@ -321,15 +490,15 @@ Geometry-based methods should outperform or complement simpler baselines:
 
 ---
 
-## Success Criteria
+## Success Criteria (Reframed)
 
 | Outcome | Implication | Next Step |
 |---------|-------------|-----------|
-| H1 success, H2 success | Reasoning has universal geometry | Proceed to H4 (intervention) |
-| H1 success, H2 fails | Reasoning is domain-specific | Analyze what differs across domains |
-| H1 fails | Geometry doesn't capture reasoning | Major pivot needed |
-| H4 success | We can improve reasoning via geometry | Write paper, major contribution |
-| H4 fails | Steering is too crude, or geometry isn't causal | Try finer-grained intervention |
+| H1 success, H2 success | Correct solutions have domain-general dynamical signatures | Proceed to H4 (intervention) |
+| H1 success, H2 fails | Correct solution signatures are domain-specific | Characterize per-domain structure (still valuable) |
+| H1 fails | Trajectory dynamics don't distinguish correct/incorrect | Major pivot: try attention patterns, gradients |
+| H4 success | Trajectory geometry is causally relevant | Major contribution: geometry enables intervention |
+| H4 fails | Geometry is correlational, not causal | Geometry is read-only signal (still useful for detection) |
 
 ---
 
@@ -408,3 +577,74 @@ ManiVer/
 4. **Multiple temperature sampling**: Focus on greedy first
 
 These can be added if initial results warrant.
+
+---
+
+## Key References
+
+### Theoretical Framework
+
+**Interpolation View**:
+- Allen-Zhu, Z., & Li, Y. (2024). Physics of Language Models (Parts 1-3). *ICML 2024 Tutorial*.
+  - Key insight: Transformers compute smooth functions; "reasoning" is interpolation through representation space.
+
+**Curvature Regimes**:
+- Merullo, J., Vatsavaya, S., Bushnaq, L., & Lewis, O. (2025). Understanding Memorization via Loss Curvature. *arXiv:2510.24256*.
+  - Key insight: High-curvature weights = general computation; low-curvature = memorization. Math uses memorization-like circuits.
+
+**Attractor Dynamics**:
+- Ren, Z., & Liu, Z. (2026). Are Your Reasoning Models Reasoning or Guessing? A Mechanistic Analysis of Hierarchical Reasoning Models. *arXiv:2601.10679*.
+  - Key insight: Iterative reasoning shows attractor dynamics with "grokking" transitions, not gradual refinement.
+
+**Belief State Geometry**:
+- Shai, M., et al. (2024). Transformers Represent Belief State Geometry in their Residual Stream. *NeurIPS 2024*. arXiv:2405.15943.
+  - Key insight: Residual stream linearly represents belief states, even with fractal geometry.
+- Bigelow, E., et al. (2025). Belief Dynamics Reveal the Dual Nature of In-Context Learning and Activation Steering. *arXiv:2511.00617*.
+  - Key insight: ICL = evidence accumulation; steering = prior modification; same belief representation.
+
+**Vector Field Analysis**:
+- Gosztolai, A., & Bhattacharyya, R. (MARBLE papers). Manifold-based Analysis of Neural Population Dynamics.
+  - Key insight: Neural dynamics can be decomposed into potential (gradient) and rotational (curl) components.
+
+### Supporting Evidence
+
+**Hidden states encode correctness**:
+- Zhang et al. (2025), Afzal et al. (2025), Azaria & Mitchell (2023)
+- Limitation: Only tested within single domains.
+
+**Truth has geometric structure**:
+- Marks, S., & Tegmark, M. (2023). The Geometry of Truth.
+- Limitation: Tested on factual recall, not reasoning processes.
+
+**Activation steering works**:
+- Turner, A., et al. (2023). Activation Addition.
+- Meng, K., et al. (2022). ROME.
+- Limitation: Tested on simple attributes, not complex reasoning.
+
+**Trajectory structure**:
+- Hosseini & Fedorenko (2023): Trajectories straighten with task success.
+
+### Critical Challenges
+
+**Decision before reasoning**:
+- Afzal et al. (2025), David (2025): Models commit to answers early in CoT.
+
+**CoT unfaithfulness**:
+- Turpin, M., et al. (2023). Language Models Don't Always Say What They Think.
+
+**Probe controls**:
+- Hewitt, J., & Liang, P. (2019). Designing and Interpreting Probes with Control Tasks.
+
+**Transfer failures**:
+- Ley, D., et al. (2024). Faithfulness interventions fail to transfer.
+
+### Methodological
+
+**Path signatures**:
+- Kidger, P., & Lyons, T. (2020). Signatory: differentiable computations of the signature and logsignature transforms.
+
+**Lyapunov analysis**:
+- Standard dynamical systems texts; adapted for discrete layer transitions.
+
+**Helmholtz decomposition**:
+- Standard vector calculus; applied to neural activation flows.
