@@ -1,0 +1,34 @@
+{
+  "model": "olmo3_think",
+  "model_path": "allenai/OLMo-3-7B-Think",
+  "n_samples": 200,
+  "max_tokens": 512,
+  "layers": [
+    0,
+    2,
+    4,
+    6,
+    8,
+    10,
+    12,
+    14,
+    16,
+    18,
+    20,
+    22,
+    24,
+    26,
+    28,
+    30
+  ],
+  "trajectory_shape": [
+    200,
+    512,
+    16,
+    4096
+  ],
+  "avg_sequence_length": 461.875,
+  "max_sequence_length": 512,
+  "seed": 42,
+  "timestamp": "2026-01-18T13:15:18.622601"
+}

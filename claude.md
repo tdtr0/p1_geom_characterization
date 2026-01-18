@@ -67,6 +67,8 @@ ManiVer/
 │   │   └── archive_transfer_correlation_plan.md
 │   ├── guides/                    # Setup and usage guides
 │   │   ├── PHASE2_PIPELINE.md    # Complete Phase 2 pipeline guide
+│   │   ├── SLURM_QUICKSTART.md   # **SLURM quick reference**
+│   │   ├── SLURM_CLUSTER_GUIDE.md  # **SLURM H100 cluster guide (detailed)**
 │   │   ├── VLLM_GPU_GUIDE.md     # **vLLM GPU compatibility & testing**
 │   │   ├── B2_SETUP.md           # Backblaze B2 + Cloudflare setup
 │   │   └── B2_QUICKSTART.md      # Quick command reference
@@ -87,8 +89,11 @@ ManiVer/
 ├── scripts/                       # Executable scripts
 │   ├── collection/                # Data collection scripts
 │   │   ├── collect_trajectories_with_labels.py  # Main Phase 2 script
-│   │   ├── collect_logiqa_vllm.py               # **vLLM batched inference (3-5x faster)**
+│   │   ├── collect_logiqa_vllm_fully_optimized.py  # **FULLY OPTIMIZED vLLM (all 6 bottlenecks fixed)**
+│   │   ├── collect_logiqa_optimized.py          # Optimized HF batching (4 bottlenecks fixed)
+│   │   ├── collect_logiqa_vllm.py               # vLLM batched inference (deprecated - memory)
 │   │   ├── test_vllm_quick.sh                   # Quick vLLM test (10 samples)
+│   │   ├── test_optimized_quick.sh              # Quick optimized test
 │   │   ├── collect_activations.py
 │   │   ├── collect_single_model.py
 │   │   ├── collect_single_logiqa.py             # Single-model LogiQA collection
@@ -108,8 +113,13 @@ ManiVer/
 │   │   ├── b2_upload.py          # Upload to Backblaze B2
 │   │   ├── b2_download.py        # Download from B2
 │   │   └── setup_b2_on_vastai.sh # Auto B2 setup
-│   ├── deployment/                # vast.ai management
-│   │   ├── vast_launcher.py      # Search/launch/destroy instances
+│   ├── deployment/                # vast.ai & SLURM management
+│   │   ├── check_slurm_storage.sh   # **SLURM: Check storage quotas**
+│   │   ├── setup_slurm_env.sh    # **SLURM: One-time environment setup**
+│   │   ├── test_logiqa_slurm.sbatch  # **SLURM: Test job (10 samples)**
+│   │   ├── run_logiqa_slurm.sbatch  # **SLURM: Full job (3 models)**
+│   │   ├── monitor_slurm_job.sh  # **SLURM: Monitor job progress**
+│   │   ├── vast_launcher.py      # vast.ai: Search/launch/destroy instances
 │   │   ├── check_collection_status.sh
 │   │   ├── connect_and_collect.sh
 │   │   ├── monitor_collection.sh
@@ -169,6 +179,17 @@ ManiVer/
 - **Phase 2 Plan**: [docs/plans/PHASE2_DETAILED_PLAN.md](docs/plans/PHASE2_DETAILED_PLAN.md) - Week-by-week breakdown
 - **Main Script**: [scripts/collection/run_phase2_pipeline.sh](scripts/collection/run_phase2_pipeline.sh) - Collect + Upload
 - **Collection Script**: [scripts/collection/collect_trajectories_with_labels.py](scripts/collection/collect_trajectories_with_labels.py)
+
+### For SLURM Cluster (H100)
+- **Quick Start**: [docs/guides/SLURM_QUICKSTART.md](docs/guides/SLURM_QUICKSTART.md) - **Fast reference for setup & monitoring**
+- **Complete Guide**: [docs/guides/SLURM_CLUSTER_GUIDE.md](docs/guides/SLURM_CLUSTER_GUIDE.md) - Detailed documentation
+- **vLLM Collection**: [scripts/collection/collect_logiqa_vllm_fully_optimized.py](scripts/collection/collect_logiqa_vllm_fully_optimized.py) - Fully optimized (all 6 bottlenecks fixed)
+- **Scripts**:
+  - [scripts/deployment/check_slurm_storage.sh](scripts/deployment/check_slurm_storage.sh) - Check quotas & available space
+  - [scripts/deployment/setup_slurm_env.sh](scripts/deployment/setup_slurm_env.sh) - One-time environment setup
+  - [scripts/deployment/test_logiqa_slurm.sbatch](scripts/deployment/test_logiqa_slurm.sbatch) - Test job (10 samples, ~10 min)
+  - [scripts/deployment/run_logiqa_slurm.sbatch](scripts/deployment/run_logiqa_slurm.sbatch) - Full job (500 samples × 3 models, ~1.5-2 hrs)
+  - [scripts/deployment/monitor_slurm_job.sh](scripts/deployment/monitor_slurm_job.sh) - Monitor job progress
 
 ### For vast.ai Setup
 - **vast.ai Guide**: [docs/guides/VASTAI_GUIDE.md](docs/guides/VASTAI_GUIDE.md) - **Login, costs, GPU selection**
@@ -267,6 +288,74 @@ ssh eyecog "cd ~/p1_geom_characterization && git add -A && git commit -m 'msg' &
 
 # vast.ai auto-pulls from GitHub on start
 ```
+
+---
+
+## ⚠️ SLURM Cluster Access (CRITICAL SAFETY RULES)
+
+### SSH Access
+```bash
+ssh ai_inst
+```
+
+### 🚨 CRITICAL SAFETY CONSTRAINTS 🚨
+
+**THIS IS A LOGIN NODE - NEVER RUN COMPUTE JOBS DIRECTLY ON IT**
+
+1. **ALWAYS submit jobs via SLURM** (`sbatch`, `srun`)
+2. **NEVER run Python scripts directly** on the login node
+3. **NEVER run model inference** on the login node
+4. **ALWAYS ask user before submitting ANY job** - even test jobs
+5. **Only allowed on login node**: File operations, text editing, job submission
+
+**Violation of these rules can cause system issues and trouble for the user.**
+
+### Available GPUs
+
+| Node | GPUs | VRAM | Cores Available | Best For |
+|------|------|------|-----------------|----------|
+| **h100** | 4× H100 80GB | 80 GB | 60 | **Recommended** - Fast, large VRAM |
+| quadro1/2 | 8× Quadro RTX 8000 | 48 GB | ? | Alternative if h100 busy |
+| tesla1/2 | 8× Tesla V100 | 32 GB | ? | Too small for vLLM+HF |
+
+**Recommended node**: `h100` (80GB VRAM, fastest inference)
+
+### SLURM Job Workflow
+
+```bash
+# 1. SSH to login node
+ssh ai_inst
+
+# 2. Prepare job files (via Claude/local editing)
+# - setup_slurm.sh (install dependencies)
+# - run_collection.sbatch (SLURM job file)
+
+# 3. Submit job (ALWAYS ask user first!)
+sbatch run_collection.sbatch
+
+# 4. Monitor job
+squeue -u $USER
+tail -f slurm-<jobid>.out
+
+# 5. Check results after completion
+ls -lh /home/$USER/maniver/ManiVer/data/trajectories/
+```
+
+### Monitoring Approach (for Claude)
+
+When monitoring SLURM jobs, Claude will:
+
+1. **SSH to ai_inst** (login node only)
+2. **Run monitoring script**: `bash scripts/deployment/monitor_slurm_job.sh <job_id>`
+3. **Check progress** from stdout logs
+4. **Report status** to user periodically
+5. **Diagnose errors** if job fails
+
+**Monitoring intervals**:
+- Test job (10 samples): Check every 5 minutes
+- Full job (500 samples): Check every 15-30 minutes
+
+**No email notifications** - Claude checks logs directly via SSH.
 
 ---
 
@@ -444,6 +533,25 @@ See [docs/guides/B2_SETUP.md](docs/guides/B2_SETUP.md) for detailed setup.
 ---
 
 ## File Update Log
+
+**2026-01-18** (evening):
+- **Created fully optimized vLLM collection pipeline for SLURM cluster** (H100)
+  - Added `scripts/collection/collect_logiqa_vllm_fully_optimized.py` - Fixes ALL 6 GPU bottlenecks
+  - Added `scripts/deployment/setup_slurm_env.sh` - One-time SLURM environment setup
+  - Added `scripts/deployment/run_logiqa_slurm.sbatch` - SLURM job file with auto-upload to B2
+  - Added `docs/guides/SLURM_CLUSTER_GUIDE.md` - Complete SLURM usage guide
+  - Added `docs/guides/SLURM_QUICKSTART.md` - Quick reference for setup & monitoring
+  - **Key innovation**: Dual-model approach (vLLM for generation + HF for activations)
+  - **Expected performance**: 1.5-2 hours for 3 models × 500 samples (vs 12.5 hrs sequential)
+  - **Bottlenecks fixed**: (1) GPU-only tensors, (2) Batched activation, (3) Async I/O, (4) Memory cleanup, (5) GPU tokenization via vLLM, (6) Fast vLLM generation (3-5x speedup)
+  - **Auto-upload**: Job automatically uploads to B2 after collection completes
+  - **Safety**: Documented critical SLURM constraints (login node vs compute node)
+- **Added storage checking and test infrastructure for SLURM**
+  - Added `scripts/deployment/check_slurm_storage.sh` - Check storage quotas before setup
+  - Added `scripts/deployment/test_logiqa_slurm.sbatch` - Test job (10 samples, ~10 min validation)
+  - Added `scripts/deployment/monitor_slurm_job.sh` - Monitor job progress by reading logs
+  - Updated all SLURM scripts to use configurable `WORK_DIR` (support /home/, /scratch/, /work/)
+  - **Monitoring approach**: Claude SSH checks logs periodically, no email notifications needed
 
 **2026-01-18** (afternoon):
 - **Added Menger curvature analysis to Phase 3** (Zhou et al., 2025)
