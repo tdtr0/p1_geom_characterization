@@ -40,7 +40,7 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 
 # Model configurations (7B versions)
 MODEL_CONFIGS = {
-    'base': 'allenai/OLMo-3-7B-0125',
+    'base': 'allenai/OLMo-3-1025-7B',  # Base model (no thinking training)
     'sft': 'allenai/OLMo-3-7B-Think-SFT',
     'rl_zero': 'allenai/OLMo-3-7B-RL-Zero-General',
     'think': 'allenai/OLMo-3-7B-Think',

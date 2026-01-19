@@ -1,0 +1,33 @@
+{
+  "timestamp": "2026-01-19T06:53:14.287710",
+  "n_test_cases": 45,
+  "models": {
+    "base": {
+      "n_total": 45,
+      "n_correct": 4,
+      "n_explicit_correction": 0,
+      "n_propagated_error": 35,
+      "correction_rate": 0.08888888888888889,
+      "explicit_rate": 0.0,
+      "propagation_rate": 0.7777777777777778
+    },
+    "rl_zero": {
+      "n_total": 45,
+      "n_correct": 5,
+      "n_explicit_correction": 1,
+      "n_propagated_error": 34,
+      "correction_rate": 0.1111111111111111,
+      "explicit_rate": 0.022222222222222223,
+      "propagation_rate": 0.7555555555555555
+    },
+    "think": {
+      "n_total": 45,
+      "n_correct": 5,
+      "n_explicit_correction": 12,
+      "n_propagated_error": 11,
+      "correction_rate": 0.1111111111111111,
+      "explicit_rate": 0.26666666666666666,
+      "propagation_rate": 0.24444444444444444
+    }
+  }
+}

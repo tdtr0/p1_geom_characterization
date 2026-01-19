@@ -1,19 +1,30 @@
 # Aha Moment Experiment: Error Detection & Phase Transitions
 
-**Status**: Experiment A ✅ Complete | Experiment B ⚠️ Trivial Result | Experiment C 🔄 In Progress
+**Status**: Experiment A ✅ Complete | Experiment B ⚠️ Trivial Result | Experiment C ✅ Complete
 **Objective**: Test whether OLMo 3 models have error-detection features (Wynroe-style) and whether training paradigm affects active error correction.
 
 ---
 
 ## Results Summary (2026-01-19)
 
-### Experiment A: Wynroe Replication ✅ SUCCESS
+### Experiment A: Error Detection Probing ⚠️ NOT A PROPER WYNROE REPLICATION
 | Model | Pairs | Best Layer | Effect Size (d) | p-value |
 |-------|-------|------------|-----------------|---------|
 | **rl_zero** | 92 | Layer 14 | **1.70** | < 10⁻¹⁵ |
 | **think** | 92 | Layer 14 | **1.65** | < 10⁻¹⁵ |
 
-**Finding**: Strong error-detection signal exists in OLMo 3 models (Cohen's d > 1.5).
+**Issue (2026-01-19)**: This is NOT a proper Wynroe replication:
+
+| Aspect | Wynroe et al. | Our Exp A |
+|--------|---------------|-----------|
+| **Method** | Activation patching (causal) | Probing (correlational) |
+| **Dataset** | MATH (hard) | GSM8K (easy) |
+| **Metric** | Logit-diff recovery % | Cohen's d |
+| **Finding** | Layer 20 is critical | Signal everywhere (d=1.1 at layer 0!) |
+
+**Problem**: GSM8K is too easy. Error info is present from layer 0 (d=1.1) - no deep processing needed. Wynroe showed layer 20 **causally matters** via patching. Our probing just shows "info exists" (less interesting).
+
+**TODO**: Proper replication requires activation patching on MATH dataset.
 
 ### Experiment B: Natural Pivot Detection ⚠️ TRIVIAL
 **Issue**: Lower curvature at pivot tokens is likely just surface-level pattern:
@@ -23,10 +34,17 @@
 
 **Verdict**: Experiment B doesn't isolate anything interesting. Replaced by Experiment C.
 
-### Experiment C: Active Error Correction 🔄 IN PROGRESS
-**New approach**: Test whether models can ACTIVELY correct errors, not just detect them passively.
+### Experiment C: Active Error Correction ✅ COMPLETE
 
-See detailed plan below.
+| Model | Correction Rate | Explicit Corrections | Error Propagation |
+|-------|-----------------|---------------------|-------------------|
+| **base** | 8.9% | 0.0% | **77.8%** |
+| **rl_zero** | 11.1% | 2.2% | **75.6%** |
+| **think** | 11.1% | **26.7%** | **24.4%** |
+
+**Finding**: Think models show 3× lower error propagation and 13× more explicit correction attempts, but **same final accuracy** (11%). Detection ≠ correction.
+
+See [RESULTS.md](RESULTS.md) for full analysis.
 
 ---
 
@@ -453,6 +471,28 @@ def detect_pivots(text: str, tokenizer, use_classifier=False) -> List[int]:
 | Gaussian Proxy | 0.757 | 0.768 | **-0.31** | Pivots MORE LINEAR |
 
 **Conclusion**: Results are opposite of hypothesis. Pivots are "pause tokens" with smoother dynamics, not sharp turns. This is likely trivial - transition words naturally have different dynamics than calculation tokens. **Experiment C provides a more meaningful test.**
+
+### Critical Confound: Induction Heads (2026-01-19)
+
+The lower velocity at pivots is likely a **trivial artifact of induction heads**, not evidence of error detection:
+
+1. **Observation**: "Wait..." tokens are often followed by **repeats** of previous content
+   - Example: "Wait, let me check: 2+2=4" → model copies earlier calculation
+
+2. **Mechanism**: [Induction heads](https://transformer-circuits.pub/2022/in-context-learning-and-induction-heads/index.html) detect [A][B]...[A] patterns and predict [B]
+   - When pivots trigger re-checking, the model is often just **copying from context**
+   - Copying = less novel computation = lower velocity
+
+3. **The direction question**: What direction is the velocity pointing?
+   - If it's induction (copying), activations move toward the copied representation
+   - This is predictable and trivial - tells us nothing about error detection
+
+4. **Proposed ablation** (future work):
+   - Check induction circuit SAE features (Neuronpedia) at pivot vs random positions
+   - If induction features are HIGH at pivots → velocity slowdown is trivial confound
+   - If induction features are LOW → velocity slowdown might be meaningful
+
+**Bottom line**: Experiment B results are likely just measuring induction head activity, not error detection capability.
 
 ---
 
