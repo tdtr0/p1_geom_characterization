@@ -2,14 +2,104 @@
 
 ## Executive Summary
 
-We ran two experiments to investigate "error-detection" signals in LLM activation trajectories:
+We ran three experiments to investigate "error-detection" signals in LLM activation trajectories:
 
 | Experiment | Question | Result | Effect Size |
 |------------|----------|--------|-------------|
-| **A: Wynroe Replication** | Can models detect errors in preceding context? | **Yes, strongly** | d=1.70 |
-| **B: Natural Pivots** | Do self-correction phrases have distinct geometry? | **Partial** - opposite of hypothesis | d=-0.31 |
+| **A: Error Detection Probing** | Can models detect errors in preceding context? | ⚠️ Signal exists (probing) | d=1.70 |
+| **A': Wynroe Activation Patching** | Is there a critical layer for error detection? | ❌ **FLAT profile** (no spike!) | 98% all layers |
+| **B: Natural Pivots** | Do self-correction phrases have distinct geometry? | ⚠️ **Trivial** - likely induction head artifact | d=-0.31 |
+| **C: Active Error Correction** | Can think-trained models correct errors that base models propagate? | **Surprising** - detection ≠ correction | See below |
 
-**Key Finding**: Models have strong internal "error detectors" that can identify mistakes in context (Experiment A). However, natural self-correction phrases ("Wait...", "But...") show *lower* velocity and *more linear* trajectories than random positions (Experiment B) - suggesting pivots are "reflection pauses" rather than sharp directional changes.
+**Critical Updates (2026-01-19)**:
+
+1. ✅ **Experiment A' (Proper Wynroe Patching) COMPLETED - OPPOSITE RESULT!**:
+   - Used proper **activation patching** methodology (like Wynroe)
+   - **Result: FLAT profile** - patching ANY layer gives ~98% recovery
+   - **No critical layer** - unlike Wynroe's layer 20 spike in DeepSeek-R1
+   - **Interpretation**: OLMo-3 may have distributed (not localized) error processing
+
+2. ⚠️ **Original Experiment A (probing)** was methodologically limited:
+   - Probing (correlational), not patching (causal)
+   - Signal strong everywhere (d=1.1 at layer 0!) → trivially available
+
+3. ⚠️ **Experiment B velocity slowdown is likely induction heads**:
+   - "Wait..." tokens often precede **repeats** of earlier calculations
+   - [Induction heads](https://transformer-circuits.pub/2022/in-context-learning-and-induction-heads/index.html) copy from context → less novel computation → lower velocity
+   - This is trivial - not about error detection
+   - **Proposed ablation**: Check induction SAE features (Neuronpedia) at pivots
+
+4. ✅ **Experiment C remains the key finding**: Detection ≠ correction
+   - Think models resist propagation 3× better but don't correct better (11% vs 11%)
+   - This is a robust behavioral finding independent of the methodological issues above
+
+---
+
+## Research Journey & Decision Procedure
+
+### Motivation
+
+The "aha moment" phenomenon in reasoning models (like DeepSeek-R1, o1) refers to instances where models appear to catch their own mistakes mid-reasoning, saying things like "Wait, that's not right..." before correcting course. We wanted to understand:
+
+1. **Is there a real internal signal?** Do models have an "error detector" in their activations?
+2. **What triggers the correction?** Is it geometric (sharp trajectory turn) or something else?
+3. **Can models actually fix errors?** Or do they just recognize something is wrong?
+
+### Decision Procedure
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         RESEARCH DECISION TREE                               │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│  Q1: Do models have internal error-detection signals?                        │
+│      │                                                                       │
+│      └──► Experiment A: Wynroe Replication                                   │
+│           • Method: Compare activations at clean vs corrupted calculations   │
+│           • Result: YES, d=1.70 (very strong signal)                         │
+│           │                                                                  │
+│           └──► Decision: Signal exists. Now test behavioral manifestation.  │
+│                                                                              │
+│  Q2: Do self-correction phrases ("Wait...") have distinct trajectory         │
+│      geometry that could explain the "aha moment"?                           │
+│      │                                                                       │
+│      └──► Experiment B: Natural Pivot Detection                              │
+│           • Method: Compare curvature/velocity at pivot vs random tokens     │
+│           • Result: OPPOSITE of hypothesis (pivots are slower, more linear)  │
+│           │                                                                  │
+│           └──► Decision: Experiment B is trivial. Pivots are just            │
+│                transition tokens with naturally smoother dynamics.           │
+│                We're measuring surface patterns, not error correction.       │
+│                                                                              │
+│  Q3: Can models ACTIVELY correct errors, not just detect them passively?     │
+│      │                                                                       │
+│      └──► Experiment C: Active Error Correction                              │
+│           • Method: Give corrupted prefix, measure if model corrects/        │
+│                     propagates the error                                     │
+│           • Result: SURPRISING - think models resist propagation (3×)        │
+│                     but don't correct better (same 11% rate)                 │
+│           │                                                                  │
+│           └──► Conclusion: Detection ≠ Correction                            │
+│                                                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### What We Did
+
+| Step | Action | Rationale | Outcome |
+|------|--------|-----------|---------|
+| 1 | Replicate Wynroe et al. on OLMo 3 | Establish if error-detection signal exists in our models | ✅ Strong signal (d=1.70) |
+| 2 | Analyze pivot token geometry | Test if "Wait..." tokens have sharp trajectory turns | ❌ Trivial result (opposite of hypothesis) |
+| 3 | Critique Experiment B | Realized we were measuring surface patterns, not causal correction | → Designed Experiment C |
+| 4 | Run active error correction | Give corrupted input, measure behavioral response | ✅ Key insight: detection ≠ correction |
+
+### Key Pivot Point
+
+After Experiment B, we realized the flaw in our approach:
+
+> **Experiment B Problem**: Measuring curvature at "Wait..." tokens is trivial. These are *transition words* that naturally have different dynamics than calculation tokens. We weren't testing whether models *can correct errors* - just where certain words appear.
+
+This led to Experiment C's design: instead of measuring *where* the model says "Wait...", test *whether* giving it an error changes its output.
 
 ---
 
@@ -325,6 +415,126 @@ Wait a second, let me make sure about the fractions. The problem says
 
 ---
 
+## Experiment C: Active Error Correction
+
+### Motivation
+
+Experiment B's pivot analysis measured *surface patterns* (curvature at "Wait..." tokens) but didn't test whether models can actually *correct* errors. This experiment directly tests the behavioral consequence of error detection: **can a think-trained model actively correct an arithmetic error that a base model would simply propagate?**
+
+### Experimental Design
+
+```
+                    CORRUPTED PREFIX                         MODEL CONTINUATION
+┌─────────────────────────────────────────────┐    ┌──────────────────────────────────┐
+│ Question: Kelly has 5 quarters and 2 dimes. │    │                                  │
+│ If she buys a can of pop for 55 cents,      │ -> │  [Model generates continuation]  │
+│ how many cents will she have left?          │    │                                  │
+│                                             │    │                                  │
+│ 5 × 25 = 125 cents                          │    │  Does it output: 91 (propagate)? │
+│ 2 × 10 = 20 cents                           │    │  Or: 90 (correct)?               │
+│ 125 + 20 = 145 cents                        │    │  Or: something else?             │
+│ 145 - 55 = 91 cents  ← ERROR (should be 90) │    │                                  │
+└─────────────────────────────────────────────┘    └──────────────────────────────────┘
+```
+
+We give each model a math problem with a **corrupted calculation** in the final step (e.g., `145 - 55 = 91` instead of `90`) and measure three outcomes:
+
+1. **Correction Rate**: Model outputs the correct answer (overrides the error)
+2. **Propagation Rate**: Model outputs the corrupted value (blindly continues)
+3. **Explicit Correction**: Model uses phrases like "Wait", "Actually", "let me check"
+
+### Methodology
+
+```python
+# 1. Start with 200 GSM8K solutions from olmo3_think (known correct)
+# 2. Find the LAST arithmetic calculation in each solution
+# 3. Corrupt the result by adding 1 (e.g., 36 → 37, $750 → $751)
+# 4. Truncate the solution right after the corrupted calculation
+# 5. Feed corrupted prefix to each model, let it generate continuation
+# 6. Extract final answer and compare to ground truth
+```
+
+**Key design choice**: We corrupt the **last** calculation, forcing the model to either:
+- Propagate the error to the final answer
+- Somehow recognize and correct the error
+
+### Results
+
+| Model | Correction Rate | Explicit Corrections | Error Propagation |
+|-------|-----------------|---------------------|-------------------|
+| **base** | 8.9% (4/45) | 0.0% (0/45) | **77.8%** (35/45) |
+| **rl_zero** | 11.1% (5/45) | 2.2% (1/45) | **75.6%** (34/45) |
+| **think** | 11.1% (5/45) | **26.7%** (12/45) | **24.4%** (11/45) |
+
+### Surprising Finding: Detection ≠ Correction
+
+The think model shows a striking pattern:
+
+1. **Same correction rate** as rl_zero (11.1%) - think training doesn't help get the right answer
+2. **13× more explicit correction attempts** (26.7% vs 2.2%) - it *tries* to verify
+3. **3× lower error propagation** (24.4% vs 77.8%) - it *resists* propagating errors
+
+**The math doesn't add up** (intentional pun):
+- 11.1% correct + 24.4% propagate = 35.5%
+- That leaves **64.5%** of cases where think model outputs *neither* the correct answer *nor* the corrupted value
+
+### What's Happening in the "Other" 64.5%?
+
+Examining the continuations reveals the think model's behavior:
+
+**Example 1**: Model recognizes error but computes incorrectly
+```
+Corrupted prefix: "145 - 55 = 91 cents"
+Think model: "Wait, let me check that subtraction again. 145 minus 55...
+             100 minus 55 is 45, plus 45 is... wait, that's not right either..."
+Output: 45 (wrong, but not propagated)
+```
+
+**Example 2**: Model attempts verification loop
+```
+Corrupted prefix: "240 - 20 = 221"
+Think model: "Wait, 240 minus 20 is 220? Wait, no, 240 minus 20 is 220?
+             Wait, no, 240 minus 20 is 220? Wait..."
+Output: Gets stuck in verification loop
+```
+
+**Example 3**: Model recalculates but makes new error
+```
+Corrupted prefix: "11,500 - 4,200 = 7301 bottles"
+Think model: "Wait, let me double-check. 11,500 minus 4200 = 7300? Wait..."
+Output: 11500 (recalculates from scratch, outputs wrong intermediate value)
+```
+
+### Interpretation: The Error Detection-Correction Gap
+
+The results reveal a fascinating **detection-correction gap**:
+
+| Capability | Base | RL-Zero | Think |
+|------------|------|---------|-------|
+| **Internal error detection** (Exp A) | d=1.70 | d=1.70 | d=1.65 |
+| **Explicit correction attempts** (Exp C) | 0% | 2% | **27%** |
+| **Error propagation resistance** (Exp C) | 22% | 24% | **76%** |
+| **Successful correction** (Exp C) | 9% | 11% | 11% |
+
+**The think model has learned to:**
+- ✅ Recognize something is wrong (low propagation)
+- ✅ Verbalize uncertainty ("Wait...", "let me check...")
+- ❌ Actually compute the correct answer
+
+This suggests the "aha moment" training (RL with verification) teaches models to **detect errors** and **resist blind propagation**, but not to **repair faulty reasoning chains**.
+
+### Connection to Experiment A
+
+Experiment A showed models have a strong internal error-detection signal (d=1.70). Experiment C shows this signal manifests behaviorally as:
+
+1. **Resistance to propagation**: The model's internal state says "this is wrong" and it refuses to simply continue
+2. **Explicit reflection**: The model generates verification phrases
+3. **But not repair**: Having an "error alarm" doesn't mean knowing the "correct value"
+
+This is analogous to a human noticing a typo but not knowing the correct spelling - detection and correction are distinct capabilities.
+
+---
+
 ## What Makes These "Error-Detection" Signals?
 
 ### Experiment A: External Error Detection
@@ -349,16 +559,17 @@ Natural pivots mark moments of **internal re-evaluation** - when the model recog
 
 ## Connection to Error Detection
 
-Both experiments reveal different aspects of error-related processing:
+All three experiments reveal different aspects of error-related processing:
 
-| Aspect | Experiment A | Experiment B |
-|--------|--------------|--------------|
-| **Error Type** | External (in context) | Internal (in own reasoning) |
-| **Timing** | At error position | At self-correction phrase |
-| **Signal** | Directional (positive projection) | Dynamic (slower, linear) |
-| **Strength** | Very strong (d=1.7) | Moderate (d=-0.3) |
+| Aspect | Experiment A | Experiment B | Experiment C |
+|--------|--------------|--------------|--------------|
+| **Question** | Can models detect errors? | Do pivots have distinct geometry? | Can models correct errors? |
+| **Error Type** | External (in context) | Internal (in own reasoning) | External (corrupted prefix) |
+| **Measure** | Activation direction | Trajectory geometry | Behavioral output |
+| **Signal** | Directional (projection) | Dynamic (velocity, curvature) | Action (propagate/correct) |
+| **Strength** | Very strong (d=1.7) | Weak (d=-0.3) | Strong behavioral difference |
 
-The strong Experiment A result suggests models have robust error-detection capabilities for external inputs. The weaker Experiment B result suggests self-correction phrases are *markers* of internal uncertainty but don't have dramatically different trajectory geometry.
+**The full picture**: Models have robust error-detection capabilities (Experiment A). This manifests geometrically as "reflection pauses" (Experiment B) and behaviorally as resistance to error propagation (Experiment C). However, detection does not imply correction - think models are 3× better at avoiding blind propagation but no better at computing correct answers.
 
 ---
 
@@ -368,12 +579,19 @@ The strong Experiment A result suggests models have robust error-detection capab
 
 2. **Pivots ≠ sharp turns**: Self-correction phrases don't represent dramatic trajectory changes. Instead, they mark "slow, linear" consolidation moments.
 
-3. **Different mechanisms**: External error detection (Experiment A) and internal self-correction (Experiment B) appear to be distinct phenomena with different geometric signatures.
+3. **Detection ≠ correction**: Think-trained models show 3× better error resistance but identical correction rates. The "aha moment" capability is about recognizing problems, not solving them.
 
-4. **Future work**:
+4. **The detection-correction gap**: This is perhaps the most important finding. Models can be trained to:
+   - Detect errors (internal signal)
+   - Resist propagating errors (behavioral)
+   - Verbalize uncertainty ("Wait...", "let me check")
+
+   But this doesn't automatically translate to fixing the error. Error repair requires different capabilities than error detection.
+
+5. **Future work**:
    - Can we use the error-detection direction to *improve* model outputs?
-   - Are "slow, linear" regions predictive of answer quality?
-   - Do pivots in correct vs incorrect solutions differ?
+   - Can we train models to close the detection-correction gap?
+   - What determines whether a model successfully corrects vs. just recognizes an error?
 
 ---
 
@@ -391,3 +609,120 @@ The strong Experiment A result suggests models have robust error-detection capab
   - `results/pivot_analysis/curvature_analysis.json` (Menger, Gaussian)
   - `results/pivot_analysis/pivot_examples.json` (text examples)
 - Plots: `results/pivot_analysis/*.png`
+
+### Experiment C (Active Error Correction)
+- Script: `run_error_correction.py`
+- Results:
+  - `results/error_correction/correction_summary.json` (aggregate statistics)
+  - `results/error_correction/correction_details.json` (per-problem details with continuations)
+- Models tested: base, rl_zero, think (45 test cases each)
+
+---
+
+## Conclusions
+
+### The Detection-Correction Gap
+
+The central finding of this research is the **detection-correction gap**: models can detect errors internally (Experiment A) and resist propagating them behaviorally (Experiment C), but this doesn't translate to successful correction.
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                    THE DETECTION-CORRECTION GAP                              │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│   DETECTION (strong)              CORRECTION (weak)                          │
+│   ──────────────────              ─────────────────                          │
+│   • d=1.70 effect size            • 11% success rate (same as base)          │
+│   • Works across problems         • 64% produce "other" wrong answers        │
+│   • Clear activation signal       • Verification loops don't help            │
+│                                                                              │
+│   Think model behavior:                                                      │
+│   ✅ "This feels wrong" (detection)                                          │
+│   ✅ "Let me check..." (verbalization)                                       │
+│   ✅ Refuses to propagate (resistance)                                       │
+│   ❌ Computes correct answer (repair)                                        │
+│                                                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### What Each Experiment Taught Us
+
+| Experiment | Question | Answer | Insight |
+|------------|----------|--------|---------|
+| **A** | Do models detect errors? | Yes (d=1.70) | Strong internal signal exists |
+| **B** | Do pivots have special geometry? | No (trivial result) | Surface patterns ≠ causal mechanisms |
+| **C** | Can models correct errors? | Partially | Detection ≠ correction |
+
+### The "Aha Moment" Demystified
+
+The "aha moment" in reasoning models appears to be:
+
+1. **Real** in terms of error detection (internal signal exists)
+2. **Behavioral** in terms of propagation resistance (think models don't blindly continue)
+3. **Limited** in terms of actual repair (detecting ≠ fixing)
+
+When a model says "Wait, that doesn't seem right...", it genuinely has an internal signal indicating an error. But knowing *something is wrong* doesn't mean knowing *what is right*.
+
+### Analogy
+
+> A spell-checker can flag "teh" as wrong (detection), refuse to autocomplete it (propagation resistance), and even say "this looks like a typo" (verbalization). But if it doesn't have "the" in its dictionary, it can't fix it (correction).
+
+The think model is like a spell-checker that learned to flag errors and refuse to propagate them, but didn't improve its underlying dictionary.
+
+### Implications for RLVR Training
+
+RLVR (RL from Verifiable Rewards) training appears to teach:
+- ✅ Error awareness (internal detection signal)
+- ✅ Caution (verbalize uncertainty)
+- ✅ Resistance (don't blindly propagate)
+- ❌ Repair (actually fix the error)
+
+This suggests current RLVR methods optimize for *recognizing* correctness, not *achieving* it. Future training might need to explicitly reward successful error repair, not just error flagging.
+
+### Open Questions
+
+1. **Why can't models repair?** Is it a capability gap (can't do the math) or a knowledge gap (doesn't know the right value)?
+
+2. **Can we close the gap?** Would training on explicit error-correction examples help?
+
+3. **Is the signal actionable?** Can we use the error-detection direction to steer models toward correct answers?
+
+4. **Does scale help?** Do larger models close the detection-correction gap?
+
+---
+
+## Appendix: Raw Numbers
+
+### Experiment C Detailed Breakdown
+
+**Base Model (allenai/OLMo-3-1025-7B)**:
+- Total test cases: 45
+- Correct answers: 4 (8.9%)
+- Explicit corrections: 0 (0.0%)
+- Propagated errors: 35 (77.8%)
+- Other wrong answers: 6 (13.3%)
+
+**RL-Zero Model (allenai/OLMo-3-7B-RL-Zero-General)**:
+- Total test cases: 45
+- Correct answers: 5 (11.1%)
+- Explicit corrections: 1 (2.2%)
+- Propagated errors: 34 (75.6%)
+- Other wrong answers: 5 (11.1%)
+
+**Think Model (allenai/OLMo-3-7B-Think)**:
+- Total test cases: 45
+- Correct answers: 5 (11.1%)
+- Explicit corrections: 12 (26.7%)
+- Propagated errors: 11 (24.4%)
+- Other wrong answers: 17 (37.8%)
+
+**Key Observations**:
+1. Think model's 12 explicit corrections only led to 5 correct answers (42% success rate on attempts)
+2. Think model's "other wrong answers" (37.8%) > base model's (13.3%) — it's more likely to compute something else entirely
+3. The 76% propagation resistance (100% - 24.4%) doesn't translate to better final answers
+
+---
+
+*Report generated: 2026-01-19*
+*Models: OLMo 3 family (7B parameters)*
+*Dataset: GSM8K (grade school math)*

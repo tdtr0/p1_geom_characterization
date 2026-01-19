@@ -1,0 +1,3552 @@
+[
+  {
+    "baseline_diff": -0.5639386858258929,
+    "layer_results": {
+      "0": {
+        "patched_diff": -0.5639386858258929,
+        "recovery_pct": 100.0
+      },
+      "2": {
+        "patched_diff": -0.5639386858258929,
+        "recovery_pct": 100.0
+      },
+      "4": {
+        "patched_diff": -0.5639386858258929,
+        "recovery_pct": 100.0
+      },
+      "6": {
+        "patched_diff": -0.5639386858258929,
+        "recovery_pct": 100.0
+      },
+      "8": {
+        "patched_diff": -0.5639386858258929,
+        "recovery_pct": 100.0
+      },
+      "10": {
+        "patched_diff": -0.5639386858258929,
+        "recovery_pct": 100.0
+      },
+      "12": {
+        "patched_diff": -0.5639386858258929,
+        "recovery_pct": 100.0
+      },
+      "14": {
+        "patched_diff": -0.5639386858258929,
+        "recovery_pct": 100.0
+      },
+      "16": {
+        "patched_diff": -0.5639386858258929,
+        "recovery_pct": 100.0
+      },
+      "18": {
+        "patched_diff": -0.5639386858258929,
+        "recovery_pct": 100.0
+      },
+      "20": {
+        "patched_diff": -0.5639386858258929,
+        "recovery_pct": 100.0
+      },
+      "22": {
+        "patched_diff": -0.5639386858258929,
+        "recovery_pct": 100.0
+      },
+      "24": {
+        "patched_diff": -0.5639386858258929,
+        "recovery_pct": 100.0
+      },
+      "26": {
+        "patched_diff": -0.5639386858258929,
+        "recovery_pct": 100.0
+      },
+      "28": {
+        "patched_diff": -0.5639386858258929,
+        "recovery_pct": 100.0
+      },
+      "30": {
+        "patched_diff": -0.5639386858258929,
+        "recovery_pct": 100.0
+      }
+    },
+    "problem_idx": 0,
+    "problem": "Julie is reading a 120-page book. Yesterday, she was able to read 12 pages and today, she read twice as many pages as yesterday. If she wants to read half of the remaining pages tomorrow, how many pag"
+  },
+  {
+    "baseline_diff": -0.31201171875,
+    "layer_results": {
+      "0": {
+        "patched_diff": -0.31201171875,
+        "recovery_pct": 100.0
+      },
+      "2": {
+        "patched_diff": -0.31201171875,
+        "recovery_pct": 100.0
+      },
+      "4": {
+        "patched_diff": -0.31201171875,
+        "recovery_pct": 100.0
+      },
+      "6": {
+        "patched_diff": -0.31201171875,
+        "recovery_pct": 100.0
+      },
+      "8": {
+        "patched_diff": -0.31201171875,
+        "recovery_pct": 100.0
+      },
+      "10": {
+        "patched_diff": -0.31201171875,
+        "recovery_pct": 100.0
+      },
+      "12": {
+        "patched_diff": -0.31201171875,
+        "recovery_pct": 100.0
+      },
+      "14": {
+        "patched_diff": -0.31201171875,
+        "recovery_pct": 100.0
+      },
+      "16": {
+        "patched_diff": -0.31201171875,
+        "recovery_pct": 100.0
+      },
+      "18": {
+        "patched_diff": -0.31201171875,
+        "recovery_pct": 100.0
+      },
+      "20": {
+        "patched_diff": -0.31201171875,
+        "recovery_pct": 100.0
+      },
+      "22": {
+        "patched_diff": -0.31201171875,
+        "recovery_pct": 100.0
+      },
+      "24": {
+        "patched_diff": -0.31201171875,
+        "recovery_pct": 100.0
+      },
+      "26": {
+        "patched_diff": -0.31201171875,
+        "recovery_pct": 100.0
+      },
+      "28": {
+        "patched_diff": -0.31201171875,
+        "recovery_pct": 100.0
+      },
+      "30": {
+        "patched_diff": -0.31201171875,
+        "recovery_pct": 100.0
+      }
+    },
+    "problem_idx": 1,
+    "problem": "Mark has a garden with flowers. He planted plants of three different colors in it. Ten of them are yellow, and there are 80% more of those in purple. There are only 25% as many green flowers as there "
+  },
+  {
+    "baseline_diff": -5.26953125,
+    "layer_results": {
+      "0": {
+        "patched_diff": -5.26953125,
+        "recovery_pct": 100.0
+      },
+      "2": {
+        "patched_diff": -5.26953125,
+        "recovery_pct": 100.0
+      },
+      "4": {
+        "patched_diff": -5.26953125,
+        "recovery_pct": 100.0
+      },
+      "6": {
+        "patched_diff": -5.26953125,
+        "recovery_pct": 100.0
+      },
+      "8": {
+        "patched_diff": -5.26953125,
+        "recovery_pct": 100.0
+      },
+      "10": {
+        "patched_diff": -5.26953125,
+        "recovery_pct": 100.0
+      },
+      "12": {
+        "patched_diff": -5.26953125,
+        "recovery_pct": 100.0
+      },
+      "14": {
+        "patched_diff": -5.26953125,
+        "recovery_pct": 100.0
+      },
+      "16": {
+        "patched_diff": -5.26953125,
+        "recovery_pct": 100.0
+      },
+      "18": {
+        "patched_diff": -5.26953125,
+        "recovery_pct": 100.0
+      },
+      "20": {
+        "patched_diff": -5.26953125,
+        "recovery_pct": 100.0
+      },
+      "22": {
+        "patched_diff": -5.26953125,
+        "recovery_pct": 100.0
+      },
+      "24": {
+        "patched_diff": -5.26953125,
+        "recovery_pct": 100.0
+      },
+      "26": {
+        "patched_diff": -5.26953125,
+        "recovery_pct": 100.0
+      },
+      "28": {
+        "patched_diff": -5.26953125,
+        "recovery_pct": 100.0
+      },
+      "30": {
+        "patched_diff": -5.26953125,
+        "recovery_pct": 100.0
+      }
+    },
+    "problem_idx": 2,
+    "problem": "Ken created a care package to send to his brother, who was away at boarding school.  Ken placed a box on a scale, and then he poured into the box enough jelly beans to bring the weight to 2 pounds.  T"
+  },
+  {
+    "baseline_diff": -12.323521205357142,
+    "layer_results": {
+      "0": {
+        "patched_diff": -12.323521205357142,
+        "recovery_pct": 100.0
+      },
+      "2": {
+        "patched_diff": -12.323521205357142,
+        "recovery_pct": 100.0
+      },
+      "4": {
+        "patched_diff": -12.323521205357142,
+        "recovery_pct": 100.0
+      },
+      "6": {
+        "patched_diff": -12.323521205357142,
+        "recovery_pct": 100.0
+      },
+      "8": {
+        "patched_diff": -12.323521205357142,
+        "recovery_pct": 100.0
+      },
+      "10": {
+        "patched_diff": -12.323521205357142,
+        "recovery_pct": 100.0
+      },
+      "12": {
+        "patched_diff": -12.323521205357142,
+        "recovery_pct": 100.0
+      },
+      "14": {
+        "patched_diff": -12.323521205357142,
+        "recovery_pct": 100.0
+      },
+      "16": {
+        "patched_diff": -12.323521205357142,
+        "recovery_pct": 100.0
+      },
+      "18": {
+        "patched_diff": -12.323521205357142,
+        "recovery_pct": 100.0
+      },
+      "20": {
+        "patched_diff": -12.323521205357142,
+        "recovery_pct": 100.0
+      },
+      "22": {
+        "patched_diff": -12.323521205357142,
+        "recovery_pct": 100.0
+      },
+      "24": {
+        "patched_diff": -12.323521205357142,
+        "recovery_pct": 100.0
+      },
+      "26": {
+        "patched_diff": -12.323521205357142,
+        "recovery_pct": 100.0
+      },
+      "28": {
+        "patched_diff": -12.323521205357142,
+        "recovery_pct": 100.0
+      },
+      "30": {
+        "patched_diff": -12.323521205357142,
+        "recovery_pct": 100.0
+      }
+    },
+    "problem_idx": 3,
+    "problem": "Tina makes $18.00 an hour.  If she works more than 8 hours per shift, she is eligible for overtime, which is paid by your hourly wage + 1/2 your hourly wage.  If she works 10 hours every day for 5 day"
+  },
+  {
+    "baseline_diff": -0.79315185546875,
+    "layer_results": {
+      "0": {
+        "patched_diff": -0.79315185546875,
+        "recovery_pct": 100.0
+      },
+      "2": {
+        "patched_diff": -0.79315185546875,
+        "recovery_pct": 100.0
+      },
+      "4": {
+        "patched_diff": -0.79315185546875,
+        "recovery_pct": 100.0
+      },
+      "6": {
+        "patched_diff": -0.79315185546875,
+        "recovery_pct": 100.0
+      },
+      "8": {
+        "patched_diff": -0.79315185546875,
+        "recovery_pct": 100.0
+      },
+      "10": {
+        "patched_diff": -0.79315185546875,
+        "recovery_pct": 100.0
+      },
+      "12": {
+        "patched_diff": -0.79315185546875,
+        "recovery_pct": 100.0
+      },
+      "14": {
+        "patched_diff": -0.79315185546875,
+        "recovery_pct": 100.0
+      },
+      "16": {
+        "patched_diff": -0.79315185546875,
+        "recovery_pct": 100.0
+      },
+      "18": {
+        "patched_diff": -0.79315185546875,
+        "recovery_pct": 100.0
+      },
+      "20": {
+        "patched_diff": -0.79315185546875,
+        "recovery_pct": 100.0
+      },
+      "22": {
+        "patched_diff": -0.79315185546875,
+        "recovery_pct": 100.0
+      },
+      "24": {
+        "patched_diff": -0.79315185546875,
+        "recovery_pct": 100.0
+      },
+      "26": {
+        "patched_diff": -0.79315185546875,
+        "recovery_pct": 100.0
+      },
+      "28": {
+        "patched_diff": -0.79315185546875,
+        "recovery_pct": 100.0
+      },
+      "30": {
+        "patched_diff": -0.79315185546875,
+        "recovery_pct": 100.0
+      }
+    },
+    "problem_idx": 4,
+    "problem": "A deep-sea monster rises from the waters once every hundred years to feast on a ship and sate its hunger. Over three hundred years, it has consumed 847 people. Ships have been built larger over time, "
+  },
+  {
+    "baseline_diff": -1.0221819196428572,
+    "layer_results": {
+      "0": {
+        "patched_diff": -1.0221819196428572,
+        "recovery_pct": 100.0
+      },
+      "2": {
+        "patched_diff": -1.0221819196428572,
+        "recovery_pct": 100.0
+      },
+      "4": {
+        "patched_diff": -1.0221819196428572,
+        "recovery_pct": 100.0
+      },
+      "6": {
+        "patched_diff": -1.0221819196428572,
+        "recovery_pct": 100.0
+      },
+      "8": {
+        "patched_diff": -1.0221819196428572,
+        "recovery_pct": 100.0
+      },
+      "10": {
+        "patched_diff": -1.0221819196428572,
+        "recovery_pct": 100.0
+      },
+      "12": {
+        "patched_diff": -1.0221819196428572,
+        "recovery_pct": 100.0
+      },
+      "14": {
+        "patched_diff": -1.0221819196428572,
+        "recovery_pct": 100.0
+      },
+      "16": {
+        "patched_diff": -1.0221819196428572,
+        "recovery_pct": 100.0
+      },
+      "18": {
+        "patched_diff": -1.0221819196428572,
+        "recovery_pct": 100.0
+      },
+      "20": {
+        "patched_diff": -1.0221819196428572,
+        "recovery_pct": 100.0
+      },
+      "22": {
+        "patched_diff": -1.0221819196428572,
+        "recovery_pct": 100.0
+      },
+      "24": {
+        "patched_diff": -1.0221819196428572,
+        "recovery_pct": 100.0
+      },
+      "26": {
+        "patched_diff": -1.0221819196428572,
+        "recovery_pct": 100.0
+      },
+      "28": {
+        "patched_diff": -1.0221819196428572,
+        "recovery_pct": 100.0
+      },
+      "30": {
+        "patched_diff": -1.0221819196428572,
+        "recovery_pct": 100.0
+      }
+    },
+    "problem_idx": 5,
+    "problem": "Tobias is buying a new pair of shoes that costs $95. He has been saving up his money each month for the past three months. He gets a $5 allowance a month. He also mows lawns and shovels driveways. He "
+  },
+  {
+    "baseline_diff": -4.970912388392857,
+    "layer_results": {
+      "0": {
+        "patched_diff": -4.970912388392857,
+        "recovery_pct": 100.0
+      },
+      "2": {
+        "patched_diff": -4.970912388392857,
+        "recovery_pct": 100.0
+      },
+      "4": {
+        "patched_diff": -4.970912388392857,
+        "recovery_pct": 100.0
+      },
+      "6": {
+        "patched_diff": -4.970912388392857,
+        "recovery_pct": 100.0
+      },
+      "8": {
+        "patched_diff": -4.970912388392857,
+        "recovery_pct": 100.0
+      },
+      "10": {
+        "patched_diff": -4.970912388392857,
+        "recovery_pct": 100.0
+      },
+      "12": {
+        "patched_diff": -4.970912388392857,
+        "recovery_pct": 100.0
+      },
+      "14": {
+        "patched_diff": -4.970912388392857,
+        "recovery_pct": 100.0
+      },
+      "16": {
+        "patched_diff": -4.970912388392857,
+        "recovery_pct": 100.0
+      },
+      "18": {
+        "patched_diff": -4.970912388392857,
+        "recovery_pct": 100.0
+      },
+      "20": {
+        "patched_diff": -4.970912388392857,
+        "recovery_pct": 100.0
+      },
+      "22": {
+        "patched_diff": -4.970912388392857,
+        "recovery_pct": 100.0
+      },
+      "24": {
+        "patched_diff": -4.970912388392857,
+        "recovery_pct": 100.0
+      },
+      "26": {
+        "patched_diff": -4.970912388392857,
+        "recovery_pct": 100.0
+      },
+      "28": {
+        "patched_diff": -4.970912388392857,
+        "recovery_pct": 100.0
+      },
+      "30": {
+        "patched_diff": -4.970912388392857,
+        "recovery_pct": 100.0
+      }
+    },
+    "problem_idx": 6,
+    "problem": "James creates a media empire.  He creates a movie for $2000.  Each DVD cost $6 to make.  He sells it for 2.5 times that much.  He sells 500 movies a day for 5 days a week.  How much profit does he mak"
+  },
+  {
+    "baseline_diff": -3.356532505580357,
+    "layer_results": {
+      "0": {
+        "patched_diff": -3.356532505580357,
+        "recovery_pct": 100.0
+      },
+      "2": {
+        "patched_diff": -3.356532505580357,
+        "recovery_pct": 100.0
+      },
+      "4": {
+        "patched_diff": -3.356532505580357,
+        "recovery_pct": 100.0
+      },
+      "6": {
+        "patched_diff": -3.356532505580357,
+        "recovery_pct": 100.0
+      },
+      "8": {
+        "patched_diff": -3.356532505580357,
+        "recovery_pct": 100.0
+      },
+      "10": {
+        "patched_diff": -3.356532505580357,
+        "recovery_pct": 100.0
+      },
+      "12": {
+        "patched_diff": -3.356532505580357,
+        "recovery_pct": 100.0
+      },
+      "14": {
+        "patched_diff": -3.356532505580357,
+        "recovery_pct": 100.0
+      },
+      "16": {
+        "patched_diff": -3.356532505580357,
+        "recovery_pct": 100.0
+      },
+      "18": {
+        "patched_diff": -3.356532505580357,
+        "recovery_pct": 100.0
+      },
+      "20": {
+        "patched_diff": -3.356532505580357,
+        "recovery_pct": 100.0
+      },
+      "22": {
+        "patched_diff": -3.356532505580357,
+        "recovery_pct": 100.0
+      },
+      "24": {
+        "patched_diff": -3.356532505580357,
+        "recovery_pct": 100.0
+      },
+      "26": {
+        "patched_diff": -3.356532505580357,
+        "recovery_pct": 100.0
+      },
+      "28": {
+        "patched_diff": -3.356532505580357,
+        "recovery_pct": 100.0
+      },
+      "30": {
+        "patched_diff": -3.356532505580357,
+        "recovery_pct": 100.0
+      }
+    },
+    "problem_idx": 7,
+    "problem": "In a truck, there are 26 pink hard hats, 15 green hard hats, and 24 yellow hard hats.  If Carl takes away 4 pink hard hats, and John takes away 6 pink hard hats and twice as many green hard hats as th"
+  },
+  {
+    "baseline_diff": -5.693272181919643,
+    "layer_results": {
+      "0": {
+        "patched_diff": -5.693272181919643,
+        "recovery_pct": 100.0
+      },
+      "2": {
+        "patched_diff": -5.693272181919643,
+        "recovery_pct": 100.0
+      },
+      "4": {
+        "patched_diff": -5.693272181919643,
+        "recovery_pct": 100.0
+      },
+      "6": {
+        "patched_diff": -5.693272181919643,
+        "recovery_pct": 100.0
+      },
+      "8": {
+        "patched_diff": -5.693272181919643,
+        "recovery_pct": 100.0
+      },
+      "10": {
+        "patched_diff": -5.693272181919643,
+        "recovery_pct": 100.0
+      },
+      "12": {
+        "patched_diff": -5.693272181919643,
+        "recovery_pct": 100.0
+      },
+      "14": {
+        "patched_diff": -5.693272181919643,
+        "recovery_pct": 100.0
+      },
+      "16": {
+        "patched_diff": -5.693272181919643,
+        "recovery_pct": 100.0
+      },
+      "18": {
+        "patched_diff": -5.693272181919643,
+        "recovery_pct": 100.0
+      },
+      "20": {
+        "patched_diff": -5.693272181919643,
+        "recovery_pct": 100.0
+      },
+      "22": {
+        "patched_diff": -5.693272181919643,
+        "recovery_pct": 100.0
+      },
+      "24": {
+        "patched_diff": -5.693272181919643,
+        "recovery_pct": 100.0
+      },
+      "26": {
+        "patched_diff": -5.693272181919643,
+        "recovery_pct": 100.0
+      },
+      "28": {
+        "patched_diff": -5.693272181919643,
+        "recovery_pct": 100.0
+      },
+      "30": {
+        "patched_diff": -5.693272181919643,
+        "recovery_pct": 100.0
+      }
+    },
+    "problem_idx": 8,
+    "problem": "It takes Roque two hours to walk to work and one hour to ride his bike to work. Roque walks to and from work three times a week and rides his bike to and from work twice a week. How many hours in tota"
+  },
+  {
+    "baseline_diff": -10.40478515625,
+    "layer_results": {
+      "0": {
+        "patched_diff": -10.40478515625,
+        "recovery_pct": 100.0
+      },
+      "2": {
+        "patched_diff": -10.40478515625,
+        "recovery_pct": 100.0
+      },
+      "4": {
+        "patched_diff": -10.40478515625,
+        "recovery_pct": 100.0
+      },
+      "6": {
+        "patched_diff": -10.40478515625,
+        "recovery_pct": 100.0
+      },
+      "8": {
+        "patched_diff": -10.40478515625,
+        "recovery_pct": 100.0
+      },
+      "10": {
+        "patched_diff": -10.40478515625,
+        "recovery_pct": 100.0
+      },
+      "12": {
+        "patched_diff": -10.40478515625,
+        "recovery_pct": 100.0
+      },
+      "14": {
+        "patched_diff": -10.40478515625,
+        "recovery_pct": 100.0
+      },
+      "16": {
+        "patched_diff": -10.40478515625,
+        "recovery_pct": 100.0
+      },
+      "18": {
+        "patched_diff": -10.40478515625,
+        "recovery_pct": 100.0
+      },
+      "20": {
+        "patched_diff": -10.40478515625,
+        "recovery_pct": 100.0
+      },
+      "22": {
+        "patched_diff": -10.40478515625,
+        "recovery_pct": 100.0
+      },
+      "24": {
+        "patched_diff": -10.40478515625,
+        "recovery_pct": 100.0
+      },
+      "26": {
+        "patched_diff": -10.40478515625,
+        "recovery_pct": 100.0
+      },
+      "28": {
+        "patched_diff": -10.40478515625,
+        "recovery_pct": 100.0
+      },
+      "30": {
+        "patched_diff": -10.40478515625,
+        "recovery_pct": 100.0
+      }
+    },
+    "problem_idx": 9,
+    "problem": "Each bird eats 12 beetles per day, each snake eats 3 birds per day, and each jaguar eats 5 snakes per day. If there are 6 jaguars in a forest, how many beetles are eaten each day?"
+  },
+  {
+    "baseline_diff": -0.2798549107142857,
+    "layer_results": {
+      "0": {
+        "patched_diff": -0.2798549107142857,
+        "recovery_pct": 100.0
+      },
+      "2": {
+        "patched_diff": -0.2798549107142857,
+        "recovery_pct": 100.0
+      },
+      "4": {
+        "patched_diff": -0.2798549107142857,
+        "recovery_pct": 100.0
+      },
+      "6": {
+        "patched_diff": -0.2798549107142857,
+        "recovery_pct": 100.0
+      },
+      "8": {
+        "patched_diff": -0.2798549107142857,
+        "recovery_pct": 100.0
+      },
+      "10": {
+        "patched_diff": -0.2798549107142857,
+        "recovery_pct": 100.0
+      },
+      "12": {
+        "patched_diff": -0.2798549107142857,
+        "recovery_pct": 100.0
+      },
+      "14": {
+        "patched_diff": -0.2798549107142857,
+        "recovery_pct": 100.0
+      },
+      "16": {
+        "patched_diff": -0.2798549107142857,
+        "recovery_pct": 100.0
+      },
+      "18": {
+        "patched_diff": -0.2798549107142857,
+        "recovery_pct": 100.0
+      },
+      "20": {
+        "patched_diff": -0.2798549107142857,
+        "recovery_pct": 100.0
+      },
+      "22": {
+        "patched_diff": -0.2798549107142857,
+        "recovery_pct": 100.0
+      },
+      "24": {
+        "patched_diff": -0.2798549107142857,
+        "recovery_pct": 100.0
+      },
+      "26": {
+        "patched_diff": -0.2798549107142857,
+        "recovery_pct": 100.0
+      },
+      "28": {
+        "patched_diff": -0.2798549107142857,
+        "recovery_pct": 100.0
+      },
+      "30": {
+        "patched_diff": -0.2798549107142857,
+        "recovery_pct": 100.0
+      }
+    },
+    "problem_idx": 10,
+    "problem": "Ann's favorite store was having a summer clearance. For $75 she bought 5 pairs of shorts for $7 each and 2 pairs of shoes for $10 each. She also bought 4 tops, all at the same price. How much did each"
+  },
+  {
+    "baseline_diff": -3.5845424107142856,
+    "layer_results": {
+      "0": {
+        "patched_diff": -3.5845424107142856,
+        "recovery_pct": 100.0
+      },
+      "2": {
+        "patched_diff": -3.5845424107142856,
+        "recovery_pct": 100.0
+      },
+      "4": {
+        "patched_diff": -3.5845424107142856,
+        "recovery_pct": 100.0
+      },
+      "6": {
+        "patched_diff": -3.5845424107142856,
+        "recovery_pct": 100.0
+      },
+      "8": {
+        "patched_diff": -3.5845424107142856,
+        "recovery_pct": 100.0
+      },
+      "10": {
+        "patched_diff": -3.5845424107142856,
+        "recovery_pct": 100.0
+      },
+      "12": {
+        "patched_diff": -3.5845424107142856,
+        "recovery_pct": 100.0
+      },
+      "14": {
+        "patched_diff": -3.5845424107142856,
+        "recovery_pct": 100.0
+      },
+      "16": {
+        "patched_diff": -3.5845424107142856,
+        "recovery_pct": 100.0
+      },
+      "18": {
+        "patched_diff": -3.5845424107142856,
+        "recovery_pct": 100.0
+      },
+      "20": {
+        "patched_diff": -3.5845424107142856,
+        "recovery_pct": 100.0
+      },
+      "22": {
+        "patched_diff": -3.5845424107142856,
+        "recovery_pct": 100.0
+      },
+      "24": {
+        "patched_diff": -3.5845424107142856,
+        "recovery_pct": 100.0
+      },
+      "26": {
+        "patched_diff": -3.5845424107142856,
+        "recovery_pct": 100.0
+      },
+      "28": {
+        "patched_diff": -3.5845424107142856,
+        "recovery_pct": 100.0
+      },
+      "30": {
+        "patched_diff": -3.5845424107142856,
+        "recovery_pct": 100.0
+      }
+    },
+    "problem_idx": 11,
+    "problem": "Ralph is going to practice playing tennis with a tennis ball machine that shoots out tennis balls for Ralph to hit. He loads up the machine with 175 tennis balls to start with. Out of the first 100 ba"
+  },
+  {
+    "baseline_diff": -4.709263392857143,
+    "layer_results": {
+      "0": {
+        "patched_diff": -4.709263392857143,
+        "recovery_pct": 100.0
+      },
+      "2": {
+        "patched_diff": -4.709263392857143,
+        "recovery_pct": 100.0
+      },
+      "4": {
+        "patched_diff": -4.709263392857143,
+        "recovery_pct": 100.0
+      },
+      "6": {
+        "patched_diff": -4.709263392857143,
+        "recovery_pct": 100.0
+      },
+      "8": {
+        "patched_diff": -4.709263392857143,
+        "recovery_pct": 100.0
+      },
+      "10": {
+        "patched_diff": -4.709263392857143,
+        "recovery_pct": 100.0
+      },
+      "12": {
+        "patched_diff": -4.709263392857143,
+        "recovery_pct": 100.0
+      },
+      "14": {
+        "patched_diff": -4.709263392857143,
+        "recovery_pct": 100.0
+      },
+      "16": {
+        "patched_diff": -4.709263392857143,
+        "recovery_pct": 100.0
+      },
+      "18": {
+        "patched_diff": -4.709263392857143,
+        "recovery_pct": 100.0
+      },
+      "20": {
+        "patched_diff": -4.709263392857143,
+        "recovery_pct": 100.0
+      },
+      "22": {
+        "patched_diff": -4.709263392857143,
+        "recovery_pct": 100.0
+      },
+      "24": {
+        "patched_diff": -4.709263392857143,
+        "recovery_pct": 100.0
+      },
+      "26": {
+        "patched_diff": -4.709263392857143,
+        "recovery_pct": 100.0
+      },
+      "28": {
+        "patched_diff": -4.709263392857143,
+        "recovery_pct": 100.0
+      },
+      "30": {
+        "patched_diff": -4.709263392857143,
+        "recovery_pct": 100.0
+      }
+    },
+    "problem_idx": 12,
+    "problem": "Brennan was researching his school project and had to download files from the internet to his computer to use for reference. After downloading 800 files, he deleted 70% of them because they were not h"
+  },
+  {
+    "baseline_diff": -1.6501377650669642,
+    "layer_results": {
+      "0": {
+        "patched_diff": -1.6501377650669642,
+        "recovery_pct": 100.0
+      },
+      "2": {
+        "patched_diff": -1.6501377650669642,
+        "recovery_pct": 100.0
+      },
+      "4": {
+        "patched_diff": -1.6501377650669642,
+        "recovery_pct": 100.0
+      },
+      "6": {
+        "patched_diff": -1.6501377650669642,
+        "recovery_pct": 100.0
+      },
+      "8": {
+        "patched_diff": -1.6501377650669642,
+        "recovery_pct": 100.0
+      },
+      "10": {
+        "patched_diff": -1.6501377650669642,
+        "recovery_pct": 100.0
+      },
+      "12": {
+        "patched_diff": -1.6501377650669642,
+        "recovery_pct": 100.0
+      },
+      "14": {
+        "patched_diff": -1.6501377650669642,
+        "recovery_pct": 100.0
+      },
+      "16": {
+        "patched_diff": -1.6501377650669642,
+        "recovery_pct": 100.0
+      },
+      "18": {
+        "patched_diff": -1.6501377650669642,
+        "recovery_pct": 100.0
+      },
+      "20": {
+        "patched_diff": -1.6501377650669642,
+        "recovery_pct": 100.0
+      },
+      "22": {
+        "patched_diff": -1.6501377650669642,
+        "recovery_pct": 100.0
+      },
+      "24": {
+        "patched_diff": -1.6501377650669642,
+        "recovery_pct": 100.0
+      },
+      "26": {
+        "patched_diff": -1.6501377650669642,
+        "recovery_pct": 100.0
+      },
+      "28": {
+        "patched_diff": -1.6501377650669642,
+        "recovery_pct": 100.0
+      },
+      "30": {
+        "patched_diff": -1.6501377650669642,
+        "recovery_pct": 100.0
+      }
+    },
+    "problem_idx": 13,
+    "problem": "Mrs. Snyder used to spend 40% of her monthly income on rent and utilities. Her salary was recently increased by $600 so now her rent and utilities only amount to 25% of her monthly income. How much wa"
+  },
+  {
+    "baseline_diff": -0.15229143415178573,
+    "layer_results": {
+      "0": {
+        "patched_diff": -0.15229143415178573,
+        "recovery_pct": 100.0
+      },
+      "2": {
+        "patched_diff": -0.15229143415178573,
+        "recovery_pct": 100.0
+      },
+      "4": {
+        "patched_diff": -0.15229143415178573,
+        "recovery_pct": 100.0
+      },
+      "6": {
+        "patched_diff": -0.15229143415178573,
+        "recovery_pct": 100.0
+      },
+      "8": {
+        "patched_diff": -0.15229143415178573,
+        "recovery_pct": 100.0
+      },
+      "10": {
+        "patched_diff": -0.15229143415178573,
+        "recovery_pct": 100.0
+      },
+      "12": {
+        "patched_diff": -0.15229143415178573,
+        "recovery_pct": 100.0
+      },
+      "14": {
+        "patched_diff": -0.15229143415178573,
+        "recovery_pct": 100.0
+      },
+      "16": {
+        "patched_diff": -0.15229143415178573,
+        "recovery_pct": 100.0
+      },
+      "18": {
+        "patched_diff": -0.15229143415178573,
+        "recovery_pct": 100.0
+      },
+      "20": {
+        "patched_diff": -0.15229143415178573,
+        "recovery_pct": 100.0
+      },
+      "22": {
+        "patched_diff": -0.15229143415178573,
+        "recovery_pct": 100.0
+      },
+      "24": {
+        "patched_diff": -0.15229143415178573,
+        "recovery_pct": 100.0
+      },
+      "26": {
+        "patched_diff": -0.15229143415178573,
+        "recovery_pct": 100.0
+      },
+      "28": {
+        "patched_diff": -0.15229143415178573,
+        "recovery_pct": 100.0
+      },
+      "30": {
+        "patched_diff": -0.15229143415178573,
+        "recovery_pct": 100.0
+      }
+    },
+    "problem_idx": 14,
+    "problem": "Noah is a painter. He paints pictures and sells them at the park. He charges $60 for a large painting and $30 for a small painting. Last month he sold eight large paintings and four small paintings. I"
+  },
+  {
+    "baseline_diff": -1.6818586077008928,
+    "layer_results": {
+      "0": {
+        "patched_diff": -1.6818586077008928,
+        "recovery_pct": 100.0
+      },
+      "2": {
+        "patched_diff": -1.6818586077008928,
+        "recovery_pct": 100.0
+      },
+      "4": {
+        "patched_diff": -1.6818586077008928,
+        "recovery_pct": 100.0
+      },
+      "6": {
+        "patched_diff": -1.6818586077008928,
+        "recovery_pct": 100.0
+      },
+      "8": {
+        "patched_diff": -1.6818586077008928,
+        "recovery_pct": 100.0
+      },
+      "10": {
+        "patched_diff": -1.6818586077008928,
+        "recovery_pct": 100.0
+      },
+      "12": {
+        "patched_diff": -1.6818586077008928,
+        "recovery_pct": 100.0
+      },
+      "14": {
+        "patched_diff": -1.6818586077008928,
+        "recovery_pct": 100.0
+      },
+      "16": {
+        "patched_diff": -1.6818586077008928,
+        "recovery_pct": 100.0
+      },
+      "18": {
+        "patched_diff": -1.6818586077008928,
+        "recovery_pct": 100.0
+      },
+      "20": {
+        "patched_diff": -1.6818586077008928,
+        "recovery_pct": 100.0
+      },
+      "22": {
+        "patched_diff": -1.6818586077008928,
+        "recovery_pct": 100.0
+      },
+      "24": {
+        "patched_diff": -1.6818586077008928,
+        "recovery_pct": 100.0
+      },
+      "26": {
+        "patched_diff": -1.6818586077008928,
+        "recovery_pct": 100.0
+      },
+      "28": {
+        "patched_diff": -1.6818586077008928,
+        "recovery_pct": 100.0
+      },
+      "30": {
+        "patched_diff": -1.6818586077008928,
+        "recovery_pct": 100.0
+      }
+    },
+    "problem_idx": 15,
+    "problem": "To make pizza, together with other ingredients, Kimber needs 10 cups of water, 16 cups of flour, and 1/2 times as many teaspoons of salt as the number of cups of flour. Calculate the combined total nu"
+  },
+  {
+    "baseline_diff": -0.9546290806361607,
+    "layer_results": {
+      "0": {
+        "patched_diff": -0.9546290806361607,
+        "recovery_pct": 100.0
+      },
+      "2": {
+        "patched_diff": -0.9546290806361607,
+        "recovery_pct": 100.0
+      },
+      "4": {
+        "patched_diff": -0.9546290806361607,
+        "recovery_pct": 100.0
+      },
+      "6": {
+        "patched_diff": -0.9546290806361607,
+        "recovery_pct": 100.0
+      },
+      "8": {
+        "patched_diff": -0.9546290806361607,
+        "recovery_pct": 100.0
+      },
+      "10": {
+        "patched_diff": -0.9546290806361607,
+        "recovery_pct": 100.0
+      },
+      "12": {
+        "patched_diff": -0.9546290806361607,
+        "recovery_pct": 100.0
+      },
+      "14": {
+        "patched_diff": -0.9546290806361607,
+        "recovery_pct": 100.0
+      },
+      "16": {
+        "patched_diff": -0.9546290806361607,
+        "recovery_pct": 100.0
+      },
+      "18": {
+        "patched_diff": -0.9546290806361607,
+        "recovery_pct": 100.0
+      },
+      "20": {
+        "patched_diff": -0.9546290806361607,
+        "recovery_pct": 100.0
+      },
+      "22": {
+        "patched_diff": -0.9546290806361607,
+        "recovery_pct": 100.0
+      },
+      "24": {
+        "patched_diff": -0.9546290806361607,
+        "recovery_pct": 100.0
+      },
+      "26": {
+        "patched_diff": -0.9546290806361607,
+        "recovery_pct": 100.0
+      },
+      "28": {
+        "patched_diff": -0.9546290806361607,
+        "recovery_pct": 100.0
+      },
+      "30": {
+        "patched_diff": -0.9546290806361607,
+        "recovery_pct": 100.0
+      }
+    },
+    "problem_idx": 16,
+    "problem": "Five friends eat at a fast-food chain and order the following: 5 pieces of hamburger that cost $3 each; 4 sets of French fries that cost $1.20; 5 cups of soda that cost $0.5 each; and 1 platter of spa"
+  },
+  {
+    "baseline_diff": -5.074593680245536,
+    "layer_results": {
+      "0": {
+        "patched_diff": -5.074593680245536,
+        "recovery_pct": 100.0
+      },
+      "2": {
+        "patched_diff": -5.074593680245536,
+        "recovery_pct": 100.0
+      },
+      "4": {
+        "patched_diff": -5.074593680245536,
+        "recovery_pct": 100.0
+      },
+      "6": {
+        "patched_diff": -5.074593680245536,
+        "recovery_pct": 100.0
+      },
+      "8": {
+        "patched_diff": -5.074593680245536,
+        "recovery_pct": 100.0
+      },
+      "10": {
+        "patched_diff": -5.074593680245536,
+        "recovery_pct": 100.0
+      },
+      "12": {
+        "patched_diff": -5.074593680245536,
+        "recovery_pct": 100.0
+      },
+      "14": {
+        "patched_diff": -5.074593680245536,
+        "recovery_pct": 100.0
+      },
+      "16": {
+        "patched_diff": -5.074593680245536,
+        "recovery_pct": 100.0
+      },
+      "18": {
+        "patched_diff": -5.074593680245536,
+        "recovery_pct": 100.0
+      },
+      "20": {
+        "patched_diff": -5.074593680245536,
+        "recovery_pct": 100.0
+      },
+      "22": {
+        "patched_diff": -5.074593680245536,
+        "recovery_pct": 100.0
+      },
+      "24": {
+        "patched_diff": -5.074593680245536,
+        "recovery_pct": 100.0
+      },
+      "26": {
+        "patched_diff": -5.074593680245536,
+        "recovery_pct": 100.0
+      },
+      "28": {
+        "patched_diff": -5.074593680245536,
+        "recovery_pct": 100.0
+      },
+      "30": {
+        "patched_diff": -5.074593680245536,
+        "recovery_pct": 100.0
+      }
+    },
+    "problem_idx": 17,
+    "problem": "Anna goes trick-or-treating in a subdivision where she gets 14 pieces of candy per house. Her brother Billy goes trick-or-tricking in a neighboring subdivision where he gets 11 pieces of candy per hou"
+  },
+  {
+    "baseline_diff": -7.489013671875,
+    "layer_results": {
+      "0": {
+        "patched_diff": -7.489013671875,
+        "recovery_pct": 100.0
+      },
+      "2": {
+        "patched_diff": -7.489013671875,
+        "recovery_pct": 100.0
+      },
+      "4": {
+        "patched_diff": -7.489013671875,
+        "recovery_pct": 100.0
+      },
+      "6": {
+        "patched_diff": -7.489013671875,
+        "recovery_pct": 100.0
+      },
+      "8": {
+        "patched_diff": -7.489013671875,
+        "recovery_pct": 100.0
+      },
+      "10": {
+        "patched_diff": -7.489013671875,
+        "recovery_pct": 100.0
+      },
+      "12": {
+        "patched_diff": -7.489013671875,
+        "recovery_pct": 100.0
+      },
+      "14": {
+        "patched_diff": -7.489013671875,
+        "recovery_pct": 100.0
+      },
+      "16": {
+        "patched_diff": -7.489013671875,
+        "recovery_pct": 100.0
+      },
+      "18": {
+        "patched_diff": -7.489013671875,
+        "recovery_pct": 100.0
+      },
+      "20": {
+        "patched_diff": -7.489013671875,
+        "recovery_pct": 100.0
+      },
+      "22": {
+        "patched_diff": -7.489013671875,
+        "recovery_pct": 100.0
+      },
+      "24": {
+        "patched_diff": -7.489013671875,
+        "recovery_pct": 100.0
+      },
+      "26": {
+        "patched_diff": -7.489013671875,
+        "recovery_pct": 100.0
+      },
+      "28": {
+        "patched_diff": -7.489013671875,
+        "recovery_pct": 100.0
+      },
+      "30": {
+        "patched_diff": -7.489013671875,
+        "recovery_pct": 100.0
+      }
+    },
+    "problem_idx": 18,
+    "problem": "A concert ticket costs $40. Mr. Benson bought 12 tickets and received a 5% discount for every ticket bought that exceeds 10. How much did Mr. Benson pay in all?"
+  },
+  {
+    "baseline_diff": -12.756417410714286,
+    "layer_results": {
+      "0": {
+        "patched_diff": -12.756417410714286,
+        "recovery_pct": 100.0
+      },
+      "2": {
+        "patched_diff": -12.756417410714286,
+        "recovery_pct": 100.0
+      },
+      "4": {
+        "patched_diff": -12.756417410714286,
+        "recovery_pct": 100.0
+      },
+      "6": {
+        "patched_diff": -12.756417410714286,
+        "recovery_pct": 100.0
+      },
+      "8": {
+        "patched_diff": -12.756417410714286,
+        "recovery_pct": 100.0
+      },
+      "10": {
+        "patched_diff": -12.756417410714286,
+        "recovery_pct": 100.0
+      },
+      "12": {
+        "patched_diff": -12.756417410714286,
+        "recovery_pct": 100.0
+      },
+      "14": {
+        "patched_diff": -12.756417410714286,
+        "recovery_pct": 100.0
+      },
+      "16": {
+        "patched_diff": -12.756417410714286,
+        "recovery_pct": 100.0
+      },
+      "18": {
+        "patched_diff": -12.756417410714286,
+        "recovery_pct": 100.0
+      },
+      "20": {
+        "patched_diff": -12.756417410714286,
+        "recovery_pct": 100.0
+      },
+      "22": {
+        "patched_diff": -12.756417410714286,
+        "recovery_pct": 100.0
+      },
+      "24": {
+        "patched_diff": -12.756417410714286,
+        "recovery_pct": 100.0
+      },
+      "26": {
+        "patched_diff": -12.756417410714286,
+        "recovery_pct": 100.0
+      },
+      "28": {
+        "patched_diff": -12.756417410714286,
+        "recovery_pct": 100.0
+      },
+      "30": {
+        "patched_diff": -12.756417410714286,
+        "recovery_pct": 100.0
+      }
+    },
+    "problem_idx": 19,
+    "problem": "A family of 12 monkeys collected 10 piles of bananas. 6 piles had 9 hands, with each hand having 14 bananas, while the remaining piles had 12 hands, with each hand having 9 bananas. How many bananas w"
+  },
+  {
+    "baseline_diff": -1.7946428571428572,
+    "layer_results": {
+      "0": {
+        "patched_diff": -1.7946428571428572,
+        "recovery_pct": 100.0
+      },
+      "2": {
+        "patched_diff": -1.7946428571428572,
+        "recovery_pct": 100.0
+      },
+      "4": {
+        "patched_diff": -1.7946428571428572,
+        "recovery_pct": 100.0
+      },
+      "6": {
+        "patched_diff": -1.7946428571428572,
+        "recovery_pct": 100.0
+      },
+      "8": {
+        "patched_diff": -1.7946428571428572,
+        "recovery_pct": 100.0
+      },
+      "10": {
+        "patched_diff": -1.7946428571428572,
+        "recovery_pct": 100.0
+      },
+      "12": {
+        "patched_diff": -1.7946428571428572,
+        "recovery_pct": 100.0
+      },
+      "14": {
+        "patched_diff": -1.7946428571428572,
+        "recovery_pct": 100.0
+      },
+      "16": {
+        "patched_diff": -1.7946428571428572,
+        "recovery_pct": 100.0
+      },
+      "18": {
+        "patched_diff": -1.7946428571428572,
+        "recovery_pct": 100.0
+      },
+      "20": {
+        "patched_diff": -1.7946428571428572,
+        "recovery_pct": 100.0
+      },
+      "22": {
+        "patched_diff": -1.7946428571428572,
+        "recovery_pct": 100.0
+      },
+      "24": {
+        "patched_diff": -1.7946428571428572,
+        "recovery_pct": 100.0
+      },
+      "26": {
+        "patched_diff": -1.7946428571428572,
+        "recovery_pct": 100.0
+      },
+      "28": {
+        "patched_diff": -1.7946428571428572,
+        "recovery_pct": 100.0
+      },
+      "30": {
+        "patched_diff": -1.7946428571428572,
+        "recovery_pct": 100.0
+      }
+    },
+    "problem_idx": 20,
+    "problem": "An earthquake caused four buildings to collapse. Experts predicted that each following earthquake would have double the number of collapsing buildings as the previous one, since each one would make th"
+  },
+  {
+    "baseline_diff": -8.13743155343192,
+    "layer_results": {
+      "0": {
+        "patched_diff": -8.13743155343192,
+        "recovery_pct": 100.0
+      },
+      "2": {
+        "patched_diff": -8.13743155343192,
+        "recovery_pct": 100.0
+      },
+      "4": {
+        "patched_diff": -8.13743155343192,
+        "recovery_pct": 100.0
+      },
+      "6": {
+        "patched_diff": -8.13743155343192,
+        "recovery_pct": 100.0
+      },
+      "8": {
+        "patched_diff": -8.13743155343192,
+        "recovery_pct": 100.0
+      },
+      "10": {
+        "patched_diff": -8.13743155343192,
+        "recovery_pct": 100.0
+      },
+      "12": {
+        "patched_diff": -8.13743155343192,
+        "recovery_pct": 100.0
+      },
+      "14": {
+        "patched_diff": -8.13743155343192,
+        "recovery_pct": 100.0
+      },
+      "16": {
+        "patched_diff": -8.13743155343192,
+        "recovery_pct": 100.0
+      },
+      "18": {
+        "patched_diff": -8.13743155343192,
+        "recovery_pct": 100.0
+      },
+      "20": {
+        "patched_diff": -8.13743155343192,
+        "recovery_pct": 100.0
+      },
+      "22": {
+        "patched_diff": -8.13743155343192,
+        "recovery_pct": 100.0
+      },
+      "24": {
+        "patched_diff": -8.13743155343192,
+        "recovery_pct": 100.0
+      },
+      "26": {
+        "patched_diff": -8.13743155343192,
+        "recovery_pct": 100.0
+      },
+      "28": {
+        "patched_diff": -8.13743155343192,
+        "recovery_pct": 100.0
+      },
+      "30": {
+        "patched_diff": -8.13743155343192,
+        "recovery_pct": 100.0
+      }
+    },
+    "problem_idx": 21,
+    "problem": "Carolyn practices the piano for 20 minutes a day and the violin for three times as long. If she practice six days a week, how many minutes does she spend practicing in a month with four weeks?"
+  },
+  {
+    "baseline_diff": -8.472516741071429,
+    "layer_results": {
+      "0": {
+        "patched_diff": -8.472516741071429,
+        "recovery_pct": 100.0
+      },
+      "2": {
+        "patched_diff": -8.472516741071429,
+        "recovery_pct": 100.0
+      },
+      "4": {
+        "patched_diff": -8.472516741071429,
+        "recovery_pct": 100.0
+      },
+      "6": {
+        "patched_diff": -8.472516741071429,
+        "recovery_pct": 100.0
+      },
+      "8": {
+        "patched_diff": -8.472516741071429,
+        "recovery_pct": 100.0
+      },
+      "10": {
+        "patched_diff": -8.472516741071429,
+        "recovery_pct": 100.0
+      },
+      "12": {
+        "patched_diff": -8.472516741071429,
+        "recovery_pct": 100.0
+      },
+      "14": {
+        "patched_diff": -8.472516741071429,
+        "recovery_pct": 100.0
+      },
+      "16": {
+        "patched_diff": -8.472516741071429,
+        "recovery_pct": 100.0
+      },
+      "18": {
+        "patched_diff": -8.472516741071429,
+        "recovery_pct": 100.0
+      },
+      "20": {
+        "patched_diff": -8.472516741071429,
+        "recovery_pct": 100.0
+      },
+      "22": {
+        "patched_diff": -8.472516741071429,
+        "recovery_pct": 100.0
+      },
+      "24": {
+        "patched_diff": -8.472516741071429,
+        "recovery_pct": 100.0
+      },
+      "26": {
+        "patched_diff": -8.472516741071429,
+        "recovery_pct": 100.0
+      },
+      "28": {
+        "patched_diff": -8.472516741071429,
+        "recovery_pct": 100.0
+      },
+      "30": {
+        "patched_diff": -8.472516741071429,
+        "recovery_pct": 100.0
+      }
+    },
+    "problem_idx": 22,
+    "problem": "Ann is cutting fabric to make curtains. She cuts a 4 foot by 6 foot rectangle for the living room, and a 2 foot by 4 foot rectangle for the bedroom. If the bolt of fabric is 16 feet by 12 feet, how mu"
+  },
+  {
+    "baseline_diff": -1.6509486607142858,
+    "layer_results": {
+      "0": {
+        "patched_diff": -1.6509486607142858,
+        "recovery_pct": 100.0
+      },
+      "2": {
+        "patched_diff": -1.6509486607142858,
+        "recovery_pct": 100.0
+      },
+      "4": {
+        "patched_diff": -1.6509486607142858,
+        "recovery_pct": 100.0
+      },
+      "6": {
+        "patched_diff": -1.6509486607142858,
+        "recovery_pct": 100.0
+      },
+      "8": {
+        "patched_diff": -1.6509486607142858,
+        "recovery_pct": 100.0
+      },
+      "10": {
+        "patched_diff": -1.6509486607142858,
+        "recovery_pct": 100.0
+      },
+      "12": {
+        "patched_diff": -1.6509486607142858,
+        "recovery_pct": 100.0
+      },
+      "14": {
+        "patched_diff": -1.6509486607142858,
+        "recovery_pct": 100.0
+      },
+      "16": {
+        "patched_diff": -1.6509486607142858,
+        "recovery_pct": 100.0
+      },
+      "18": {
+        "patched_diff": -1.6509486607142858,
+        "recovery_pct": 100.0
+      },
+      "20": {
+        "patched_diff": -1.6509486607142858,
+        "recovery_pct": 100.0
+      },
+      "22": {
+        "patched_diff": -1.6509486607142858,
+        "recovery_pct": 100.0
+      },
+      "24": {
+        "patched_diff": -1.6509486607142858,
+        "recovery_pct": 100.0
+      },
+      "26": {
+        "patched_diff": -1.6509486607142858,
+        "recovery_pct": 100.0
+      },
+      "28": {
+        "patched_diff": -1.6509486607142858,
+        "recovery_pct": 100.0
+      },
+      "30": {
+        "patched_diff": -1.6509486607142858,
+        "recovery_pct": 100.0
+      }
+    },
+    "problem_idx": 23,
+    "problem": "Leo's assignment was divided into three parts. He finished the first part of his assignment in 25 minutes. It took him twice as long to finish the second part. If he was able to finish his assignment "
+  },
+  {
+    "baseline_diff": -6.648716517857143,
+    "layer_results": {
+      "0": {
+        "patched_diff": -6.648716517857143,
+        "recovery_pct": 100.0
+      },
+      "2": {
+        "patched_diff": -6.648716517857143,
+        "recovery_pct": 100.0
+      },
+      "4": {
+        "patched_diff": -6.648716517857143,
+        "recovery_pct": 100.0
+      },
+      "6": {
+        "patched_diff": -6.648716517857143,
+        "recovery_pct": 100.0
+      },
+      "8": {
+        "patched_diff": -6.648716517857143,
+        "recovery_pct": 100.0
+      },
+      "10": {
+        "patched_diff": -6.648716517857143,
+        "recovery_pct": 100.0
+      },
+      "12": {
+        "patched_diff": -6.648716517857143,
+        "recovery_pct": 100.0
+      },
+      "14": {
+        "patched_diff": -6.648716517857143,
+        "recovery_pct": 100.0
+      },
+      "16": {
+        "patched_diff": -6.648716517857143,
+        "recovery_pct": 100.0
+      },
+      "18": {
+        "patched_diff": -6.648716517857143,
+        "recovery_pct": 100.0
+      },
+      "20": {
+        "patched_diff": -6.648716517857143,
+        "recovery_pct": 100.0
+      },
+      "22": {
+        "patched_diff": -6.648716517857143,
+        "recovery_pct": 100.0
+      },
+      "24": {
+        "patched_diff": -6.648716517857143,
+        "recovery_pct": 100.0
+      },
+      "26": {
+        "patched_diff": -6.648716517857143,
+        "recovery_pct": 100.0
+      },
+      "28": {
+        "patched_diff": -6.648716517857143,
+        "recovery_pct": 100.0
+      },
+      "30": {
+        "patched_diff": -6.648716517857143,
+        "recovery_pct": 100.0
+      }
+    },
+    "problem_idx": 24,
+    "problem": "Liza bought 10 kilograms of butter to make cookies. She used one-half of it for chocolate chip cookies, one-fifth of it for peanut butter cookies, and one-third of the remaining butter for sugar cooki"
+  },
+  {
+    "baseline_diff": -1.9464285714285714,
+    "layer_results": {
+      "0": {
+        "patched_diff": -1.9464285714285714,
+        "recovery_pct": 100.0
+      },
+      "2": {
+        "patched_diff": -1.9464285714285714,
+        "recovery_pct": 100.0
+      },
+      "4": {
+        "patched_diff": -1.9464285714285714,
+        "recovery_pct": 100.0
+      },
+      "6": {
+        "patched_diff": -1.9464285714285714,
+        "recovery_pct": 100.0
+      },
+      "8": {
+        "patched_diff": -1.9464285714285714,
+        "recovery_pct": 100.0
+      },
+      "10": {
+        "patched_diff": -1.9464285714285714,
+        "recovery_pct": 100.0
+      },
+      "12": {
+        "patched_diff": -1.9464285714285714,
+        "recovery_pct": 100.0
+      },
+      "14": {
+        "patched_diff": -1.9464285714285714,
+        "recovery_pct": 100.0
+      },
+      "16": {
+        "patched_diff": -1.9464285714285714,
+        "recovery_pct": 100.0
+      },
+      "18": {
+        "patched_diff": -1.9464285714285714,
+        "recovery_pct": 100.0
+      },
+      "20": {
+        "patched_diff": -1.9464285714285714,
+        "recovery_pct": 100.0
+      },
+      "22": {
+        "patched_diff": -1.9464285714285714,
+        "recovery_pct": 100.0
+      },
+      "24": {
+        "patched_diff": -1.9464285714285714,
+        "recovery_pct": 100.0
+      },
+      "26": {
+        "patched_diff": -1.9464285714285714,
+        "recovery_pct": 100.0
+      },
+      "28": {
+        "patched_diff": -1.9464285714285714,
+        "recovery_pct": 100.0
+      },
+      "30": {
+        "patched_diff": -1.9464285714285714,
+        "recovery_pct": 100.0
+      }
+    },
+    "problem_idx": 25,
+    "problem": "A Statistics student wants to find out the average daily allowance of the middle school students. According to his survey, 2/3 of the students receive an average of $6 allowance per day while the rest"
+  },
+  {
+    "baseline_diff": -1.0758928571428572,
+    "layer_results": {
+      "0": {
+        "patched_diff": -1.0758928571428572,
+        "recovery_pct": 100.0
+      },
+      "2": {
+        "patched_diff": -1.0758928571428572,
+        "recovery_pct": 100.0
+      },
+      "4": {
+        "patched_diff": -1.0758928571428572,
+        "recovery_pct": 100.0
+      },
+      "6": {
+        "patched_diff": -1.0758928571428572,
+        "recovery_pct": 100.0
+      },
+      "8": {
+        "patched_diff": -1.0758928571428572,
+        "recovery_pct": 100.0
+      },
+      "10": {
+        "patched_diff": -1.0758928571428572,
+        "recovery_pct": 100.0
+      },
+      "12": {
+        "patched_diff": -1.0758928571428572,
+        "recovery_pct": 100.0
+      },
+      "14": {
+        "patched_diff": -1.0758928571428572,
+        "recovery_pct": 100.0
+      },
+      "16": {
+        "patched_diff": -1.0758928571428572,
+        "recovery_pct": 100.0
+      },
+      "18": {
+        "patched_diff": -1.0758928571428572,
+        "recovery_pct": 100.0
+      },
+      "20": {
+        "patched_diff": -1.0758928571428572,
+        "recovery_pct": 100.0
+      },
+      "22": {
+        "patched_diff": -1.0758928571428572,
+        "recovery_pct": 100.0
+      },
+      "24": {
+        "patched_diff": -1.0758928571428572,
+        "recovery_pct": 100.0
+      },
+      "26": {
+        "patched_diff": -1.0758928571428572,
+        "recovery_pct": 100.0
+      },
+      "28": {
+        "patched_diff": -1.0758928571428572,
+        "recovery_pct": 100.0
+      },
+      "30": {
+        "patched_diff": -1.0758928571428572,
+        "recovery_pct": 100.0
+      }
+    },
+    "problem_idx": 26,
+    "problem": "Every hour Joanne has to collect the coins out of the fountain inside the mall. During the first hour, she collected 15 coins. For the next two hours, she collected 35 coins from the fountain. In the "
+  },
+  {
+    "baseline_diff": -8.065987723214286,
+    "layer_results": {
+      "0": {
+        "patched_diff": -8.065987723214286,
+        "recovery_pct": 100.0
+      },
+      "2": {
+        "patched_diff": -8.065987723214286,
+        "recovery_pct": 100.0
+      },
+      "4": {
+        "patched_diff": -8.065987723214286,
+        "recovery_pct": 100.0
+      },
+      "6": {
+        "patched_diff": -8.065987723214286,
+        "recovery_pct": 100.0
+      },
+      "8": {
+        "patched_diff": -8.065987723214286,
+        "recovery_pct": 100.0
+      },
+      "10": {
+        "patched_diff": -8.065987723214286,
+        "recovery_pct": 100.0
+      },
+      "12": {
+        "patched_diff": -8.065987723214286,
+        "recovery_pct": 100.0
+      },
+      "14": {
+        "patched_diff": -8.065987723214286,
+        "recovery_pct": 100.0
+      },
+      "16": {
+        "patched_diff": -8.065987723214286,
+        "recovery_pct": 100.0
+      },
+      "18": {
+        "patched_diff": -8.065987723214286,
+        "recovery_pct": 100.0
+      },
+      "20": {
+        "patched_diff": -8.065987723214286,
+        "recovery_pct": 100.0
+      },
+      "22": {
+        "patched_diff": -8.065987723214286,
+        "recovery_pct": 100.0
+      },
+      "24": {
+        "patched_diff": -8.065987723214286,
+        "recovery_pct": 100.0
+      },
+      "26": {
+        "patched_diff": -8.065987723214286,
+        "recovery_pct": 100.0
+      },
+      "28": {
+        "patched_diff": -8.065987723214286,
+        "recovery_pct": 100.0
+      },
+      "30": {
+        "patched_diff": -8.065987723214286,
+        "recovery_pct": 100.0
+      }
+    },
+    "problem_idx": 27,
+    "problem": "Jerry\u2019s two daughters play softball on different teams. They each have 8 games this season. Each team practices 4 hours for every game they play. If each game lasts for 2 hours, how many hours will Je"
+  },
+  {
+    "baseline_diff": -17.47265625,
+    "layer_results": {
+      "0": {
+        "patched_diff": -17.47265625,
+        "recovery_pct": 100.0
+      },
+      "2": {
+        "patched_diff": -17.47265625,
+        "recovery_pct": 100.0
+      },
+      "4": {
+        "patched_diff": -17.47265625,
+        "recovery_pct": 100.0
+      },
+      "6": {
+        "patched_diff": -17.47265625,
+        "recovery_pct": 100.0
+      },
+      "8": {
+        "patched_diff": -17.47265625,
+        "recovery_pct": 100.0
+      },
+      "10": {
+        "patched_diff": -17.47265625,
+        "recovery_pct": 100.0
+      },
+      "12": {
+        "patched_diff": -17.47265625,
+        "recovery_pct": 100.0
+      },
+      "14": {
+        "patched_diff": -17.47265625,
+        "recovery_pct": 100.0
+      },
+      "16": {
+        "patched_diff": -17.47265625,
+        "recovery_pct": 100.0
+      },
+      "18": {
+        "patched_diff": -17.47265625,
+        "recovery_pct": 100.0
+      },
+      "20": {
+        "patched_diff": -17.47265625,
+        "recovery_pct": 100.0
+      },
+      "22": {
+        "patched_diff": -17.47265625,
+        "recovery_pct": 100.0
+      },
+      "24": {
+        "patched_diff": -17.47265625,
+        "recovery_pct": 100.0
+      },
+      "26": {
+        "patched_diff": -17.47265625,
+        "recovery_pct": 100.0
+      },
+      "28": {
+        "patched_diff": -17.47265625,
+        "recovery_pct": 100.0
+      },
+      "30": {
+        "patched_diff": -17.47265625,
+        "recovery_pct": 100.0
+      }
+    },
+    "problem_idx": 28,
+    "problem": "A bear is preparing to hibernate for the winter and needs to gain 1000 pounds. At the end of summer, the bear feasts on berries and small woodland animals. During autumn, it devours acorns and salmon."
+  },
+  {
+    "baseline_diff": -1.6512625558035714,
+    "layer_results": {
+      "0": {
+        "patched_diff": -1.6512625558035714,
+        "recovery_pct": 100.0
+      },
+      "2": {
+        "patched_diff": -1.6512625558035714,
+        "recovery_pct": 100.0
+      },
+      "4": {
+        "patched_diff": -1.6512625558035714,
+        "recovery_pct": 100.0
+      },
+      "6": {
+        "patched_diff": -1.6512625558035714,
+        "recovery_pct": 100.0
+      },
+      "8": {
+        "patched_diff": -1.6512625558035714,
+        "recovery_pct": 100.0
+      },
+      "10": {
+        "patched_diff": -1.6512625558035714,
+        "recovery_pct": 100.0
+      },
+      "12": {
+        "patched_diff": -1.6512625558035714,
+        "recovery_pct": 100.0
+      },
+      "14": {
+        "patched_diff": -1.6512625558035714,
+        "recovery_pct": 100.0
+      },
+      "16": {
+        "patched_diff": -1.6512625558035714,
+        "recovery_pct": 100.0
+      },
+      "18": {
+        "patched_diff": -1.6512625558035714,
+        "recovery_pct": 100.0
+      },
+      "20": {
+        "patched_diff": -1.6512625558035714,
+        "recovery_pct": 100.0
+      },
+      "22": {
+        "patched_diff": -1.6512625558035714,
+        "recovery_pct": 100.0
+      },
+      "24": {
+        "patched_diff": -1.6512625558035714,
+        "recovery_pct": 100.0
+      },
+      "26": {
+        "patched_diff": -1.6512625558035714,
+        "recovery_pct": 100.0
+      },
+      "28": {
+        "patched_diff": -1.6512625558035714,
+        "recovery_pct": 100.0
+      },
+      "30": {
+        "patched_diff": -1.6512625558035714,
+        "recovery_pct": 100.0
+      }
+    },
+    "problem_idx": 29,
+    "problem": "Tara has been planning to buy a laptop which costs $1000. A computer shop accepts payment in installments of $65 per month provided that a 20% down payment is made. If Tara wants to pay an additional "
+  },
+  {
+    "baseline_diff": -0.8249162946428571,
+    "layer_results": {
+      "0": {
+        "patched_diff": -0.8249162946428571,
+        "recovery_pct": 100.0
+      },
+      "2": {
+        "patched_diff": -0.8249162946428571,
+        "recovery_pct": 100.0
+      },
+      "4": {
+        "patched_diff": -0.8249162946428571,
+        "recovery_pct": 100.0
+      },
+      "6": {
+        "patched_diff": -0.8249162946428571,
+        "recovery_pct": 100.0
+      },
+      "8": {
+        "patched_diff": -0.8249162946428571,
+        "recovery_pct": 100.0
+      },
+      "10": {
+        "patched_diff": -0.8249162946428571,
+        "recovery_pct": 100.0
+      },
+      "12": {
+        "patched_diff": -0.8249162946428571,
+        "recovery_pct": 100.0
+      },
+      "14": {
+        "patched_diff": -0.8249162946428571,
+        "recovery_pct": 100.0
+      },
+      "16": {
+        "patched_diff": -0.8249162946428571,
+        "recovery_pct": 100.0
+      },
+      "18": {
+        "patched_diff": -0.8249162946428571,
+        "recovery_pct": 100.0
+      },
+      "20": {
+        "patched_diff": -0.8249162946428571,
+        "recovery_pct": 100.0
+      },
+      "22": {
+        "patched_diff": -0.8249162946428571,
+        "recovery_pct": 100.0
+      },
+      "24": {
+        "patched_diff": -0.8249162946428571,
+        "recovery_pct": 100.0
+      },
+      "26": {
+        "patched_diff": -0.8249162946428571,
+        "recovery_pct": 100.0
+      },
+      "28": {
+        "patched_diff": -0.8249162946428571,
+        "recovery_pct": 100.0
+      },
+      "30": {
+        "patched_diff": -0.8249162946428571,
+        "recovery_pct": 100.0
+      }
+    },
+    "problem_idx": 30,
+    "problem": "Jesse and Mia are competing in a week long race. They have one week to run 30 miles. On the first three days Jesse averages (2/3) of a mile. On day four she runs 10 miles. Mia averages 3 miles a day o"
+  },
+  {
+    "baseline_diff": -1.1663469587053572,
+    "layer_results": {
+      "0": {
+        "patched_diff": -1.1663469587053572,
+        "recovery_pct": 100.0
+      },
+      "2": {
+        "patched_diff": -1.1663469587053572,
+        "recovery_pct": 100.0
+      },
+      "4": {
+        "patched_diff": -1.1663469587053572,
+        "recovery_pct": 100.0
+      },
+      "6": {
+        "patched_diff": -1.1663469587053572,
+        "recovery_pct": 100.0
+      },
+      "8": {
+        "patched_diff": -1.1663469587053572,
+        "recovery_pct": 100.0
+      },
+      "10": {
+        "patched_diff": -1.1663469587053572,
+        "recovery_pct": 100.0
+      },
+      "12": {
+        "patched_diff": -1.1663469587053572,
+        "recovery_pct": 100.0
+      },
+      "14": {
+        "patched_diff": -1.1663469587053572,
+        "recovery_pct": 100.0
+      },
+      "16": {
+        "patched_diff": -1.1663469587053572,
+        "recovery_pct": 100.0
+      },
+      "18": {
+        "patched_diff": -1.1663469587053572,
+        "recovery_pct": 100.0
+      },
+      "20": {
+        "patched_diff": -1.1663469587053572,
+        "recovery_pct": 100.0
+      },
+      "22": {
+        "patched_diff": -1.1663469587053572,
+        "recovery_pct": 100.0
+      },
+      "24": {
+        "patched_diff": -1.1663469587053572,
+        "recovery_pct": 100.0
+      },
+      "26": {
+        "patched_diff": -1.1663469587053572,
+        "recovery_pct": 100.0
+      },
+      "28": {
+        "patched_diff": -1.1663469587053572,
+        "recovery_pct": 100.0
+      },
+      "30": {
+        "patched_diff": -1.1663469587053572,
+        "recovery_pct": 100.0
+      }
+    },
+    "problem_idx": 31,
+    "problem": "The ratio of coins that Elsa has to that which Amalie has is 10:45. If the total number of coins they have is 440, and Amalie spends 3/4 of what she has on toys, how many will she remain with?"
+  },
+  {
+    "baseline_diff": -1.7520926339285714,
+    "layer_results": {
+      "0": {
+        "patched_diff": -1.7520926339285714,
+        "recovery_pct": 100.0
+      },
+      "2": {
+        "patched_diff": -1.7520926339285714,
+        "recovery_pct": 100.0
+      },
+      "4": {
+        "patched_diff": -1.7520926339285714,
+        "recovery_pct": 100.0
+      },
+      "6": {
+        "patched_diff": -1.7520926339285714,
+        "recovery_pct": 100.0
+      },
+      "8": {
+        "patched_diff": -1.7520926339285714,
+        "recovery_pct": 100.0
+      },
+      "10": {
+        "patched_diff": -1.7520926339285714,
+        "recovery_pct": 100.0
+      },
+      "12": {
+        "patched_diff": -1.7520926339285714,
+        "recovery_pct": 100.0
+      },
+      "14": {
+        "patched_diff": -1.7520926339285714,
+        "recovery_pct": 100.0
+      },
+      "16": {
+        "patched_diff": -1.7520926339285714,
+        "recovery_pct": 100.0
+      },
+      "18": {
+        "patched_diff": -1.7520926339285714,
+        "recovery_pct": 100.0
+      },
+      "20": {
+        "patched_diff": -1.7520926339285714,
+        "recovery_pct": 100.0
+      },
+      "22": {
+        "patched_diff": -1.7520926339285714,
+        "recovery_pct": 100.0
+      },
+      "24": {
+        "patched_diff": -1.7520926339285714,
+        "recovery_pct": 100.0
+      },
+      "26": {
+        "patched_diff": -1.7520926339285714,
+        "recovery_pct": 100.0
+      },
+      "28": {
+        "patched_diff": -1.7520926339285714,
+        "recovery_pct": 100.0
+      },
+      "30": {
+        "patched_diff": -1.7520926339285714,
+        "recovery_pct": 100.0
+      }
+    },
+    "problem_idx": 32,
+    "problem": "Nancy is filling an aquarium for her fish. She fills it halfway and goes to answer the door. While she's gone, her cat knocks the aquarium over and spills half the water in it. Then Nancy comes back a"
+  },
+  {
+    "baseline_diff": -1.8805803571428572,
+    "layer_results": {
+      "0": {
+        "patched_diff": -1.8805803571428572,
+        "recovery_pct": 100.0
+      },
+      "2": {
+        "patched_diff": -1.8805803571428572,
+        "recovery_pct": 100.0
+      },
+      "4": {
+        "patched_diff": -1.8805803571428572,
+        "recovery_pct": 100.0
+      },
+      "6": {
+        "patched_diff": -1.8805803571428572,
+        "recovery_pct": 100.0
+      },
+      "8": {
+        "patched_diff": -1.8805803571428572,
+        "recovery_pct": 100.0
+      },
+      "10": {
+        "patched_diff": -1.8805803571428572,
+        "recovery_pct": 100.0
+      },
+      "12": {
+        "patched_diff": -1.8805803571428572,
+        "recovery_pct": 100.0
+      },
+      "14": {
+        "patched_diff": -1.8805803571428572,
+        "recovery_pct": 100.0
+      },
+      "16": {
+        "patched_diff": -1.8805803571428572,
+        "recovery_pct": 100.0
+      },
+      "18": {
+        "patched_diff": -1.8805803571428572,
+        "recovery_pct": 100.0
+      },
+      "20": {
+        "patched_diff": -1.8805803571428572,
+        "recovery_pct": 100.0
+      },
+      "22": {
+        "patched_diff": -1.8805803571428572,
+        "recovery_pct": 100.0
+      },
+      "24": {
+        "patched_diff": -1.8805803571428572,
+        "recovery_pct": 100.0
+      },
+      "26": {
+        "patched_diff": -1.8805803571428572,
+        "recovery_pct": 100.0
+      },
+      "28": {
+        "patched_diff": -1.8805803571428572,
+        "recovery_pct": 100.0
+      },
+      "30": {
+        "patched_diff": -1.8805803571428572,
+        "recovery_pct": 100.0
+      }
+    },
+    "problem_idx": 33,
+    "problem": "Jennifer purchased 40 cans of milk at the store before meeting her classmate Mark, who was also buying milk. Jennifer bought 6 additional cans for every 5 cans Mark bought. If Mark purchased 50 cans, "
+  },
+  {
+    "baseline_diff": -1.679410661969866,
+    "layer_results": {
+      "0": {
+        "patched_diff": -1.679410661969866,
+        "recovery_pct": 100.0
+      },
+      "2": {
+        "patched_diff": -1.679410661969866,
+        "recovery_pct": 100.0
+      },
+      "4": {
+        "patched_diff": -1.679410661969866,
+        "recovery_pct": 100.0
+      },
+      "6": {
+        "patched_diff": -1.679410661969866,
+        "recovery_pct": 100.0
+      },
+      "8": {
+        "patched_diff": -1.679410661969866,
+        "recovery_pct": 100.0
+      },
+      "10": {
+        "patched_diff": -1.679410661969866,
+        "recovery_pct": 100.0
+      },
+      "12": {
+        "patched_diff": -1.679410661969866,
+        "recovery_pct": 100.0
+      },
+      "14": {
+        "patched_diff": -1.679410661969866,
+        "recovery_pct": 100.0
+      },
+      "16": {
+        "patched_diff": -1.679410661969866,
+        "recovery_pct": 100.0
+      },
+      "18": {
+        "patched_diff": -1.679410661969866,
+        "recovery_pct": 100.0
+      },
+      "20": {
+        "patched_diff": -1.679410661969866,
+        "recovery_pct": 100.0
+      },
+      "22": {
+        "patched_diff": -1.679410661969866,
+        "recovery_pct": 100.0
+      },
+      "24": {
+        "patched_diff": -1.679410661969866,
+        "recovery_pct": 100.0
+      },
+      "26": {
+        "patched_diff": -1.679410661969866,
+        "recovery_pct": 100.0
+      },
+      "28": {
+        "patched_diff": -1.679410661969866,
+        "recovery_pct": 100.0
+      },
+      "30": {
+        "patched_diff": -1.679410661969866,
+        "recovery_pct": 100.0
+      }
+    },
+    "problem_idx": 34,
+    "problem": "Sam and Jeff had a skipping competition at recess. The competition was split into four rounds. Sam completed 1 more skip than Jeff in the first round. Jeff skipped 3 fewer times than Sam in the second"
+  },
+  {
+    "baseline_diff": -0.017229352678571428,
+    "layer_results": {
+      "0": {
+        "patched_diff": -0.017229352678571428,
+        "recovery_pct": 100.0
+      },
+      "2": {
+        "patched_diff": -0.017229352678571428,
+        "recovery_pct": 100.0
+      },
+      "4": {
+        "patched_diff": -0.017229352678571428,
+        "recovery_pct": 100.0
+      },
+      "6": {
+        "patched_diff": -0.017229352678571428,
+        "recovery_pct": 100.0
+      },
+      "8": {
+        "patched_diff": -0.017229352678571428,
+        "recovery_pct": 100.0
+      },
+      "10": {
+        "patched_diff": -0.017229352678571428,
+        "recovery_pct": 100.0
+      },
+      "12": {
+        "patched_diff": -0.017229352678571428,
+        "recovery_pct": 100.0
+      },
+      "14": {
+        "patched_diff": -0.017229352678571428,
+        "recovery_pct": 100.0
+      },
+      "16": {
+        "patched_diff": -0.017229352678571428,
+        "recovery_pct": 100.0
+      },
+      "18": {
+        "patched_diff": -0.017229352678571428,
+        "recovery_pct": 100.0
+      },
+      "20": {
+        "patched_diff": -0.017229352678571428,
+        "recovery_pct": 100.0
+      },
+      "22": {
+        "patched_diff": -0.017229352678571428,
+        "recovery_pct": 100.0
+      },
+      "24": {
+        "patched_diff": -0.017229352678571428,
+        "recovery_pct": 100.0
+      },
+      "26": {
+        "patched_diff": -0.017229352678571428,
+        "recovery_pct": 100.0
+      },
+      "28": {
+        "patched_diff": -0.017229352678571428,
+        "recovery_pct": 100.0
+      },
+      "30": {
+        "patched_diff": -0.017229352678571428,
+        "recovery_pct": 100.0
+      }
+    },
+    "problem_idx": 35,
+    "problem": "Irene earns $500 if she works for 40 hours a week and gets an extra $20 for every hour of overtime. If she worked 50 hours last week, calculate her total income."
+  },
+  {
+    "baseline_diff": -12.182756696428571,
+    "layer_results": {
+      "0": {
+        "patched_diff": -12.182756696428571,
+        "recovery_pct": 100.0
+      },
+      "2": {
+        "patched_diff": -12.182756696428571,
+        "recovery_pct": 100.0
+      },
+      "4": {
+        "patched_diff": -12.182756696428571,
+        "recovery_pct": 100.0
+      },
+      "6": {
+        "patched_diff": -12.182756696428571,
+        "recovery_pct": 100.0
+      },
+      "8": {
+        "patched_diff": -12.182756696428571,
+        "recovery_pct": 100.0
+      },
+      "10": {
+        "patched_diff": -12.182756696428571,
+        "recovery_pct": 100.0
+      },
+      "12": {
+        "patched_diff": -12.182756696428571,
+        "recovery_pct": 100.0
+      },
+      "14": {
+        "patched_diff": -12.182756696428571,
+        "recovery_pct": 100.0
+      },
+      "16": {
+        "patched_diff": -12.182756696428571,
+        "recovery_pct": 100.0
+      },
+      "18": {
+        "patched_diff": -12.182756696428571,
+        "recovery_pct": 100.0
+      },
+      "20": {
+        "patched_diff": -12.182756696428571,
+        "recovery_pct": 100.0
+      },
+      "22": {
+        "patched_diff": -12.182756696428571,
+        "recovery_pct": 100.0
+      },
+      "24": {
+        "patched_diff": -12.182756696428571,
+        "recovery_pct": 100.0
+      },
+      "26": {
+        "patched_diff": -12.182756696428571,
+        "recovery_pct": 100.0
+      },
+      "28": {
+        "patched_diff": -12.182756696428571,
+        "recovery_pct": 100.0
+      },
+      "30": {
+        "patched_diff": -12.182756696428571,
+        "recovery_pct": 100.0
+      }
+    },
+    "problem_idx": 36,
+    "problem": "Paityn has 20 red hats and 24 blue hats. Her friend Zola has 4/5 times as many red hats as she has and twice the number of blue hats. If they combine all the hats together and share them equally betwe"
+  },
+  {
+    "baseline_diff": -1.884765625,
+    "layer_results": {
+      "0": {
+        "patched_diff": -1.884765625,
+        "recovery_pct": 100.0
+      },
+      "2": {
+        "patched_diff": -1.884765625,
+        "recovery_pct": 100.0
+      },
+      "4": {
+        "patched_diff": -1.884765625,
+        "recovery_pct": 100.0
+      },
+      "6": {
+        "patched_diff": -1.884765625,
+        "recovery_pct": 100.0
+      },
+      "8": {
+        "patched_diff": -1.884765625,
+        "recovery_pct": 100.0
+      },
+      "10": {
+        "patched_diff": -1.884765625,
+        "recovery_pct": 100.0
+      },
+      "12": {
+        "patched_diff": -1.884765625,
+        "recovery_pct": 100.0
+      },
+      "14": {
+        "patched_diff": -1.884765625,
+        "recovery_pct": 100.0
+      },
+      "16": {
+        "patched_diff": -1.884765625,
+        "recovery_pct": 100.0
+      },
+      "18": {
+        "patched_diff": -1.884765625,
+        "recovery_pct": 100.0
+      },
+      "20": {
+        "patched_diff": -1.884765625,
+        "recovery_pct": 100.0
+      },
+      "22": {
+        "patched_diff": -1.884765625,
+        "recovery_pct": 100.0
+      },
+      "24": {
+        "patched_diff": -1.884765625,
+        "recovery_pct": 100.0
+      },
+      "26": {
+        "patched_diff": -1.884765625,
+        "recovery_pct": 100.0
+      },
+      "28": {
+        "patched_diff": -1.884765625,
+        "recovery_pct": 100.0
+      },
+      "30": {
+        "patched_diff": -1.884765625,
+        "recovery_pct": 100.0
+      }
+    },
+    "problem_idx": 37,
+    "problem": "Krystian works in the library. He borrows an average of 40 books every day. Every Friday, his number of borrowed books is about 40% higher than the daily average. How many books does he borrow in a we"
+  },
+  {
+    "baseline_diff": -7.355782645089286,
+    "layer_results": {
+      "0": {
+        "patched_diff": -7.355782645089286,
+        "recovery_pct": 100.0
+      },
+      "2": {
+        "patched_diff": -7.355782645089286,
+        "recovery_pct": 100.0
+      },
+      "4": {
+        "patched_diff": -7.355782645089286,
+        "recovery_pct": 100.0
+      },
+      "6": {
+        "patched_diff": -7.355782645089286,
+        "recovery_pct": 100.0
+      },
+      "8": {
+        "patched_diff": -7.355782645089286,
+        "recovery_pct": 100.0
+      },
+      "10": {
+        "patched_diff": -7.355782645089286,
+        "recovery_pct": 100.0
+      },
+      "12": {
+        "patched_diff": -7.355782645089286,
+        "recovery_pct": 100.0
+      },
+      "14": {
+        "patched_diff": -7.355782645089286,
+        "recovery_pct": 100.0
+      },
+      "16": {
+        "patched_diff": -7.355782645089286,
+        "recovery_pct": 100.0
+      },
+      "18": {
+        "patched_diff": -7.355782645089286,
+        "recovery_pct": 100.0
+      },
+      "20": {
+        "patched_diff": -7.355782645089286,
+        "recovery_pct": 100.0
+      },
+      "22": {
+        "patched_diff": -7.355782645089286,
+        "recovery_pct": 100.0
+      },
+      "24": {
+        "patched_diff": -7.355782645089286,
+        "recovery_pct": 100.0
+      },
+      "26": {
+        "patched_diff": -7.355782645089286,
+        "recovery_pct": 100.0
+      },
+      "28": {
+        "patched_diff": -7.355782645089286,
+        "recovery_pct": 100.0
+      },
+      "30": {
+        "patched_diff": -7.355782645089286,
+        "recovery_pct": 100.0
+      }
+    },
+    "problem_idx": 38,
+    "problem": "Herman likes to feed the birds in December, January and February.  He feeds them 1/2 cup in the morning and 1/2 cup in the afternoon.  How many cups of food will he need for all three months?"
+  },
+  {
+    "baseline_diff": -1.6226632254464286,
+    "layer_results": {
+      "0": {
+        "patched_diff": -1.6226632254464286,
+        "recovery_pct": 100.0
+      },
+      "2": {
+        "patched_diff": -1.6226632254464286,
+        "recovery_pct": 100.0
+      },
+      "4": {
+        "patched_diff": -1.6226632254464286,
+        "recovery_pct": 100.0
+      },
+      "6": {
+        "patched_diff": -1.6226632254464286,
+        "recovery_pct": 100.0
+      },
+      "8": {
+        "patched_diff": -1.6226632254464286,
+        "recovery_pct": 100.0
+      },
+      "10": {
+        "patched_diff": -1.6226632254464286,
+        "recovery_pct": 100.0
+      },
+      "12": {
+        "patched_diff": -1.6226632254464286,
+        "recovery_pct": 100.0
+      },
+      "14": {
+        "patched_diff": -1.6226632254464286,
+        "recovery_pct": 100.0
+      },
+      "16": {
+        "patched_diff": -1.6226632254464286,
+        "recovery_pct": 100.0
+      },
+      "18": {
+        "patched_diff": -1.6226632254464286,
+        "recovery_pct": 100.0
+      },
+      "20": {
+        "patched_diff": -1.6226632254464286,
+        "recovery_pct": 100.0
+      },
+      "22": {
+        "patched_diff": -1.6226632254464286,
+        "recovery_pct": 100.0
+      },
+      "24": {
+        "patched_diff": -1.6226632254464286,
+        "recovery_pct": 100.0
+      },
+      "26": {
+        "patched_diff": -1.6226632254464286,
+        "recovery_pct": 100.0
+      },
+      "28": {
+        "patched_diff": -1.6226632254464286,
+        "recovery_pct": 100.0
+      },
+      "30": {
+        "patched_diff": -1.6226632254464286,
+        "recovery_pct": 100.0
+      }
+    },
+    "problem_idx": 39,
+    "problem": "John works a job that offers performance bonuses.  He makes $80 a day and works for 8 hours.  He has the option of working hard to earn the performance bonus of an extra $20 a day, but the extra effor"
+  },
+  {
+    "baseline_diff": -3.3477957589285716,
+    "layer_results": {
+      "0": {
+        "patched_diff": -3.3477957589285716,
+        "recovery_pct": 100.0
+      },
+      "2": {
+        "patched_diff": -3.3477957589285716,
+        "recovery_pct": 100.0
+      },
+      "4": {
+        "patched_diff": -3.3477957589285716,
+        "recovery_pct": 100.0
+      },
+      "6": {
+        "patched_diff": -3.3477957589285716,
+        "recovery_pct": 100.0
+      },
+      "8": {
+        "patched_diff": -3.3477957589285716,
+        "recovery_pct": 100.0
+      },
+      "10": {
+        "patched_diff": -3.3477957589285716,
+        "recovery_pct": 100.0
+      },
+      "12": {
+        "patched_diff": -3.3477957589285716,
+        "recovery_pct": 100.0
+      },
+      "14": {
+        "patched_diff": -3.3477957589285716,
+        "recovery_pct": 100.0
+      },
+      "16": {
+        "patched_diff": -3.3477957589285716,
+        "recovery_pct": 100.0
+      },
+      "18": {
+        "patched_diff": -3.3477957589285716,
+        "recovery_pct": 100.0
+      },
+      "20": {
+        "patched_diff": -3.3477957589285716,
+        "recovery_pct": 100.0
+      },
+      "22": {
+        "patched_diff": -3.3477957589285716,
+        "recovery_pct": 100.0
+      },
+      "24": {
+        "patched_diff": -3.3477957589285716,
+        "recovery_pct": 100.0
+      },
+      "26": {
+        "patched_diff": -3.3477957589285716,
+        "recovery_pct": 100.0
+      },
+      "28": {
+        "patched_diff": -3.3477957589285716,
+        "recovery_pct": 100.0
+      },
+      "30": {
+        "patched_diff": -3.3477957589285716,
+        "recovery_pct": 100.0
+      }
+    },
+    "problem_idx": 40,
+    "problem": "Sally and Bob have made plans to go on a trip at the end of the year. They both decide to work as babysitters and save half of what they've earned for their trip. If Sally makes $6 per day and Bob mak"
+  },
+  {
+    "baseline_diff": -10.666364397321429,
+    "layer_results": {
+      "0": {
+        "patched_diff": 0.2763148716517857,
+        "recovery_pct": -2.5905253313975916
+      },
+      "2": {
+        "patched_diff": 0.3973911830357143,
+        "recovery_pct": -3.725647917443252
+      },
+      "4": {
+        "patched_diff": 0.45284598214285715,
+        "recovery_pct": -4.2455513919679815
+      },
+      "6": {
+        "patched_diff": 0.6348353794642857,
+        "recovery_pct": -5.951750341697566
+      },
+      "8": {
+        "patched_diff": 0.6356724330357143,
+        "recovery_pct": -5.959597941313034
+      },
+      "10": {
+        "patched_diff": 0.6849190848214286,
+        "recovery_pct": -6.421298385356379
+      },
+      "12": {
+        "patched_diff": 0.36376953125,
+        "recovery_pct": -3.410435999555302
+      },
+      "14": {
+        "patched_diff": 0.17947823660714285,
+        "recovery_pct": -1.6826561508831817
+      },
+      "16": {
+        "patched_diff": 0.21902901785714285,
+        "recovery_pct": -2.0534552327140267
+      },
+      "18": {
+        "patched_diff": 0.07791573660714286,
+        "recovery_pct": -0.7304807308731109
+      },
+      "20": {
+        "patched_diff": -0.05810546875,
+        "recovery_pct": 0.5447542066403772
+      },
+      "22": {
+        "patched_diff": 0.19601004464285715,
+        "recovery_pct": -1.8376462432886673
+      },
+      "24": {
+        "patched_diff": 0.34375,
+        "recovery_pct": -3.2227475754187025
+      },
+      "26": {
+        "patched_diff": 0.38357979910714285,
+        "recovery_pct": -3.5961625237880357
+      },
+      "28": {
+        "patched_diff": -0.31033761160714285,
+        "recovery_pct": 2.9094975574346194
+      },
+      "30": {
+        "patched_diff": -0.17236328125,
+        "recovery_pct": 1.615951554151707
+      }
+    },
+    "problem_idx": 41,
+    "problem": "Alice has 20 quarters. She wants to exchange them for nickels and so she goes to the bank. After getting back from the bank, she discovers that 20% of the nickels are iron nickels worth $3 each. What "
+  },
+  {
+    "baseline_diff": -3.10205078125,
+    "layer_results": {
+      "0": {
+        "patched_diff": -3.10205078125,
+        "recovery_pct": 100.0
+      },
+      "2": {
+        "patched_diff": -3.10205078125,
+        "recovery_pct": 100.0
+      },
+      "4": {
+        "patched_diff": -3.10205078125,
+        "recovery_pct": 100.0
+      },
+      "6": {
+        "patched_diff": -3.10205078125,
+        "recovery_pct": 100.0
+      },
+      "8": {
+        "patched_diff": -3.10205078125,
+        "recovery_pct": 100.0
+      },
+      "10": {
+        "patched_diff": -3.10205078125,
+        "recovery_pct": 100.0
+      },
+      "12": {
+        "patched_diff": -3.10205078125,
+        "recovery_pct": 100.0
+      },
+      "14": {
+        "patched_diff": -3.10205078125,
+        "recovery_pct": 100.0
+      },
+      "16": {
+        "patched_diff": -3.10205078125,
+        "recovery_pct": 100.0
+      },
+      "18": {
+        "patched_diff": -3.10205078125,
+        "recovery_pct": 100.0
+      },
+      "20": {
+        "patched_diff": -3.10205078125,
+        "recovery_pct": 100.0
+      },
+      "22": {
+        "patched_diff": -3.10205078125,
+        "recovery_pct": 100.0
+      },
+      "24": {
+        "patched_diff": -3.10205078125,
+        "recovery_pct": 100.0
+      },
+      "26": {
+        "patched_diff": -3.10205078125,
+        "recovery_pct": 100.0
+      },
+      "28": {
+        "patched_diff": -3.10205078125,
+        "recovery_pct": 100.0
+      },
+      "30": {
+        "patched_diff": -3.10205078125,
+        "recovery_pct": 100.0
+      }
+    },
+    "problem_idx": 42,
+    "problem": "Nancy, the librarian, is shelving books from the cart. She shelved 12 history books, 8 romance books, and 4 poetry books from the top section of the cart. Half the books on the bottom section of the c"
+  },
+  {
+    "baseline_diff": -1.8395821707589286,
+    "layer_results": {
+      "0": {
+        "patched_diff": -1.8395821707589286,
+        "recovery_pct": 100.0
+      },
+      "2": {
+        "patched_diff": -1.8395821707589286,
+        "recovery_pct": 100.0
+      },
+      "4": {
+        "patched_diff": -1.8395821707589286,
+        "recovery_pct": 100.0
+      },
+      "6": {
+        "patched_diff": -1.8395821707589286,
+        "recovery_pct": 100.0
+      },
+      "8": {
+        "patched_diff": -1.8395821707589286,
+        "recovery_pct": 100.0
+      },
+      "10": {
+        "patched_diff": -1.8395821707589286,
+        "recovery_pct": 100.0
+      },
+      "12": {
+        "patched_diff": -1.8395821707589286,
+        "recovery_pct": 100.0
+      },
+      "14": {
+        "patched_diff": -1.8395821707589286,
+        "recovery_pct": 100.0
+      },
+      "16": {
+        "patched_diff": -1.8395821707589286,
+        "recovery_pct": 100.0
+      },
+      "18": {
+        "patched_diff": -1.8395821707589286,
+        "recovery_pct": 100.0
+      },
+      "20": {
+        "patched_diff": -1.8395821707589286,
+        "recovery_pct": 100.0
+      },
+      "22": {
+        "patched_diff": -1.8395821707589286,
+        "recovery_pct": 100.0
+      },
+      "24": {
+        "patched_diff": -1.8395821707589286,
+        "recovery_pct": 100.0
+      },
+      "26": {
+        "patched_diff": -1.8395821707589286,
+        "recovery_pct": 100.0
+      },
+      "28": {
+        "patched_diff": -1.8395821707589286,
+        "recovery_pct": 100.0
+      },
+      "30": {
+        "patched_diff": -1.8395821707589286,
+        "recovery_pct": 100.0
+      }
+    },
+    "problem_idx": 43,
+    "problem": "Hector purchased a container of gumballs.  He gave 4 to Todd, then he gave twice as many as he had given Todd to Alisha, and then he gave 5 less than four times as many to Bobby as he had given to Ali"
+  },
+  {
+    "baseline_diff": -0.08597237723214286,
+    "layer_results": {
+      "0": {
+        "patched_diff": -0.08597237723214286,
+        "recovery_pct": 100.0
+      },
+      "2": {
+        "patched_diff": -0.08597237723214286,
+        "recovery_pct": 100.0
+      },
+      "4": {
+        "patched_diff": -0.08597237723214286,
+        "recovery_pct": 100.0
+      },
+      "6": {
+        "patched_diff": -0.08597237723214286,
+        "recovery_pct": 100.0
+      },
+      "8": {
+        "patched_diff": -0.08597237723214286,
+        "recovery_pct": 100.0
+      },
+      "10": {
+        "patched_diff": -0.08597237723214286,
+        "recovery_pct": 100.0
+      },
+      "12": {
+        "patched_diff": -0.08597237723214286,
+        "recovery_pct": 100.0
+      },
+      "14": {
+        "patched_diff": -0.08597237723214286,
+        "recovery_pct": 100.0
+      },
+      "16": {
+        "patched_diff": -0.08597237723214286,
+        "recovery_pct": 100.0
+      },
+      "18": {
+        "patched_diff": -0.08597237723214286,
+        "recovery_pct": 100.0
+      },
+      "20": {
+        "patched_diff": -0.08597237723214286,
+        "recovery_pct": 100.0
+      },
+      "22": {
+        "patched_diff": -0.08597237723214286,
+        "recovery_pct": 100.0
+      },
+      "24": {
+        "patched_diff": -0.08597237723214286,
+        "recovery_pct": 100.0
+      },
+      "26": {
+        "patched_diff": -0.08597237723214286,
+        "recovery_pct": 100.0
+      },
+      "28": {
+        "patched_diff": -0.08597237723214286,
+        "recovery_pct": 100.0
+      },
+      "30": {
+        "patched_diff": -0.08597237723214286,
+        "recovery_pct": 100.0
+      }
+    },
+    "problem_idx": 44,
+    "problem": "Gail has two fish tanks. The first tank is twice the size of the second tank. There are 48 gallons of water in the first tank. She follows the rule of one gallon of water per inch of fish. If she keep"
+  },
+  {
+    "baseline_diff": -0.5518014090401786,
+    "layer_results": {
+      "0": {
+        "patched_diff": -0.5518014090401786,
+        "recovery_pct": 100.0
+      },
+      "2": {
+        "patched_diff": -0.5518014090401786,
+        "recovery_pct": 100.0
+      },
+      "4": {
+        "patched_diff": -0.5518014090401786,
+        "recovery_pct": 100.0
+      },
+      "6": {
+        "patched_diff": -0.5518014090401786,
+        "recovery_pct": 100.0
+      },
+      "8": {
+        "patched_diff": -0.5518014090401786,
+        "recovery_pct": 100.0
+      },
+      "10": {
+        "patched_diff": -0.5518014090401786,
+        "recovery_pct": 100.0
+      },
+      "12": {
+        "patched_diff": -0.5518014090401786,
+        "recovery_pct": 100.0
+      },
+      "14": {
+        "patched_diff": -0.5518014090401786,
+        "recovery_pct": 100.0
+      },
+      "16": {
+        "patched_diff": -0.5518014090401786,
+        "recovery_pct": 100.0
+      },
+      "18": {
+        "patched_diff": -0.5518014090401786,
+        "recovery_pct": 100.0
+      },
+      "20": {
+        "patched_diff": -0.5518014090401786,
+        "recovery_pct": 100.0
+      },
+      "22": {
+        "patched_diff": -0.5518014090401786,
+        "recovery_pct": 100.0
+      },
+      "24": {
+        "patched_diff": -0.5518014090401786,
+        "recovery_pct": 100.0
+      },
+      "26": {
+        "patched_diff": -0.5518014090401786,
+        "recovery_pct": 100.0
+      },
+      "28": {
+        "patched_diff": -0.5518014090401786,
+        "recovery_pct": 100.0
+      },
+      "30": {
+        "patched_diff": -0.5518014090401786,
+        "recovery_pct": 100.0
+      }
+    },
+    "problem_idx": 45,
+    "problem": "Janice can type 6 sentences per minute. Today at work, Janice continued working on a paper she started typing yesterday. She typed for 20 minutes, took a break, and typed 15 minutes longer. She then h"
+  },
+  {
+    "baseline_diff": -2.173583984375,
+    "layer_results": {
+      "0": {
+        "patched_diff": -2.173583984375,
+        "recovery_pct": 100.0
+      },
+      "2": {
+        "patched_diff": -2.173583984375,
+        "recovery_pct": 100.0
+      },
+      "4": {
+        "patched_diff": -2.173583984375,
+        "recovery_pct": 100.0
+      },
+      "6": {
+        "patched_diff": -2.173583984375,
+        "recovery_pct": 100.0
+      },
+      "8": {
+        "patched_diff": -2.173583984375,
+        "recovery_pct": 100.0
+      },
+      "10": {
+        "patched_diff": -2.173583984375,
+        "recovery_pct": 100.0
+      },
+      "12": {
+        "patched_diff": -2.173583984375,
+        "recovery_pct": 100.0
+      },
+      "14": {
+        "patched_diff": -2.173583984375,
+        "recovery_pct": 100.0
+      },
+      "16": {
+        "patched_diff": -2.173583984375,
+        "recovery_pct": 100.0
+      },
+      "18": {
+        "patched_diff": -2.173583984375,
+        "recovery_pct": 100.0
+      },
+      "20": {
+        "patched_diff": -2.173583984375,
+        "recovery_pct": 100.0
+      },
+      "22": {
+        "patched_diff": -2.173583984375,
+        "recovery_pct": 100.0
+      },
+      "24": {
+        "patched_diff": -2.173583984375,
+        "recovery_pct": 100.0
+      },
+      "26": {
+        "patched_diff": -2.173583984375,
+        "recovery_pct": 100.0
+      },
+      "28": {
+        "patched_diff": -2.173583984375,
+        "recovery_pct": 100.0
+      },
+      "30": {
+        "patched_diff": -2.173583984375,
+        "recovery_pct": 100.0
+      }
+    },
+    "problem_idx": 46,
+    "problem": "There is very little car traffic on Happy Street. During the week, most cars pass it on Tuesday - 25. On Monday, 20% less than on Tuesday, and on Wednesday, 2 more cars than on Monday. On Thursday and"
+  },
+  {
+    "baseline_diff": -2.7101004464285716,
+    "layer_results": {
+      "0": {
+        "patched_diff": -2.7101004464285716,
+        "recovery_pct": 100.0
+      },
+      "2": {
+        "patched_diff": -2.7101004464285716,
+        "recovery_pct": 100.0
+      },
+      "4": {
+        "patched_diff": -2.7101004464285716,
+        "recovery_pct": 100.0
+      },
+      "6": {
+        "patched_diff": -2.7101004464285716,
+        "recovery_pct": 100.0
+      },
+      "8": {
+        "patched_diff": -2.7101004464285716,
+        "recovery_pct": 100.0
+      },
+      "10": {
+        "patched_diff": -2.7101004464285716,
+        "recovery_pct": 100.0
+      },
+      "12": {
+        "patched_diff": -2.7101004464285716,
+        "recovery_pct": 100.0
+      },
+      "14": {
+        "patched_diff": -2.7101004464285716,
+        "recovery_pct": 100.0
+      },
+      "16": {
+        "patched_diff": -2.7101004464285716,
+        "recovery_pct": 100.0
+      },
+      "18": {
+        "patched_diff": -2.7101004464285716,
+        "recovery_pct": 100.0
+      },
+      "20": {
+        "patched_diff": -2.7101004464285716,
+        "recovery_pct": 100.0
+      },
+      "22": {
+        "patched_diff": -2.7101004464285716,
+        "recovery_pct": 100.0
+      },
+      "24": {
+        "patched_diff": -2.7101004464285716,
+        "recovery_pct": 100.0
+      },
+      "26": {
+        "patched_diff": -2.7101004464285716,
+        "recovery_pct": 100.0
+      },
+      "28": {
+        "patched_diff": -2.7101004464285716,
+        "recovery_pct": 100.0
+      },
+      "30": {
+        "patched_diff": -2.7101004464285716,
+        "recovery_pct": 100.0
+      }
+    },
+    "problem_idx": 47,
+    "problem": "Alyssa, Keely, and Kendall ordered 100 chicken nuggets from a fast-food restaurant. Keely and Kendall each ate twice as many as Alyssa. How many did Alyssa eat?"
+  },
+  {
+    "baseline_diff": -11.355329241071429,
+    "layer_results": {
+      "0": {
+        "patched_diff": -11.355329241071429,
+        "recovery_pct": 100.0
+      },
+      "2": {
+        "patched_diff": -11.355329241071429,
+        "recovery_pct": 100.0
+      },
+      "4": {
+        "patched_diff": -11.355329241071429,
+        "recovery_pct": 100.0
+      },
+      "6": {
+        "patched_diff": -11.355329241071429,
+        "recovery_pct": 100.0
+      },
+      "8": {
+        "patched_diff": -11.355329241071429,
+        "recovery_pct": 100.0
+      },
+      "10": {
+        "patched_diff": -11.355329241071429,
+        "recovery_pct": 100.0
+      },
+      "12": {
+        "patched_diff": -11.355329241071429,
+        "recovery_pct": 100.0
+      },
+      "14": {
+        "patched_diff": -11.355329241071429,
+        "recovery_pct": 100.0
+      },
+      "16": {
+        "patched_diff": -11.355329241071429,
+        "recovery_pct": 100.0
+      },
+      "18": {
+        "patched_diff": -11.355329241071429,
+        "recovery_pct": 100.0
+      },
+      "20": {
+        "patched_diff": -11.355329241071429,
+        "recovery_pct": 100.0
+      },
+      "22": {
+        "patched_diff": -11.355329241071429,
+        "recovery_pct": 100.0
+      },
+      "24": {
+        "patched_diff": -11.355329241071429,
+        "recovery_pct": 100.0
+      },
+      "26": {
+        "patched_diff": -11.355329241071429,
+        "recovery_pct": 100.0
+      },
+      "28": {
+        "patched_diff": -11.355329241071429,
+        "recovery_pct": 100.0
+      },
+      "30": {
+        "patched_diff": -11.355329241071429,
+        "recovery_pct": 100.0
+      }
+    },
+    "problem_idx": 48,
+    "problem": "Lilah's family gallery has 400 photos. On a two-day trip to the Grand Canyon, they took half as many photos they have in the family's gallery on the first day and 120 more photos than they took on the"
+  },
+  {
+    "baseline_diff": -1.8864397321428572,
+    "layer_results": {
+      "0": {
+        "patched_diff": -1.8864397321428572,
+        "recovery_pct": 100.0
+      },
+      "2": {
+        "patched_diff": -1.8864397321428572,
+        "recovery_pct": 100.0
+      },
+      "4": {
+        "patched_diff": -1.8864397321428572,
+        "recovery_pct": 100.0
+      },
+      "6": {
+        "patched_diff": -1.8864397321428572,
+        "recovery_pct": 100.0
+      },
+      "8": {
+        "patched_diff": -1.8864397321428572,
+        "recovery_pct": 100.0
+      },
+      "10": {
+        "patched_diff": -1.8864397321428572,
+        "recovery_pct": 100.0
+      },
+      "12": {
+        "patched_diff": -1.8864397321428572,
+        "recovery_pct": 100.0
+      },
+      "14": {
+        "patched_diff": -1.8864397321428572,
+        "recovery_pct": 100.0
+      },
+      "16": {
+        "patched_diff": -1.8864397321428572,
+        "recovery_pct": 100.0
+      },
+      "18": {
+        "patched_diff": -1.8864397321428572,
+        "recovery_pct": 100.0
+      },
+      "20": {
+        "patched_diff": -1.8864397321428572,
+        "recovery_pct": 100.0
+      },
+      "22": {
+        "patched_diff": -1.8864397321428572,
+        "recovery_pct": 100.0
+      },
+      "24": {
+        "patched_diff": -1.8864397321428572,
+        "recovery_pct": 100.0
+      },
+      "26": {
+        "patched_diff": -1.8864397321428572,
+        "recovery_pct": 100.0
+      },
+      "28": {
+        "patched_diff": -1.8864397321428572,
+        "recovery_pct": 100.0
+      },
+      "30": {
+        "patched_diff": -1.8864397321428572,
+        "recovery_pct": 100.0
+      }
+    },
+    "problem_idx": 49,
+    "problem": "Valerie needs to put stamps on the envelopes she is about to mail. She has thank you cards for each of her grandmother, uncle and aunt for the birthday presents they sent. She also has to pay the wate"
+  }
+]
