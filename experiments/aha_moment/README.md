@@ -160,7 +160,32 @@ Step 4: Extract Direction and Analyze
 │ - Layer profile (which layer shows strongest signal)            │
 └─────────────────────────────────────────────────────────────────┘
 ```
-
+┌───────────────────────────────────────────────────────── ────┐
+│                   Research Strategy                          │
+├──────────────────────────────────────────────────────── ─────┤
+│                                                              │
+│  OPEN MODELS (OLMo, Qwen, Llama)                             │
+│  ├── Full activation analysis                                │
+│  ├── Error-detection direction extraction                    │
+│  ├── Phase transition measurement                            │
+│  └── Causal intervention                                     │
+│                                                              │
+│            ↓ Transfer findings ↓                             │
+│                                                              │
+│  CLOSED MODELS (Claude, o1, GPT-4)                           │
+│  ├── Behavioral probing (does behavior match?)               │
+│  ├── Correction rate analysis                                │
+│  ├── Self-consistency probes                                 │
+│  ├── Extended thinking mining (Claude)                       │
+│  └── Logprob analysis (when available)                       │
+│                                                              │
+│            ↓ Validate ↓                                      │
+│                                                              │
+│  QUESTION: Do closed models show the same behavioral         │
+│  signatures that correlate with error-detection in open      │
+│  models?                                                     │
+│                                                              │
+└────────────────────────────────────────────────────────────-─┘
 ### Expected Results
 
 | Model | Error Direction | Hypothesis |
@@ -264,7 +289,9 @@ Step 3: Analyze Trajectory at Pivot
 │ Compare velocity/direction to surrounding tokens                │
 └─────────────────────────────────────────────────────────────────┘
 ```
+Step 4: replicate in close models - 
 
+these models can actually check if they are good or not - which might be useful for us - this is not interventional but just descriptional - we might need something else to be interventional. 
 ### Pivot Detection: Multi-Token Challenge
 
 "But wait" might tokenize to multiple tokens. We need smarter detection:
