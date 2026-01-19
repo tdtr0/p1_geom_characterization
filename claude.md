@@ -291,6 +291,55 @@ ssh eyecog "cd ~/p1_geom_characterization && git add -A && git commit -m 'msg' &
 
 ---
 
+## 🖥️ Eyecog Server Access
+
+### SSH Access
+```bash
+ssh eyecog
+```
+
+### Data Locations (Updated 2026-01-19)
+
+**IMPORTANT**: Large trajectory data has been moved to `/data/thanhdo/` to free up /home space.
+
+| Data | Location | Size | Notes |
+|------|----------|------|-------|
+| **trajectories_0shot** | `/data/thanhdo/trajectories_0shot/` | ~38GB | Symlinked from ~/p1.../data/ |
+| **trajectories_8shot** | `/data/thanhdo/trajectories_8shot/` | ~57GB | Symlinked from ~/p1.../data/ |
+| **trajectories** (current) | `~/p1_geom_characterization/data/trajectories/` | ~16GB | In home dir |
+| **experiments** | `~/p1_geom_characterization/experiments/` | ~11GB | aha_moment data |
+
+**Symlinks in place** - code paths still work:
+```bash
+~/p1_geom_characterization/data/trajectories_0shot -> /data/thanhdo/trajectories_0shot
+~/p1_geom_characterization/data/trajectories_8shot -> /data/thanhdo/trajectories_8shot
+```
+
+### Corrupted Files (Deleted 2026-01-19)
+These 0shot logiqa files were truncated/corrupted and have been deleted:
+- `olmo3_sft/logiqa_trajectories.h5`
+- `olmo3_rl_zero/logiqa_trajectories.h5`
+- `olmo3_think/logiqa_trajectories.h5`
+
+Only `olmo3_base/logiqa_trajectories.h5` survives in 0shot.
+
+### Available Conda Environments
+```bash
+source ~/miniconda3/etc/profile.d/conda.sh
+conda activate base           # Main env with torch, transformers, h5py
+conda activate geometric_transfer  # Alternative (5.6GB)
+conda activate swin_improv    # Vision models (8.1GB)
+```
+
+### GPUs
+```bash
+nvidia-smi  # Check availability
+# GPU 0: RTX 3090 24GB
+# GPU 1: RTX 3090 24GB
+```
+
+---
+
 ## ⚠️ SLURM Cluster Access (CRITICAL SAFETY RULES)
 
 ### SSH Access

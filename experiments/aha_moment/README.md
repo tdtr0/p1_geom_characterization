@@ -1,11 +1,11 @@
 # Aha Moment Experiment: Error Detection & Phase Transitions
 
-**Status**: Experiment A ✅ Complete | Experiment B 🔄 Needs Recollection
-**Objective**: Test whether OLMo 3 models have error-detection features (Wynroe-style) and whether natural self-correction points show phase transition signatures.
+**Status**: Experiment A ✅ Complete | Experiment B ⚠️ Trivial Result | Experiment C 🔄 In Progress
+**Objective**: Test whether OLMo 3 models have error-detection features (Wynroe-style) and whether training paradigm affects active error correction.
 
 ---
 
-## Results Summary (2026-01-18)
+## Results Summary (2026-01-19)
 
 ### Experiment A: Wynroe Replication ✅ SUCCESS
 | Model | Pairs | Best Layer | Effect Size (d) | p-value |
@@ -15,12 +15,18 @@
 
 **Finding**: Strong error-detection signal exists in OLMo 3 models (Cohen's d > 1.5).
 
-### Experiment B: Natural Pivot Detection ❌ BLOCKED
-**Issue**: Phase 2 data only contains **prompt trajectories** (66 tokens), not generation trajectories.
-- Pivots occur in generation (positions 100+), which are zero-padded in Phase 2 data
-- Need to recollect with generation trajectories
+### Experiment B: Natural Pivot Detection ⚠️ TRIVIAL
+**Issue**: Lower curvature at pivot tokens is likely just surface-level pattern:
+- "Wait..." and "But..." are transition tokens → naturally smoother dynamics
+- No comparison across models (only tested `olmo3_think`)
+- Measures where pivots OCCUR, not whether model CAN correct
 
-**Fix**: Created new collection script `collect_pivot_trajectories.py` that captures full generation.
+**Verdict**: Experiment B doesn't isolate anything interesting. Replaced by Experiment C.
+
+### Experiment C: Active Error Correction 🔄 IN PROGRESS
+**New approach**: Test whether models can ACTIVELY correct errors, not just detect them passively.
+
+See detailed plan below.
 
 ---
 
@@ -437,11 +443,172 @@ def detect_pivots(text: str, tokenizer, use_classifier=False) -> List[int]:
 | Direction change | High | Low | Trajectory bending at pivot |
 | Lyapunov | High (spike) | Stable | Transitioning between basins |
 
+### Actual Results (Experiment B)
+
+| Metric | Pivot Mean | Random Mean | Effect Size (d) | Finding |
+|--------|------------|-------------|-----------------|---------|
+| Velocity | 14.90 | 15.42 | **-0.22** | Pivots are SLOWER |
+| Direction Change | 1.37 | 1.38 | -0.05 | No difference |
+| Menger Curvature | 0.111 | 0.109 | 0.17 | No difference |
+| Gaussian Proxy | 0.757 | 0.768 | **-0.31** | Pivots MORE LINEAR |
+
+**Conclusion**: Results are opposite of hypothesis. Pivots are "pause tokens" with smoother dynamics, not sharp turns. This is likely trivial - transition words naturally have different dynamics than calculation tokens. **Experiment C provides a more meaningful test.**
+
+---
+
+## Experiment C: Active Error Correction (NEW)
+
+### Motivation
+
+Experiment A shows models CAN detect errors (passive signal exists).
+Experiment B measures where pivot words occur (trivial finding).
+
+**Missing question**: Do models ACTIVELY correct errors when given the chance?
+
+### Hypothesis
+
+**Think-trained models (rl_zero, think) should correct errors that base models propagate.**
+
+If a model processes a corrupted solution with an arithmetic error:
+- **Base model**: Continues with wrong answer (no correction ability)
+- **Think model**: Recognizes error and corrects it (active correction)
+
+### Experimental Design
+
+```
+Step 1: Take corrupted traces from Experiment A
+┌─────────────────────────────────────────────────────────────────┐
+│ Corrupted trace: "The cost is $430 + $320 = $751"              │
+│                                               ↑ ERROR (should be $750)
+│ Ground truth answer: 750                                        │
+└─────────────────────────────────────────────────────────────────┘
+
+Step 2: Truncate BEFORE the final answer
+┌─────────────────────────────────────────────────────────────────┐
+│ Prefix: "Question: ... The cost is $430 + $320 = $751          │
+│          Therefore, the answer is "                             │
+│                                    ↑ TRUNCATE HERE              │
+│                                                                 │
+│ The model must now complete: what number comes next?            │
+└─────────────────────────────────────────────────────────────────┘
+
+Step 3: Continue generation with different models
+┌─────────────────────────────────────────────────────────────────┐
+│ Model         │ Continuation           │ Correct? │ Behavior    │
+│───────────────┼────────────────────────┼──────────┼─────────────│
+│ base          │ "751"                  │ ❌       │ Propagates  │
+│ sft           │ "751"                  │ ❌       │ Propagates  │
+│ rl_zero       │ "Wait, 430+320=750..."│ ✅       │ Corrects!   │
+│ think         │ "750 (fixing error)"   │ ✅       │ Corrects!   │
+└─────────────────────────────────────────────────────────────────┘
+
+Step 4: Collect activation trajectories during continuation
+┌─────────────────────────────────────────────────────────────────┐
+│ For models that CORRECT:                                        │
+│   - What do activations look like at correction point?          │
+│   - Higher curvature? Velocity spike? Direction change?         │
+│                                                                 │
+│ For models that PROPAGATE:                                      │
+│   - Smooth continuation (no correction dynamics)                │
+│   - Lower curvature, stable trajectory                          │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Metrics
+
+**Primary (Functional)**:
+| Metric | Description |
+|--------|-------------|
+| Correction Rate | % of errors corrected (final answer matches ground truth) |
+| Correction Type | Explicit ("Wait, that's wrong") vs Implicit (just outputs correct number) |
+
+**Secondary (Geometric)**:
+| Metric | Description |
+|--------|-------------|
+| Trajectory Divergence | How much does correcting model diverge from propagating model? |
+| Curvature at Correction | Menger curvature when correction happens |
+| Error Direction Projection | Does error-detection direction predict correction? |
+
+### Expected Results
+
+| Model | Correction Rate | Hypothesis |
+|-------|-----------------|------------|
+| **base** | ~0% | No outcome training, just continues pattern |
+| **sft** | ~10-20% | Some format understanding, mostly follows input |
+| **rl_zero** | ~50-70% | RLVR teaches outcome verification |
+| **think** | ~60-80% | Full training pipeline, best correction |
+
+**Key comparison**: rl_zero vs base reveals what RLVR training adds.
+
+### Implementation
+
+**Script**: `run_error_correction.py`
+
+```python
+def main():
+    # 1. Load corrupted traces from Experiment A
+    with h5py.File('data/wynroe_replication/wynroe_trajectories.h5', 'r') as f:
+        metadata = load_metadata(f)  # Has error positions, ground truth
+
+    # 2. Create truncated prefixes
+    prefixes = []
+    for pair in metadata:
+        corrupted_trace = pair['corrupted_trace']
+        # Truncate before "#### <answer>" or "the answer is <number>"
+        truncated = truncate_before_answer(corrupted_trace)
+        prefixes.append({
+            'prefix': truncated,
+            'ground_truth': pair['answer'],
+            'error_value': pair['corrupt_value'],  # The wrong number
+        })
+
+    # 3. Continue with each model
+    models = ['base', 'sft', 'rl_zero', 'think']
+    results = {}
+
+    for model_name in models:
+        model = load_model(model_name)
+
+        for prefix_data in prefixes:
+            # Generate continuation
+            continuation = model.generate(prefix_data['prefix'], max_tokens=50)
+
+            # Extract final answer from continuation
+            predicted = extract_number(continuation)
+            correct = (predicted == prefix_data['ground_truth'])
+
+            # Collect trajectory during generation (if needed for geometry)
+            trajectory = collect_generation_trajectory(model, prefix_data['prefix'])
+
+            results[model_name].append({
+                'correct': correct,
+                'predicted': predicted,
+                'continuation': continuation,
+                'trajectory': trajectory,
+            })
+
+    # 4. Analyze
+    for model_name in models:
+        correction_rate = mean([r['correct'] for r in results[model_name]])
+        print(f"{model_name}: {correction_rate:.1%} correction rate")
+```
+
+### Success Criteria
+
+1. **Primary**: Think models (rl_zero, think) correct significantly more errors than base model (p < 0.05)
+2. **Secondary**: Correction rate correlates with error-detection strength from Experiment A
+3. **Geometric**: Correcting trajectories show distinct dynamics vs propagating trajectories
+
+### GPU Requirements
+
+- ~1-2 hours on single GPU (92 prefixes × 4 models × ~50 tokens each)
+- Same GPU as Experiment A (eyecog or box1)
+
 ### Implementation
 
 **Scripts**:
-- `detect_pivots.py` — Pivot detection (regex + optional zero-shot filter) (TODO)
-- `analyze_pivot_dynamics.py` — Analyze velocity/direction at pivots (EXISTS)
+- `detect_pivots.py` — Pivot detection (regex + optional zero-shot filter) (DEPRECATED)
+- `analyze_pivot_dynamics.py` — Analyze velocity/direction at pivots (DEPRECATED)
 
 **Dependencies** (for zero-shot option):
 ```bash
