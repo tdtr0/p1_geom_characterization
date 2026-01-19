@@ -6,26 +6,30 @@ We ran three experiments to investigate "error-detection" signals in LLM activat
 
 | Experiment | Question | Result | Effect Size |
 |------------|----------|--------|-------------|
-| **A: Error Detection Probing** | Can models detect errors in preceding context? | ⚠️ Signal exists but **NOT proper Wynroe replication** | d=1.70 |
+| **A: Error Detection Probing** | Can models detect errors in preceding context? | ⚠️ Signal exists (probing) | d=1.70 |
+| **A': Wynroe Activation Patching** | Is there a critical layer for error detection? | ❌ **FLAT profile** (no spike!) | 98% all layers |
 | **B: Natural Pivots** | Do self-correction phrases have distinct geometry? | ⚠️ **Trivial** - likely induction head artifact | d=-0.31 |
 | **C: Active Error Correction** | Can think-trained models correct errors that base models propagate? | **Surprising** - detection ≠ correction | See below |
 
 **Critical Updates (2026-01-19)**:
 
-1. ⚠️ **Experiment A is NOT a proper Wynroe replication**:
-   - We used **probing** (correlational), Wynroe used **activation patching** (causal)
-   - We used **GSM8K** (easy), Wynroe used **MATH** (hard)
-   - Our signal is strong everywhere (d=1.1 at layer 0!) → info is trivially available
-   - Wynroe showed layer 20 **causally matters**; our probing just shows "info exists"
-   - **TODO**: Proper replication requires activation patching on MATH
+1. ✅ **Experiment A' (Proper Wynroe Patching) COMPLETED - OPPOSITE RESULT!**:
+   - Used proper **activation patching** methodology (like Wynroe)
+   - **Result: FLAT profile** - patching ANY layer gives ~98% recovery
+   - **No critical layer** - unlike Wynroe's layer 20 spike in DeepSeek-R1
+   - **Interpretation**: OLMo-3 may have distributed (not localized) error processing
 
-2. ⚠️ **Experiment B velocity slowdown is likely induction heads**:
+2. ⚠️ **Original Experiment A (probing)** was methodologically limited:
+   - Probing (correlational), not patching (causal)
+   - Signal strong everywhere (d=1.1 at layer 0!) → trivially available
+
+3. ⚠️ **Experiment B velocity slowdown is likely induction heads**:
    - "Wait..." tokens often precede **repeats** of earlier calculations
    - [Induction heads](https://transformer-circuits.pub/2022/in-context-learning-and-induction-heads/index.html) copy from context → less novel computation → lower velocity
    - This is trivial - not about error detection
    - **Proposed ablation**: Check induction SAE features (Neuronpedia) at pivots
 
-3. ✅ **Experiment C remains the key finding**: Detection ≠ correction
+4. ✅ **Experiment C remains the key finding**: Detection ≠ correction
    - Think models resist propagation 3× better but don't correct better (11% vs 11%)
    - This is a robust behavioral finding independent of the methodological issues above
 

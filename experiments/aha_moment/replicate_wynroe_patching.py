@@ -54,7 +54,7 @@ def load_math_dataset(n_samples: int = 100, subset: str = "algebra") -> List[Dic
 
     Args:
         n_samples: Number of problems to load
-        subset: MATH subset (algebra, geometry, etc.)
+        subset: MATH subset (algebra, geometry, number_theory, etc.)
 
     Returns:
         List of problems with 'problem' and 'solution' fields
@@ -62,19 +62,34 @@ def load_math_dataset(n_samples: int = 100, subset: str = "algebra") -> List[Dic
     print(f"Loading MATH dataset ({subset})...")
 
     try:
-        # Try loading from HuggingFace
-        dataset = load_dataset("hendrycks/competition_math", split="train")
-        # Filter by type if needed
+        # Use EleutherAI's version (hendrycks/competition_math has DMCA issues)
+        dataset = load_dataset("EleutherAI/hendrycks_math", subset, split="train", trust_remote_code=True)
         problems = [
-            {"problem": item["problem"], "solution": item["solution"], "level": item["level"]}
+            {"problem": item["problem"], "solution": item["solution"]}
             for item in dataset
         ]
-        # Take first n_samples
+        print(f"Loaded {len(problems)} problems from MATH/{subset}")
+        # Shuffle and take n_samples
+        import random
+        random.shuffle(problems)
         return problems[:n_samples]
     except Exception as e:
-        print(f"Warning: Could not load MATH dataset: {e}")
-        print("Falling back to GSM8K with harder problems...")
+        print(f"Warning: Could not load MATH/{subset}: {e}")
 
+        # Try another subset
+        for alt_subset in ["algebra", "number_theory", "counting_and_probability"]:
+            if alt_subset != subset:
+                try:
+                    dataset = load_dataset("EleutherAI/hendrycks_math", alt_subset, split="train", trust_remote_code=True)
+                    problems = [{"problem": item["problem"], "solution": item["solution"]} for item in dataset]
+                    print(f"Loaded {len(problems)} problems from MATH/{alt_subset}")
+                    import random
+                    random.shuffle(problems)
+                    return problems[:n_samples]
+                except:
+                    continue
+
+        print("Falling back to GSM8K with harder problems...")
         # Fallback to GSM8K
         dataset = load_dataset("gsm8k", "main", split="train")
         problems = [
@@ -307,8 +322,10 @@ def run_patching_experiment(
     # Baseline logit-diff (clean - corrupted)
     baseline_diff = compute_logit_diff(clean_logits, corrupted_logits)
 
-    if abs(baseline_diff) < 0.01:
-        # No meaningful difference - skip this pair
+    # Wynroe filtered for logit-diff > 3 (kept only 44% of pairs)
+    # This ensures we only keep pairs where the model shows STRONG response to the error
+    if abs(baseline_diff) < 3.0:
+        # No meaningful difference - skip this pair (model doesn't notice error)
         return None
 
     # Step 2: Collect clean activations
@@ -357,9 +374,11 @@ def main():
     output_dir = script_dir / args.output_dir
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    # Load dataset
-    problems = load_math_dataset(n_samples=args.n_samples * 2)  # Load extra in case some fail
-    print(f"Loaded {len(problems)} problems")
+    # Load dataset - need 3-4x target because:
+    # 1. ~50% fail error injection
+    # 2. ~56% filtered out (logit-diff < 3, like Wynroe)
+    problems = load_math_dataset(n_samples=args.n_samples * 5)
+    print(f"Loaded {len(problems)} problems (target: {args.n_samples} after filtering)")
 
     # Load model
     model_path = MODEL_CONFIGS[args.model]
@@ -378,6 +397,8 @@ def main():
     # Run experiment
     all_results = []
     successful_pairs = 0
+    filtered_low_diff = 0  # Track how many filtered for low logit-diff
+    failed_injection = 0   # Track how many failed error injection
 
     for i, problem in enumerate(tqdm(problems, desc="Running patching experiment")):
         if successful_pairs >= args.n_samples:
@@ -389,6 +410,7 @@ def main():
         # Step 2: Inject error
         clean, corrupted, error_pos = inject_arithmetic_error(solution)
         if clean is None:
+            failed_injection += 1
             continue
 
         # Step 3: Create prompts (prefix up to error)
@@ -407,6 +429,8 @@ def main():
                 result["problem"] = problem["problem"][:200]  # Truncate for storage
                 all_results.append(result)
                 successful_pairs += 1
+            else:
+                filtered_low_diff += 1  # Filtered for logit-diff < 3
         except Exception as e:
             print(f"Error on problem {i}: {e}")
             continue
@@ -415,7 +439,15 @@ def main():
         if i % 10 == 0:
             torch.cuda.empty_cache()
 
-    print(f"\nSuccessfully processed {len(all_results)} pairs")
+    total_attempted = i + 1
+    print(f"\n" + "=" * 60)
+    print("FILTERING SUMMARY (Wynroe kept 44%)")
+    print("=" * 60)
+    print(f"Total attempted:     {total_attempted}")
+    print(f"Failed injection:    {failed_injection} ({100*failed_injection/max(1,total_attempted):.1f}%)")
+    print(f"Filtered (diff<3):   {filtered_low_diff} ({100*filtered_low_diff/max(1,total_attempted):.1f}%)")
+    print(f"Successful pairs:    {len(all_results)} ({100*len(all_results)/max(1,total_attempted):.1f}%)")
+    print(f"(Wynroe retention:   44%)")
 
     # Aggregate results
     layer_recovery = {layer: [] for layer in LAYERS_TO_PATCH}
