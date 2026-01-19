@@ -222,6 +222,79 @@ All metrics computed with 5-fold stratified cross-validation with standard devia
 
 ---
 
+---
+
+## Phase 3 Dynamical Systems Analysis (Partial Results)
+
+**Date**: 2026-01-20
+**Analysis**: `phase3_dynamical_analysis.py`
+**Samples**: 50 per task (reduced from 150 due to memory constraints)
+
+### 1. Error-Detection Direction Analysis (Wynroe-style)
+
+**Method**: Extract linear direction separating correct/incorrect via difference-in-means, test across layers.
+
+| Task | Best Layer | Effect Size (d) | p-value | Classification Accuracy |
+|------|-----------|-----------------|---------|------------------------|
+| HumanEval | 26 | **1.733** | 0.0008 | **90.0%** |
+| LogiQA | 28 | **1.429** | 0.0001 | **76.0%** |
+
+**Key Finding**: A single linear direction can distinguish correct from incorrect with high accuracy. The error-detection direction emerges in late layers (26-28 out of 32).
+
+**Interpretation**: This replicates findings from Wynroe et al. — there exists a linear "error-detection direction" in the residual stream that separates correct from incorrect solutions. The effect is stronger for HumanEval (d=1.73) than LogiQA (d=1.43).
+
+### 2. Menger Curvature Analysis (Zhou et al., 2025)
+
+**Method**: Compute Menger curvature at each layer transition, compare profiles between correct/incorrect.
+
+| Task | Correct Mean | Incorrect Mean | Effect Size | p-value |
+|------|--------------|----------------|-------------|---------|
+| HumanEval | 2.694 | 2.317 | 0.412 | 0.387 |
+| LogiQA | 1.335 | 1.215 | 0.391 | 0.244 |
+
+**Within-Domain**: Not significant (p > 0.2). Correct solutions have slightly higher curvature, but the difference is not statistically reliable with N=50.
+
+**Cross-Domain Correlation**:
+| Comparison | Pearson r | p-value |
+|------------|-----------|---------|
+| HumanEval ↔ LogiQA | **0.994** | **<0.0001** |
+
+**Critical Finding**: The curvature profiles are nearly identical across domains (r=0.994)!
+
+**Interpretation**: This is a surprising and important result:
+- The *shape* of trajectories through layers (curvature profile) is highly similar across domains
+- But the *direction* that separates correct/incorrect is domain-specific (H2 classifier transfer fails)
+
+This suggests that correct solutions traverse the manifold with **similar geometric structure** across domains, even though the **specific features** that distinguish correct/incorrect are domain-specific.
+
+### 3. Lyapunov Exponent Analysis
+
+**Status**: Analysis crashed during computation (memory issue). Results pending.
+
+**Hypothesis**: Correct solutions have more stable dynamics (lower Lyapunov exponents, indicating convergent trajectories).
+
+### 4. Summary of Dynamical Findings
+
+| Analysis | Within-Domain | Cross-Domain |
+|----------|---------------|--------------|
+| Error Direction | ✓ Strong (d>1.4) | Not tested yet |
+| Menger Curvature | ✗ Weak (d~0.4) | ✓ Strong (r=0.99) |
+| Lyapunov | Pending | Pending |
+| Attractor | Pending | Pending |
+
+### 5. Revised Interpretation of H2
+
+The original H2 hypothesis ("dynamical signatures share structure across domains") may be **partially true** in a nuanced way:
+
+- **What transfers**: The geometric *structure* of trajectories (curvature profile)
+- **What doesn't transfer**: The specific *direction* that separates correct/incorrect
+
+This is analogous to saying:
+- All correct solutions follow "smooth, curved paths" through the manifold (structure transfers)
+- But the specific destination (attractor basin) differs by domain (direction doesn't transfer)
+
+---
+
 ## Files Generated
 
 - `results/phase3_0shot_olmo3_base.json`: Raw results from `h1_h2_classifier.py`
