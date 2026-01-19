@@ -1,0 +1,43 @@
+{
+  "model": "olmo3_think",
+  "n_samples": 200,
+  "n_samples_with_pivots": 62,
+  "total_pivots": 234,
+  "metrics": {
+    "velocity": {
+      "pivot_mean": 14.897006034851074,
+      "pivot_std": 2.144139528274536,
+      "random_mean": 15.418888092041016,
+      "random_std": 2.6014726161956787,
+      "effect_size_d": -0.2189287394285202,
+      "p_value": 0.018536897477869196
+    },
+    "direction_change": {
+      "pivot_mean": 1.3704351859214978,
+      "pivot_std": 0.13709076529987058,
+      "random_mean": 1.378110356310494,
+      "random_std": 0.14249148597672956,
+      "effect_size_d": -0.054894320058377875,
+      "p_value": 0.5538013661097918
+    },
+    "lyapunov": {
+      "pivot_mean": 1.6417201548560052,
+      "pivot_std": 0.016890126773675428,
+      "random_mean": 1.6419017844729953,
+      "random_std": 0.014942062197119353,
+      "effect_size_d": -0.01139038543390575,
+      "p_value": 0.9022057823128465
+    }
+  },
+  "pivot_patterns": {
+    "Wait": 48,
+    "BUT": 101,
+    "BUT_WAIT": 5,
+    "hmm": 19,
+    "Wait_correction": 5,
+    "however": 45,
+    "actually": 8,
+    "hmm_correction": 2,
+    "Actually_correction": 1
+  }
+}
