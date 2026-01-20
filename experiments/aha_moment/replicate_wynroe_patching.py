@@ -209,8 +209,9 @@ def activation_patch_forward(
     def make_patch_hook(layer_idx: int):
         def hook(module, input, output):
             # output is (hidden_states, ...) or just hidden_states
+            # CRITICAL: Must clone before modifying - in-place ops don't propagate correctly
             if isinstance(output, tuple):
-                hidden_states = output[0]
+                hidden_states = output[0].clone()  # Clone to ensure modification propagates
                 # Replace with clean activations
                 patched = clean_activations[layer_idx].to(hidden_states.device)
                 # Match sequence length
@@ -218,10 +219,11 @@ def activation_patch_forward(
                 hidden_states[:, :min_len, :] = patched[:, :min_len, :]
                 return (hidden_states,) + output[1:]
             else:
-                patched = clean_activations[layer_idx].to(output.device)
-                min_len = min(output.shape[1], patched.shape[1])
-                output[:, :min_len, :] = patched[:, :min_len, :]
-                return output
+                new_output = output.clone()  # Clone to ensure modification propagates
+                patched = clean_activations[layer_idx].to(new_output.device)
+                min_len = min(new_output.shape[1], patched.shape[1])
+                new_output[:, :min_len, :] = patched[:, :min_len, :]
+                return new_output
         return hook
 
     # Register hook at the specified layer
