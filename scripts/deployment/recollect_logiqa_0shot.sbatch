@@ -39,7 +39,8 @@ echo "Working directory: $REPO_DIR"
 cd $REPO_DIR
 
 # Activate conda
-source activate maniver_env
+source ~/miniconda3/etc/profile.d/conda.sh
+conda activate maniver_env
 
 # Set environment variables
 export PYTHONPATH=$REPO_DIR/src:$PYTHONPATH
