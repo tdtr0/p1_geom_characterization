@@ -5,7 +5,7 @@
 #SBATCH --time=0-04:00
 #SBATCH --mem=80000
 #SBATCH --gres=gpu:1
-#SBATCH --nodelist=h100
+#SBATCH --nodelist=quadro1
 
 #
 # LogiQA 0-shot recollection with full trajectory capture (no truncation)
@@ -63,7 +63,7 @@ echo ""
 
 # Models to recollect (corrupted 0-shot LogiQA files)
 MODELS=("olmo3_sft" "olmo3_rl_zero" "olmo3_think")
-BATCH_SIZE=8
+BATCH_SIZE=4  # Reduced for 48GB GPU (vs 8 for 80GB H100)
 NUM_SAMPLES=500
 
 echo "========================================="
