@@ -45,8 +45,8 @@ from task_data import prepare_logiqa
 
 # Configuration
 N_SAMPLES = 500
-MAX_SEQ_LEN = 512
-MAX_NEW_TOKENS = 2048
+MAX_SEQ_LEN = 2048      # Full trajectory capture - no truncation
+MAX_NEW_TOKENS = 2048   # Max generation length
 LAYERS_TO_COLLECT = list(range(0, 32, 2))  # Even layers
 BATCH_SIZE = 8  # Optimized for H100
 OUTPUT_DIR = Path('data/trajectories')
