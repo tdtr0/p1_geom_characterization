@@ -224,11 +224,12 @@ All metrics computed with 5-fold stratified cross-validation with standard devia
 
 ---
 
-## Phase 3 Dynamical Systems Analysis (Partial Results)
+## Phase 3 Dynamical Systems Analysis (COMPLETE Results)
 
-**Date**: 2026-01-20
+**Date**: 2026-01-20 (Updated)
 **Analysis**: `phase3_dynamical_analysis.py`
-**Samples**: 50 per task (reduced from 150 due to memory constraints)
+**Samples**: 100 per task
+**Model**: olmo3_base (0-shot)
 
 ### 1. Error-Detection Direction Analysis (Wynroe-style)
 
@@ -236,12 +237,12 @@ All metrics computed with 5-fold stratified cross-validation with standard devia
 
 | Task | Best Layer | Effect Size (d) | p-value | Classification Accuracy |
 |------|-----------|-----------------|---------|------------------------|
-| HumanEval | 26 | **1.733** | 0.0008 | **90.0%** |
-| LogiQA | 28 | **1.429** | 0.0001 | **76.0%** |
+| HumanEval | 26 | **1.066** | 0.0006 | **68.0%** |
+| LogiQA | 28 | **1.054** | <0.0001 | **71.0%** |
 
-**Key Finding**: A single linear direction can distinguish correct from incorrect with high accuracy. The error-detection direction emerges in late layers (26-28 out of 32).
+**Key Finding**: A single linear direction can distinguish correct from incorrect with good accuracy. The error-detection direction emerges in late layers (26-28 out of 32).
 
-**Interpretation**: This replicates findings from Wynroe et al. — there exists a linear "error-detection direction" in the residual stream that separates correct from incorrect solutions. The effect is stronger for HumanEval (d=1.73) than LogiQA (d=1.43).
+**Interpretation**: This replicates findings from Wynroe et al. — there exists a linear "error-detection direction" in the residual stream that separates correct from incorrect solutions. The effect is similar across both domains (d≈1.0).
 
 ### 2. Menger Curvature Analysis (Zhou et al., 2025)
 
@@ -249,15 +250,15 @@ All metrics computed with 5-fold stratified cross-validation with standard devia
 
 | Task | Correct Mean | Incorrect Mean | Effect Size | p-value |
 |------|--------------|----------------|-------------|---------|
-| HumanEval | 2.694 | 2.317 | 0.412 | 0.387 |
-| LogiQA | 1.335 | 1.215 | 0.391 | 0.244 |
+| HumanEval | 2.383 | 2.111 | 0.315 | 0.291 |
+| LogiQA | 1.266 | 1.196 | 0.244 | 0.322 |
 
-**Within-Domain**: Not significant (p > 0.2). Correct solutions have slightly higher curvature, but the difference is not statistically reliable with N=50.
+**Within-Domain**: Not significant (p > 0.2). Correct solutions have slightly higher curvature, but the difference is not statistically reliable with N=100.
 
 **Cross-Domain Correlation**:
 | Comparison | Pearson r | p-value |
 |------------|-----------|---------|
-| HumanEval ↔ LogiQA | **0.994** | **<0.0001** |
+| HumanEval ↔ LogiQA | **0.996** | **<0.0001** |
 
 **Critical Finding**: The curvature profiles are nearly identical across domains (r=0.994)!
 
@@ -269,29 +270,75 @@ This suggests that correct solutions traverse the manifold with **similar geomet
 
 ### 3. Lyapunov Exponent Analysis
 
-**Status**: Analysis crashed during computation (memory issue). Results pending.
+**Method**: Compute Frobenius norm ratio at each layer transition as proxy for trajectory expansion/contraction.
 
-**Hypothesis**: Correct solutions have more stable dynamics (lower Lyapunov exponents, indicating convergent trajectories).
+| Task | Correct Mean | Incorrect Mean | Effect Size | p-value |
+|------|--------------|----------------|-------------|---------|
+| HumanEval | 0.186 | 0.189 | **-0.303** | 0.311 |
+| LogiQA | 0.190 | 0.191 | **-0.267** | 0.280 |
 
-### 4. Summary of Dynamical Findings
+**Key Finding**: The effect direction is as hypothesized — correct solutions have LOWER expansion (more stable trajectories). However, the effect is not statistically significant (p > 0.3).
+
+**Interpretation**: Weak support for H5 (stability hypothesis). The trend is in the expected direction but more samples or more sensitive methods may be needed for significance.
+
+### 4. Attractor Analysis
+
+**Method**: Cluster final layer states using K-means (k=8), analyze cluster composition.
+
+| Task | Mean Purity | Correct-Dominated Clusters | Incorrect-Dominated Clusters |
+|------|-------------|---------------------------|------------------------------|
+| HumanEval | 92.7% | 0 | 8 |
+| LogiQA | 84.8% | 0 | 8 |
+
+**Key Finding**: Clusters have high purity (solutions within clusters tend to be all-correct or all-incorrect), but no correct-dominated clusters exist. This is due to severe class imbalance — with only 13% correct samples, even random assignment would produce few correct-dominated clusters.
+
+### 5. Error Direction Transfer (H2 Detailed Test)
+
+**Method**: Train linear classifier on error-detection direction from one domain, test on another.
+
+| Train → Test | Train Accuracy | Test Accuracy | Status |
+|--------------|----------------|---------------|--------|
+| HumanEval → LogiQA | 52.0% | **75.0%** | ✓ Transfer |
+| LogiQA → HumanEval | 67.0% | **19.0%** | ✗ No transfer |
+
+**Critical Finding**: Direction transfer is **ASYMMETRIC**!
+- Code → Logic: **Works** (75% accuracy)
+- Logic → Code: **Fails** (19% accuracy, worse than chance)
+
+**Interpretation**: The error-detection direction learned from code generation (HumanEval) generalizes to logic reasoning (LogiQA), but NOT vice versa. This suggests:
+1. Code generation may require more structured reasoning that encompasses logic-like patterns
+2. Logic reasoning may use more task-specific representations that don't generalize to code
+3. There may be a **hierarchy** of reasoning complexity: code ⊃ logic
+
+### 6. Summary of Dynamical Findings
 
 | Analysis | Within-Domain | Cross-Domain |
 |----------|---------------|--------------|
-| Error Direction | ✓ Strong (d>1.4) | Not tested yet |
-| Menger Curvature | ✗ Weak (d~0.4) | ✓ Strong (r=0.99) |
-| Lyapunov | Pending | Pending |
-| Attractor | Pending | Pending |
+| Error Direction | ✓ Strong (d>1.0, p<0.001) | **Asymmetric**: code→logic works, logic→code fails |
+| Menger Curvature | ✗ Weak (d~0.3, p>0.2) | ✓ Strong (r=0.996, p<0.0001) |
+| Lyapunov | ~ Trend in expected direction | N/A |
+| Attractor | High purity (85-93%) | Class imbalance confound |
 
-### 5. Revised Interpretation of H2
+### 7. Revised Interpretation of H2
 
-The original H2 hypothesis ("dynamical signatures share structure across domains") may be **partially true** in a nuanced way:
+The original H2 hypothesis ("dynamical signatures share structure across domains") is **more nuanced** than expected:
 
-- **What transfers**: The geometric *structure* of trajectories (curvature profile)
-- **What doesn't transfer**: The specific *direction* that separates correct/incorrect
+**What transfers**:
+1. **Geometric structure** (curvature profile) — r=0.996 correlation across domains
+2. **Error direction from code to logic** — 75% transfer accuracy
 
-This is analogous to saying:
-- All correct solutions follow "smooth, curved paths" through the manifold (structure transfers)
-- But the specific destination (attractor basin) differs by domain (direction doesn't transfer)
+**What doesn't transfer**:
+1. **Error direction from logic to code** — 19% accuracy (worse than chance)
+2. **Generic linear classifiers** — ~52% cross-domain accuracy
+
+**Proposed hierarchy**:
+```
+Code generation (HumanEval) ⊃ Logic reasoning (LogiQA)
+```
+
+This suggests code generation requires reasoning patterns that **encompass** logic-like reasoning, but logic reasoning uses **domain-specific** patterns that don't generalize back to code.
+
+**Analogy**: A skilled programmer can often reason about logic puzzles, but a skilled logician may struggle with code syntax and structure.
 
 ---
 

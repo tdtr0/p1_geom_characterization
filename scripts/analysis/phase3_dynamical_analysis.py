@@ -294,15 +294,18 @@ def compute_curvature_correlation(traj1, labels1, traj2, labels2):
 # 3. LYAPUNOV EXPONENT ANALYSIS
 # ============================================================================
 
-def compute_lyapunov_exponents(trajectory):
+def compute_lyapunov_exponents(trajectory, method='fast'):
     """
     Compute local Lyapunov exponents along a trajectory.
 
     For discrete dynamics x_{l+1} = f(x_l), estimate expansion/contraction
-    using singular value ratios of layer transitions.
+    using either:
+    - 'fast': Frobenius norm ratio (instant, good proxy)
+    - 'svd': Full SVD singular value ratio (slow but more accurate)
 
     Args:
         trajectory: (seq_len, n_layers, d_model)
+        method: 'fast' (default) or 'svd'
 
     Returns:
         dict with Lyapunov statistics
@@ -314,17 +317,25 @@ def compute_lyapunov_exponents(trajectory):
         x_l = trajectory[:, l, :]      # (seq_len, d_model)
         x_l1 = trajectory[:, l+1, :]   # (seq_len, d_model)
 
-        delta_x = x_l1 - x_l
-
-        # SVD to estimate expansion
-        try:
-            _, s, _ = np.linalg.svd(delta_x, full_matrices=False)
-            if len(s) > 1 and s[-1] > 1e-10:
-                expansion = np.log(s[0] / (s[-1] + 1e-8))
-            else:
+        if method == 'fast':
+            # Fast: Frobenius norm ratio as proxy for expansion
+            norm_ratio = np.linalg.norm(x_l1, 'fro') / (np.linalg.norm(x_l, 'fro') + 1e-8)
+            expansion = np.log(norm_ratio + 1e-8)
+        else:
+            # SVD: Full singular value analysis (slow)
+            delta_x = x_l1 - x_l
+            try:
+                # Subsample for speed if sequence is long
+                if seq_len > 64:
+                    idx = np.linspace(0, seq_len-1, 64, dtype=int)
+                    delta_x = delta_x[idx, :]
+                _, s, _ = np.linalg.svd(delta_x, full_matrices=False)
+                if len(s) > 1 and s[-1] > 1e-10:
+                    expansion = np.log(s[0] / (s[-1] + 1e-8))
+                else:
+                    expansion = 0
+            except:
                 expansion = 0
-        except:
-            expansion = 0
 
         layer_lyapunov.append(expansion)
 
