@@ -45,6 +45,7 @@ conda activate maniver_env
 # Set environment variables
 export PYTHONPATH=$REPO_DIR/src:$PYTHONPATH
 export HDF5_USE_FILE_LOCKING=FALSE
+export VLLM_ATTENTION_BACKEND=TRITON_ATTN  # Avoid FlashInfer JIT issues with GCC/CUDA mismatch
 
 # Show environment info
 echo ""
