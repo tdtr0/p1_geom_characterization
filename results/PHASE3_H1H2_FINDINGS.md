@@ -260,13 +260,23 @@ All metrics computed with 5-fold stratified cross-validation with standard devia
 |------------|-----------|---------|
 | HumanEval ↔ LogiQA | **0.996** | **<0.0001** |
 
-**Critical Finding**: The curvature profiles are nearly identical across domains (r=0.994)!
+**Cross-Domain Correlation**: r=0.996 - but this is a **NULL RESULT** (see below)!
 
-**Interpretation**: This is a surprising and important result:
-- The *shape* of trajectories through layers (curvature profile) is highly similar across domains
-- But the *direction* that separates correct/incorrect is domain-specific (H2 classifier transfer fails)
+**CRITICAL CORRECTION** (from follow-up analysis):
 
-This suggests that correct solutions traverse the manifold with **similar geometric structure** across domains, even though the **specific features** that distinguish correct/incorrect are domain-specific.
+We tested curvature profiles conditioned on correctness:
+| Comparison | r |
+|------------|---|
+| HumanEval Correct ↔ Incorrect | 0.9999 |
+| LogiQA Correct ↔ Incorrect | 0.9998 |
+| Cross-domain (any) | 0.996 |
+
+**All correlations are r ≈ 1.0!** This means curvature profile is:
+- Identical whether correct or incorrect
+- Identical across domains
+- **An architectural property, NOT related to reasoning**
+
+The r=0.996 cross-domain finding is a **red herring** - it tells us about transformer architecture, not about reasoning transfer.
 
 ### 3. Lyapunov Exponent Analysis
 
@@ -315,30 +325,38 @@ This suggests that correct solutions traverse the manifold with **similar geomet
 | Analysis | Within-Domain | Cross-Domain |
 |----------|---------------|--------------|
 | Error Direction | ✓ Strong (d>1.0, p<0.001) | **Asymmetric**: code→logic works, logic→code fails |
-| Menger Curvature | ✗ Weak (d~0.3, p>0.2) | ✓ Strong (r=0.996, p<0.0001) |
+| Menger Curvature | ✗ Weak (d~0.3, p>0.2) | ✗ NULL RESULT (architectural, r≈1.0 for everything) |
 | Lyapunov | ~ Trend in expected direction | N/A |
 | Attractor | High purity (85-93%) | Class imbalance confound |
 
 ### 7. Revised Interpretation of H2
 
-The original H2 hypothesis ("dynamical signatures share structure across domains") is **more nuanced** than expected:
+The original H2 hypothesis ("dynamical signatures share structure across domains") is **mostly FALSE** with one interesting exception:
 
 **What transfers**:
-1. **Geometric structure** (curvature profile) — r=0.996 correlation across domains
-2. **Error direction from code to logic** — 75% transfer accuracy
+1. ~~Geometric structure (curvature profile)~~ - **CORRECTED**: This is a null result (architectural property)
+2. **Error direction from code to logic** — 75% transfer accuracy (ASYMMETRIC)
 
 **What doesn't transfer**:
 1. **Error direction from logic to code** — 19% accuracy (worse than chance)
 2. **Generic linear classifiers** — ~52% cross-domain accuracy
+3. **Curvature profile** — Not useful (identical for correct/incorrect)
+
+**The one interesting finding**: Asymmetric direction transfer
+
+```
+Code generation (HumanEval) ──75%──> Logic reasoning (LogiQA)
+Logic reasoning (LogiQA) ──19%──> Code generation (HumanEval)
+```
 
 **Proposed hierarchy**:
 ```
-Code generation (HumanEval) ⊃ Logic reasoning (LogiQA)
+Code generation ⊃ Logic reasoning
 ```
 
-This suggests code generation requires reasoning patterns that **encompass** logic-like reasoning, but logic reasoning uses **domain-specific** patterns that don't generalize back to code.
+This suggests code generation requires reasoning patterns that **encompass** logic-like patterns, but logic reasoning uses **domain-specific** patterns.
 
-**Analogy**: A skilled programmer can often reason about logic puzzles, but a skilled logician may struggle with code syntax and structure.
+**What we learned about Menger curvature**: It's an architectural property of transformers, not a signal for correctness or reasoning. All trajectories through OLMo-3 have nearly identical curvature profiles (r≈1.0) regardless of task or correctness.
 
 ---
 

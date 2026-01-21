@@ -32,6 +32,53 @@ Phase 1 (complete) showed RLVR and SFT models have different static geometry:
 
 ---
 
+## Motivating Result: Linear Methods Don't Capture Reasoning
+
+### SVD Analysis: Is Reasoning Linearly Separable?
+
+Before pursuing dynamical analysis, we tested a simpler hypothesis: **Does RLVR create separable "reasoning subspaces" in top eigenvectors?**
+
+**Method**: Compared SVD of activation matrices between `olmo3_base` and `olmo3_rl_zero`:
+- Computed eigenvector alignment: `delta_k = 1 - |cos(v_base_k, v_rlvr_k)|`
+- Compared top-10 vs tail-50 eigenvectors across 16 layers
+
+**Prediction if reasoning is separable**:
+- Top eigenvectors should change MORE (reasoning directions refined)
+- Tail eigenvectors should change LESS (knowledge preserved)
+
+**Results** (2026-01-19):
+
+| Task | Top-10 Delta | Tail-50 Delta | Ratio | Interpretation |
+|------|-------------|---------------|-------|----------------|
+| HumanEval | 0.008 (0.8%) | 0.073 (7.3%) | 0.12 | **TAIL-HEAVY** |
+| GSM8K | 0.022 (2.2%) | 0.067 (6.7%) | 0.33 | **TAIL-HEAVY** |
+
+**Finding: OPPOSITE of separable reasoning hypothesis.**
+
+Tail eigenvectors change 3-8x MORE than top eigenvectors. RLVR:
+1. **Preserves top eigenvectors** — core representational structure unchanged
+2. **Refines tail eigenvectors** — adjusts low-variance, fine-grained directions
+3. **Does NOT create distinct "reasoning subspaces"**
+
+### Why This Motivates Dynamical Analysis
+
+This negative result supports the **interpolation view** (Allen-Zhu & Li, 2024):
+- There is no separate "reasoning mode" or "reasoning subspace"
+- Reasoning is not captured by linear projections onto principal components
+- RLVR refinement is distributed, not localized to specific directions
+
+**Implication**: If reasoning isn't in the **space** (static subspace), it may be in the **flow** (trajectory dynamics).
+
+This motivates our focus on:
+- **Vector field analysis**: How activations flow through layers
+- **Lyapunov stability**: Whether correct solutions are more stable
+- **Attractor dynamics**: Which basins correct vs incorrect solutions converge to
+- **Path signatures**: Trajectory shape features (reparameterization-invariant)
+
+*Full analysis: `experiments/svd_reasoning_separability/` and `notebooks/working_notes/SVD_LINEAR_SEPARABILITY_FINDINGS.md`*
+
+---
+
 ## Theoretical Framework: Interpolation, Attractors, and Belief Dynamics
 
 ### The Allen-Zhu View: Everything is Interpolation

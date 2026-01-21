@@ -1,6 +1,6 @@
 # Menger Curvature Analysis Findings
 
-**Date**: 2026-01-20
+**Date**: 2026-01-20 (Updated with critical correction)
 **Model**: olmo3_base (0-shot)
 **Tasks**: HumanEval, LogiQA
 
@@ -11,9 +11,16 @@
 We computed Menger curvature across layer trajectories and found:
 
 1. **Within-domain**: Curvature does NOT significantly distinguish correct vs incorrect (p > 0.2)
-2. **Cross-domain**: Curvature profiles are HIGHLY correlated (r = 0.994, p < 0.0001)
+2. **Cross-domain**: Curvature profiles are HIGHLY correlated (r = 0.996, p < 0.0001)
 
-This suggests trajectory geometry transfers across domains even though linear classifiers do not.
+**CRITICAL UPDATE**: The r=0.996 finding is a **RED HERRING / NULL RESULT**!
+
+Further analysis showed that curvature profiles are identical across:
+- Correct vs Incorrect (within domain): r = 0.9999
+- Correct vs Correct (cross domain): r = 0.9961
+- All pairwise combinations: r > 0.995
+
+This means curvature profile is an **architectural property** of the transformer, not a signal related to reasoning or correctness.
 
 ---
 
@@ -99,28 +106,67 @@ def compute_menger_curvature(trajectory):
 |------------|-----------------|---------|
 | HumanEval ↔ LogiQA | **0.996** | < 0.0001 |
 
-**Interpretation**: Despite being different tasks (code vs logic), the curvature profiles across layers are nearly identical. This is a striking finding:
-
-- The **shape** of how curvature changes across layers is the same
-- This suggests a **domain-invariant geometric structure** in transformer computation
-- Even though linear classifiers don't transfer, the underlying geometry does
+**Initial Interpretation** (INCORRECT): ~~Despite being different tasks (code vs logic), the curvature profiles across layers are nearly identical. This suggests a domain-invariant geometric structure.~~
 
 ---
 
-## Key Finding: Structure Transfers, Direction Does Not
+## CRITICAL CORRECTION: Correctness-Conditioned Analysis
+
+After the initial finding, we tested whether curvature differs by correctness:
+
+### Pairwise Curvature Profile Correlations
+
+| Comparison | Correlation (r) |
+|------------|-----------------|
+| HumanEval Correct ↔ HumanEval Incorrect | **0.9999** |
+| LogiQA Correct ↔ LogiQA Incorrect | **0.9998** |
+| HumanEval Correct ↔ LogiQA Correct | 0.9961 |
+| HumanEval Incorrect ↔ LogiQA Incorrect | 0.9963 |
+
+### Interpretation
+
+**ALL correlations are essentially r ≈ 1.0!**
+
+This means:
+1. Curvature profile is **identical** whether the solution is correct or incorrect
+2. Curvature profile is **identical** across tasks (code vs logic)
+3. **Curvature profile is a property of the ARCHITECTURE, not the task or correctness**
+
+The r=0.996 cross-domain finding tells us **nothing** about reasoning transfer. It just shows that OLMo-3 processes information similarly through layers regardless of content.
+
+---
+
+## What About Curvature Magnitude?
+
+Even though the **profile shape** is identical, could the **magnitude** differ?
+
+| Task | Correct | Incorrect | Cohen's d | p-value |
+|------|---------|-----------|-----------|---------|
+| HumanEval | 2.38 ± 0.96 | 2.11 ± 0.84 | 0.319 | 0.291 |
+| LogiQA | 1.27 ± 0.22 | 1.20 ± 0.30 | 0.246 | 0.322 |
+
+**Result**: Small positive effect (correct has higher curvature) but not significant (p > 0.2).
+
+---
+
+## CORRECTED Key Finding: Curvature is Architectural, Not Task-Related
 
 Our original H2 hypothesis asked: "Do linear directions that separate correct/incorrect transfer across domains?"
 
 **Answer**: No, linear directions do NOT transfer (cross-domain AUC ~ 52%, chance level).
 
-**But**: The geometric structure (curvature profile) DOES transfer (r = 0.994).
+**Initially we thought**: The geometric structure (curvature profile) DOES transfer (r = 0.996).
 
-This suggests:
-1. Correct and incorrect solutions traverse the manifold differently
-2. This difference has similar *structure* across domains (similar curvature changes)
-3. But the *specific direction* of the difference is domain-dependent
+**CORRECTED**: The r=0.996 is **NOT evidence for transfer**. Curvature profiles are identical whether:
+- Solution is correct or incorrect (r=0.9999)
+- Task is code or logic (r=0.996)
 
-**Analogy**: It's like asking "do successful basketball players and successful programmers both need to practice?" - Yes, the *structure* (practice leads to success) transfers. But the *specific skills* practiced are different.
+**What this actually tells us**:
+1. Curvature profile is determined by **transformer architecture**, not task or correctness
+2. All trajectories through OLMo-3 have nearly identical curvature profiles
+3. The r=0.996 cross-domain finding is a **null result** - it doesn't support H2
+
+**Analogy**: It's like measuring the "bumpiness" of different roads and finding they're all equally bumpy. This doesn't tell you which roads lead to the right destination - it just tells you the asphalt was laid the same way everywhere.
 
 ---
 
