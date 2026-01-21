@@ -80,11 +80,16 @@ ManiVer/
 │       └── geometric_compression_research_plan.md
 │
 ├── experiments/                   # Subexperiments (self-contained)
-│   └── aha_moment/               # Phase transition at correction points
+│   ├── aha_moment/               # Phase transition at correction points
+│   │   ├── README.md             # Experiment overview
+│   │   ├── collect_thinking_traces.py
+│   │   ├── analyze_pivot_points.py
+│   │   └── data/                 # Local data for this experiment
+│   └── svd_reasoning_separability/  # **NEW: Linear separability test**
 │       ├── README.md             # Experiment overview
-│       ├── collect_thinking_traces.py
-│       ├── analyze_pivot_points.py
-│       └── data/                 # Local data for this experiment
+│       ├── analyze_svd_delta.py  # Main analysis script
+│       ├── dashboard.sh          # Monitoring dashboard
+│       └── results/              # Output plots and JSON
 │
 ├── scripts/                       # Executable scripts
 │   ├── collection/                # Data collection scripts
@@ -582,6 +587,18 @@ See [docs/guides/B2_SETUP.md](docs/guides/B2_SETUP.md) for detailed setup.
 ---
 
 ## File Update Log
+
+**2026-01-19**:
+- **Added SVD Linear Separability Experiment** — Motivating negative result for dynamical analysis
+  - Added `experiments/svd_reasoning_separability/` - Complete experiment folder
+  - Added `experiments/svd_reasoning_separability/analyze_svd_delta.py` - SVD comparison script
+  - Added `experiments/svd_reasoning_separability/dashboard.sh` - Real-time monitoring
+  - Added `notebooks/working_notes/SVD_LINEAR_SEPARABILITY_FINDINGS.md` - Detailed findings
+  - **Key result**: Tail eigenvectors change 3-8x MORE than top eigenvectors (opposite of separable reasoning)
+  - **Interpretation**: RLVR preserves top eigenvectors (core structure), refines tail (fine-grained)
+  - **Implication**: Linear methods don't capture reasoning; motivates dynamical/flow analysis
+  - Updated `docs/paper/RESEARCH_PLAN.md` with new "Motivating Result" section
+  - Runtime: ~12 minutes on eyecog (randomized SVD)
 
 **2026-01-18** (evening):
 - **Created fully optimized vLLM collection pipeline for SLURM cluster** (H100)

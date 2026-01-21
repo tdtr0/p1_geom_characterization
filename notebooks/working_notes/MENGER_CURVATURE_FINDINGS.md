@@ -1,174 +1,158 @@
-# Menger Curvature Analysis Findings
+# Menger Curvature Analysis: Findings and Next Steps
 
-**Date**: 2026-01-20
-**Model**: olmo3_base (0-shot)
-**Tasks**: HumanEval, LogiQA
-
----
-
-## Summary
-
-We computed Menger curvature across layer trajectories and found:
-
-1. **Within-domain**: Curvature does NOT significantly distinguish correct vs incorrect (p > 0.2)
-2. **Cross-domain**: Curvature profiles are HIGHLY correlated (r = 0.994, p < 0.0001)
-
-This suggests trajectory geometry transfers across domains even though linear classifiers do not.
+**Date**: 2026-01-21
+**Status**: Layer curvature abandoned → Sequence flow analysis next
 
 ---
 
-## Methods
+## Key Finding: Layer Curvature is Architectural
 
-### Menger Curvature Definition
+Menger curvature on **layer trajectories** (path through layers 0→30) is purely architectural:
 
-Menger curvature measures the curvature of a path through three consecutive points. For points P1, P2, P3:
+| Comparison | Correlation (r) |
+|------------|-----------------|
+| Correct ↔ Incorrect (same domain) | 0.9999 |
+| Cross-domain (HumanEval ↔ LogiQA) | 0.996 |
 
+**Conclusion**: Curvature profile is determined by transformer architecture, not task or correctness. All trajectories through OLMo-3 have nearly identical curvature profiles regardless of content.
+
+**Why this happened**: Raw activations are superpositioned — geometric measures on layer paths capture how the transformer processes information through layers, not semantic content.
+
+---
+
+## Methods (for reference)
+
+**Menger curvature** for three consecutive points P1, P2, P3:
 ```
-curvature = 4 * Area(P1, P2, P3) / (|P1-P2| * |P2-P3| * |P1-P3|)
-```
-
-Where Area is computed via cross product magnitude.
-
-### Implementation
-
-```python
-def compute_menger_curvature(trajectory):
-    """
-    Compute mean Menger curvature for a layer-wise trajectory.
-
-    Args:
-        trajectory: (n_layers, d_model) - activations at each layer
-
-    Returns:
-        mean_curvature: float
-    """
-    n_layers = trajectory.shape[0]
-    curvatures = []
-
-    for i in range(n_layers - 2):
-        p1 = trajectory[i]
-        p2 = trajectory[i + 1]
-        p3 = trajectory[i + 2]
-
-        # Side lengths
-        a = np.linalg.norm(p2 - p1)
-        b = np.linalg.norm(p3 - p2)
-        c = np.linalg.norm(p3 - p1)
-
-        # Avoid division by zero
-        if a * b * c < 1e-10:
-            continue
-
-        # Heron's formula for area
-        s = (a + b + c) / 2
-        area_sq = s * (s - a) * (s - b) * (s - c)
-        area = np.sqrt(max(0, area_sq))
-
-        # Menger curvature
-        curvature = 4 * area / (a * b * c)
-        curvatures.append(curvature)
-
-    return np.mean(curvatures) if curvatures else 0.0
+κ = 4 * Area(P1, P2, P3) / (|P1-P2| * |P2-P3| * |P1-P3|)
 ```
 
-### Data Processing
-
-1. Load trajectories from HDF5 files
-2. Average across sequence dimension: `(n_samples, 512, 16, 4096) -> (n_samples, 16, 4096)`
-3. Compute curvature for each sample's layer trajectory
-4. Split by correctness label (`is_correct` field)
+**Data processing**:
+1. Load trajectories: `(n_samples, 512, 16, 4096)`
+2. Average across sequence: `(n_samples, 16, 4096)`
+3. Compute curvature at each layer transition
 
 ---
 
-## Results (Updated 2026-01-20, N=100 per task)
+## New Direction: Sequence Flow at Last Layer
 
-### Within-Domain Analysis
+Instead of curvature on **layer paths** (0→30), compute geometry on **token sequences** at the last layer (token 0→512 at layer 30).
 
-| Task | Correct Curvature | Incorrect Curvature | Effect Size (d) | p-value |
-|------|-------------------|---------------------|-----------------|---------|
-| HumanEval | 2.383 | 2.111 | 0.315 | 0.291 |
-| LogiQA | 1.266 | 1.196 | 0.244 | 0.322 |
-
-**Interpretation**: The effect sizes are small (d ~ 0.2-0.3) and not statistically significant. This confirms that curvature alone is not a strong discriminator for correctness within a single domain.
-
-### Cross-Domain Correlation
-
-**Layer-wise curvature profiles** were computed by averaging curvature at each layer transition:
-
-| Comparison | Correlation (r) | p-value |
-|------------|-----------------|---------|
-| HumanEval ↔ LogiQA | **0.996** | < 0.0001 |
-
-**Interpretation**: Despite being different tasks (code vs logic), the curvature profiles across layers are nearly identical. This is a striking finding:
-
-- The **shape** of how curvature changes across layers is the same
-- This suggests a **domain-invariant geometric structure** in transformer computation
-- Even though linear classifiers don't transfer, the underlying geometry does
+**Why this might work**:
+- Last layer encodes the "answer state" closest to output
+- Sequence dynamics depend on actual content being generated
+- Aligns with belief dynamics literature (Shai et al.)
 
 ---
 
-## Key Finding: Structure Transfers, Direction Does Not
+## Execution Plan
 
-Our original H2 hypothesis asked: "Do linear directions that separate correct/incorrect transfer across domains?"
+### H_flow1: Velocity Distribution (~10 min)
 
-**Answer**: No, linear directions do NOT transfer (cross-domain AUC ~ 52%, chance level).
+**Measure**: `velocity_t = ||x_{t+1} - x_t||` at layer 30
 
-**But**: The geometric structure (curvature profile) DOES transfer (r = 0.994).
+**Test**:
+1. Extract last layer (index 15) from trajectories
+2. Compute velocity at each token transition
+3. Compare correct vs incorrect: mean, variance, end-velocity
 
-This suggests:
-1. Correct and incorrect solutions traverse the manifold differently
-2. This difference has similar *structure* across domains (similar curvature changes)
-3. But the *specific direction* of the difference is domain-dependent
-
-**Analogy**: It's like asking "do successful basketball players and successful programmers both need to practice?" - Yes, the *structure* (practice leads to success) transfers. But the *specific skills* practiced are different.
+**Prediction**: Correct solutions may "settle" (lower velocity near end)
 
 ---
 
-## Data Limitations
+### H_flow2: Sequence Curvature (~15 min)
 
-This analysis was conducted on **limited data**:
+**Measure**: `curvature_t = Menger(x_{t-1}, x_t, x_{t+1})` at layer 30
 
-| Factor | Limitation |
-|--------|------------|
-| Model | Single model (olmo3_base) |
-| Tasks | 2 tasks (HumanEval, LogiQA) - GSM8K not included |
-| Samples | 50 per task (memory constraints) |
-| HumanEval balance | Only 5/50 correct (10%) - severely imbalanced |
-| LogiQA balance | 12/50 correct (24%) - acceptable |
+**Test**:
+1. Compute Menger curvature at each token transition
+2. Compare curvature profiles: correct vs incorrect
+3. If r < 0.95, we have content-dependent signal (unlike layer curvature r≈1.0)
 
-**Recommendations for robust analysis**:
-1. Run on all 4 models (need to fix corrupted LogiQA files first)
-2. Include GSM8K for 3-way cross-domain correlation
-3. Use full 500 samples (requires chunked processing or more RAM)
-4. Balance samples or use stratified statistics
+**Prediction**: Correct solutions may have more "direct" paths (lower curvature)
 
 ---
 
-## Connection to Zhou et al. (2025)
+### H_flow3: Cross-Domain Flow Transfer (~30 min)
 
-Our findings align with Zhou et al. "The Geometry of Reasoning" (arXiv:2510.09782):
+**Features per sample**:
+```
+[mean_velocity, var_velocity, mean_curvature, var_curvature, convergence_rate]
+```
 
-> "Menger curvature (second-order geometric structure) captures logical relationships between reasoning steps better than first-order metrics."
+**Test**:
+1. Extract flow features for HumanEval and LogiQA
+2. Train classifier on flow features (correct vs incorrect) within domain
+3. Test cross-domain transfer
+4. Compare to error-direction transfer (which was asymmetric)
 
-Our observation that curvature profiles correlate across domains supports their claim that curvature captures something fundamental about reasoning structure, not just surface task characteristics.
+---
+
+## Priority
+
+| # | Hypothesis | Effort | Key Question |
+|---|------------|--------|--------------|
+| 1 | H_flow1 | ~10 min | Does generation "speed" differ? |
+| 2 | H_flow2 | ~15 min | Is sequence curvature content-dependent? |
+| 3 | H_flow3 | ~30 min | Does flow structure transfer? |
+
+**Critical test**: H_flow2 — if sequence curvature shows r < 0.95 for correct vs incorrect, we've found a content-dependent geometric signal.
+
+---
+
+## Results (2026-01-21)
+
+### H_flow1: Velocity Distribution — NO SIGNAL
+
+| Task | Correct | Incorrect | Cohen's d | p |
+|------|---------|-----------|-----------|---|
+| HumanEval | 15.8 ± 5.7 | 18.5 ± 8.6 | -0.32 | 0.29 |
+| LogiQA | 28.0 ± 5.1 | 30.2 ± 7.8 | -0.30 | 0.23 |
+
+Correct solutions have slightly lower velocity (d ~ -0.3) but not significant.
+
+### H_flow2: Sequence Curvature — STILL ARCHITECTURAL
+
+| Task | Profile Correlation (r) |
+|------|------------------------|
+| HumanEval | 0.9769 |
+| LogiQA | 0.9903 |
+
+Both r > 0.95, meaning sequence curvature profile at last layer is **also architectural**, not content-dependent.
+
+### H_flow3: Cross-Domain Flow Transfer — WEAK SIGNAL
+
+| Metric | HumanEval | LogiQA | HE→LQ | LQ→HE |
+|--------|-----------|--------|-------|-------|
+| Within-domain AUC | 0.560 | **0.662** | — | — |
+| Cross-domain AUC | — | — | 0.629 | 0.541 |
+
+- LogiQA shows moderate within-domain signal (AUC=0.662)
+- LogiQA → HumanEval transfer works (0.629)
+- HumanEval → LogiQA transfer weak (0.541)
+
+**Note**: This is the opposite direction from error-direction transfer (which was HE→LQ).
+
+---
+
+## Conclusion
+
+**All three sequence flow hypotheses show weak or no signal:**
+
+1. **H_flow1**: Velocity distribution does not distinguish correct/incorrect
+2. **H_flow2**: Sequence curvature profile is still architectural (r > 0.95)
+3. **H_flow3**: Weak transfer signal (AUC 0.54-0.66), direction opposite to error-direction
+
+**Implication**: Geometric measures (curvature, velocity) on both layer paths AND token sequences capture architectural properties, not semantic content. The superposition problem persists even at the last layer.
+
+**Next direction**: May need to analyze:
+- Attention patterns (which tokens attend to which)
+- Probe-based representations (trained linear probes)
+- Specific reasoning tokens only (not full sequence)
 
 ---
 
 ## Code Reference
 
-Full implementation: [scripts/analysis/phase3_dynamical_analysis.py](../../scripts/analysis/phase3_dynamical_analysis.py)
-
-Key functions:
-- `compute_menger_curvature()` - Lines 145-175
-- `menger_curvature_analysis()` - Lines 230-280
-- Cross-domain correlation computed using `scipy.stats.pearsonr`
-
----
-
-## Next Steps
-
-1. **Fix data issues** (see DATA_COLLECTION_ISSUES.md)
-2. **Run on all models** with fixed data
-3. **Add GSM8K** to test 3-way cross-domain correlation
-4. **Compute curvature derivatives** - do changes in curvature (not just magnitude) differ?
-5. **Test predictive power** - can curvature profile + correctness train a cross-domain classifier?
+- Layer curvature: [scripts/analysis/phase3_dynamical_analysis.py](../../scripts/analysis/phase3_dynamical_analysis.py)
+- Sequence flow: [scripts/analysis/sequence_flow_analysis.py](../../scripts/analysis/sequence_flow_analysis.py)

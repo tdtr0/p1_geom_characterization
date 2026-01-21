@@ -79,20 +79,22 @@ class FullyOptimizedCollector:
     5-6: vLLM for fast generation, minimal CPU transfers
     """
 
-    def __init__(self, model_name: str, layers_to_collect: List[int], batch_size: int = 8):
+    def __init__(self, model_name: str, layers_to_collect: List[int], batch_size: int = 8, tensor_parallel_size: int = 1):
         self.model_name = model_name
         self.layers_to_collect = layers_to_collect
         self.batch_size = batch_size
         self.n_layers = len(layers_to_collect)
+        self.tensor_parallel_size = tensor_parallel_size
 
         print(f"Loading models: {model_name}")
         print(f"  Batch size: {batch_size}")
+        print(f"  Tensor parallel size: {tensor_parallel_size}")
 
         # Load vLLM model for fast generation
         print(f"  Loading vLLM model...")
         self.llm = LLM(
             model=model_name,
-            tensor_parallel_size=1,
+            tensor_parallel_size=tensor_parallel_size,
             dtype='float16',
             max_model_len=MAX_SEQ_LEN + MAX_NEW_TOKENS,
             gpu_memory_utilization=0.45,  # Leave room for HF model
@@ -234,6 +236,7 @@ def collect_logiqa_fully_optimized(
     model_config: Dict,
     task_data: List,
     batch_size: int = 8,
+    tensor_parallel_size: int = 1,
 ):
     """
     Collect LogiQA trajectories with fully optimized vLLM + batched activation collection.
@@ -263,6 +266,7 @@ def collect_logiqa_fully_optimized(
         model_name=model_config['model_name'],
         layers_to_collect=LAYERS_TO_COLLECT,
         batch_size=batch_size,
+        tensor_parallel_size=tensor_parallel_size,
     )
 
     n_correct = 0
@@ -410,6 +414,7 @@ def main():
     parser.add_argument('model_key', type=str, help='Model key (e.g., olmo3_sft)')
     parser.add_argument('--batch-size', type=int, default=8, help='Batch size (default: 8)')
     parser.add_argument('--num-samples', type=int, default=500, help='Number of samples')
+    parser.add_argument('--tensor-parallel-size', type=int, default=1, help='vLLM tensor parallel size (default: 1)')
 
     args = parser.parse_args()
 
@@ -427,6 +432,7 @@ def main():
         model_config=model_config,
         task_data=task_data,
         batch_size=args.batch_size,
+        tensor_parallel_size=args.tensor_parallel_size,
     )
 
 
