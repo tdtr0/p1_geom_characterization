@@ -1,0 +1,58 @@
+{
+  "n_samples": 55,
+  "n_correct": 38,
+  "n_incorrect": 17,
+  "correct_rate": 0.6909090909090909,
+  "velocity_analysis": {
+    "correct_mean": 15.276612763264696,
+    "correct_std": 0.7668322094535814,
+    "incorrect_mean": 15.149323908067018,
+    "incorrect_std": 0.562457255903243,
+    "t_statistic": 0.6031715344639825,
+    "p_value": 0.5489672117136761,
+    "cohens_d": 0.17894016152054035
+  },
+  "prediction_analysis": {
+    "median_velocity": 15.190104166666666,
+    "low_velocity_success_rate": 0.6666666666666666,
+    "high_velocity_success_rate": 0.7142857142857143
+  },
+  "per_pattern": {
+    "actually": {
+      "correct_count": 3,
+      "incorrect_count": 6,
+      "correct_mean": 15.372395833333334,
+      "incorrect_mean": 14.786458333333334
+    },
+    "hmm": {
+      "correct_count": 14,
+      "incorrect_count": 7,
+      "correct_mean": 15.75390625,
+      "incorrect_mean": 15.396205357142858
+    },
+    "Actually": {
+      "correct_count": 3,
+      "incorrect_count": 6,
+      "correct_mean": 15.372395833333334,
+      "incorrect_mean": 14.786458333333334
+    },
+    "however": {
+      "correct_count": 14,
+      "incorrect_count": 20,
+      "correct_mean": 15.23046875,
+      "incorrect_mean": 15.126953125
+    },
+    "BUT": {
+      "correct_count": 53,
+      "incorrect_count": 36,
+      "correct_mean": 15.028891509433961,
+      "incorrect_mean": 14.92990451388889
+    },
+    "Wait": {
+      "correct_count": 30,
+      "incorrect_count": 19,
+      "correct_mean": 15.260677083333333,
+      "incorrect_mean": 14.999588815789474
+    }
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "n_samples": 200,
+  "n_with_corrections": 17,
+  "n_without_corrections": 183,
+  "correction_rate": 0.085,
+  "correctness_with_corrections": 0.5294117647058824,
+  "correctness_without_corrections": 0.7103825136612022,
+  "velocity_analysis": {
+    "n_correct_with_vel": 9,
+    "n_incorrect_with_vel": 8,
+    "correct_mean_vel": 15.968605324074073,
+    "incorrect_mean_vel": 15.37255859375
+  }
+}

@@ -39,13 +39,34 @@ MODEL_CONFIGS = {
     'base': 'allenai/OLMo-3-1025-7B',
     'rl_zero': 'allenai/OLMo-3-7B-RL-Zero-General',
     'think': 'allenai/OLMo-3-7B-Think',
+    # DeepSeek-R1 distilled model (what Wynroe used)
+    'deepseek': 'deepseek-ai/DeepSeek-R1-Distill-Qwen-7B',
 }
+
+# Architecture-specific layer access paths
+# Qwen-based models use same path as OLMo
+def get_layers(model, model_key: str):
+    """Get the transformer layers from the model, handling architecture differences."""
+    if model_key == 'deepseek':
+        # Qwen architecture: model.model.layers
+        return model.model.layers
+    else:
+        # OLMo architecture: model.model.layers
+        return model.model.layers
 
 # Correction tokens to measure logit-diff for
 CORRECTION_TOKENS = ["Wait", "But", "Actually", "Hmm", "wait", "but", "actually"]
 
-# Layers to patch
-LAYERS_TO_PATCH = list(range(0, 32, 2))  # [0, 2, 4, ..., 30]
+# Default layers to patch (will be dynamically adjusted for each model)
+LAYERS_TO_PATCH_DEFAULT = list(range(0, 32, 2))  # [0, 2, 4, ..., 30]
+
+
+def get_layers_to_patch(model, model_key: str) -> List[int]:
+    """Get layer indices to patch based on model architecture."""
+    model_layers = get_layers(model, model_key)
+    n_layers = len(model_layers)
+    # Patch every 2nd layer
+    return list(range(0, n_layers, 2))
 
 
 def load_math_dataset(n_samples: int = 100, subset: str = "algebra") -> List[Dict]:
@@ -187,6 +208,7 @@ def activation_patch_forward(
     corrupted_prompt: str,
     clean_activations: Dict[int, torch.Tensor],
     patch_layer: int,
+    model_key: str = "think",
 ) -> Dict[str, float]:
     """
     Run forward pass with patching: replace corrupted activations with clean ones at specified layer.
@@ -197,11 +219,13 @@ def activation_patch_forward(
         corrupted_prompt: The prompt with error
         clean_activations: Dict mapping layer_idx -> clean hidden states
         patch_layer: Which layer to patch
+        model_key: Model key for architecture-specific layer access
 
     Returns:
         Dict of correction token logits after patching
     """
     inputs = tokenizer(corrupted_prompt, return_tensors="pt").to(model.device)
+    model_layers = get_layers(model, model_key)
 
     # Store hooks to remove later
     hooks = []
@@ -227,7 +251,7 @@ def activation_patch_forward(
         return hook
 
     # Register hook at the specified layer
-    layer = model.model.layers[patch_layer]
+    layer = model_layers[patch_layer]
     hook = layer.register_forward_hook(make_patch_hook(patch_layer))
     hooks.append(hook)
 
@@ -257,6 +281,7 @@ def collect_clean_activations(
     tokenizer,
     prompt: str,
     layers: List[int],
+    model_key: str = "think",
 ) -> Dict[int, torch.Tensor]:
     """
     Collect activations for clean prompt at specified layers.
@@ -267,6 +292,7 @@ def collect_clean_activations(
     inputs = tokenizer(prompt, return_tensors="pt").to(model.device)
 
     activations = {}
+    model_layers = get_layers(model, model_key)
 
     def make_hook(layer_idx: int):
         def hook(module, input, output):
@@ -278,7 +304,7 @@ def collect_clean_activations(
 
     hooks = []
     for layer_idx in layers:
-        layer = model.model.layers[layer_idx]
+        layer = model_layers[layer_idx]
         hook = layer.register_forward_hook(make_hook(layer_idx))
         hooks.append(hook)
 
@@ -310,6 +336,7 @@ def run_patching_experiment(
     clean_prompt: str,
     corrupted_prompt: str,
     layers_to_patch: List[int],
+    model_key: str = "think",
 ) -> Dict[str, Any]:
     """
     Run full patching experiment for one clean/corrupted pair.
@@ -331,7 +358,7 @@ def run_patching_experiment(
         return None
 
     # Step 2: Collect clean activations
-    clean_activations = collect_clean_activations(model, tokenizer, clean_prompt, layers_to_patch)
+    clean_activations = collect_clean_activations(model, tokenizer, clean_prompt, layers_to_patch, model_key)
 
     # Step 3: Patch at each layer and measure recovery
     results = {
@@ -343,7 +370,7 @@ def run_patching_experiment(
 
     for layer in layers_to_patch:
         patched_logits = activation_patch_forward(
-            model, tokenizer, corrupted_prompt, clean_activations, layer
+            model, tokenizer, corrupted_prompt, clean_activations, layer, model_key
         )
 
         # Compute how much of the baseline diff we recovered
@@ -361,7 +388,8 @@ def run_patching_experiment(
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--model", type=str, default="think", choices=list(MODEL_CONFIGS.keys()))
+    parser.add_argument("--model", type=str, default="think", choices=list(MODEL_CONFIGS.keys()),
+                        help="Model to test: think, base, rl_zero, or deepseek (Wynroe's exact model)")
     parser.add_argument("--gpu", type=int, default=0)
     parser.add_argument("--n_samples", type=int, default=50, help="Number of problems to test")
     parser.add_argument("--output-dir", type=str, default="results/wynroe_patching")
@@ -396,6 +424,10 @@ def main():
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
 
+    # Determine layers to patch based on model architecture
+    layers_to_patch = get_layers_to_patch(model, args.model)
+    print(f"Layers to patch: {layers_to_patch} ({len(layers_to_patch)} layers)")
+
     # Run experiment
     all_results = []
     successful_pairs = 0
@@ -423,7 +455,7 @@ def main():
         # Step 4: Run patching experiment
         try:
             result = run_patching_experiment(
-                model, tokenizer, clean_prompt, corrupted_prompt, LAYERS_TO_PATCH
+                model, tokenizer, clean_prompt, corrupted_prompt, layers_to_patch, args.model
             )
 
             if result is not None:
@@ -452,7 +484,7 @@ def main():
     print(f"(Wynroe retention:   44%)")
 
     # Aggregate results
-    layer_recovery = {layer: [] for layer in LAYERS_TO_PATCH}
+    layer_recovery = {layer: [] for layer in layers_to_patch}
     for result in all_results:
         for layer, layer_result in result["layer_results"].items():
             layer_recovery[layer].append(layer_result["recovery_pct"])
@@ -461,7 +493,7 @@ def main():
     summary = {
         "model": args.model,
         "n_pairs": len(all_results),
-        "layers": LAYERS_TO_PATCH,
+        "layers": layers_to_patch,
         "layer_stats": {},
     }
 
@@ -472,7 +504,7 @@ def main():
     best_layer = None
     best_recovery = -float("inf")
 
-    for layer in LAYERS_TO_PATCH:
+    for layer in layers_to_patch:
         recoveries = layer_recovery[layer]
         if recoveries:
             mean_recovery = np.mean(recoveries)

@@ -48,23 +48,38 @@ Layer 30:  100.0% ± 0.0  ██████████████████
 
 **Conclusion**: OLMo-3 shows **distributed error processing** - fundamentally different from DeepSeek-R1's localized circuit.
 
-### Experiment B: Natural Pivot Detection ⚠️ NEEDS FURTHER ANALYSIS
-**Finding**: Lower velocity/curvature at pivot tokens ("Wait...", "But...")
+### Experiment B: Natural Pivot Detection ✅ COMPLETE
 
-**Potential Explanations** (not mutually exclusive):
-1. **Induction heads** - Pivots often precede repetition from context → copying = less novel computation
-2. **Deliberative processing** - Slower dynamics = more careful computation before course change
-3. **State transitions** - Pivot tokens mark attractor basin transitions (Ren & Liu 2026)
+**Original Finding**: Lower velocity/curvature at pivot tokens ("Wait...", "But...")
+- Velocity: d=-0.22, p=0.02 (significant)
+- Gaussian curvature: d=-0.31, p=0.001 (significant)
 
-**Open Questions**:
-- Does velocity at pivots correlate with **correction success**? (H1)
-- Does velocity differ across models (base vs think)?
-- Do successful corrections have different pivot dynamics than failed ones?
+**Follow-up Analysis (2026-01-21)**: Does velocity predict correction success?
 
-**Next Steps**:
-- Compare pivot dynamics: successful corrections vs failed corrections
-- Cross-model comparison of pivot velocity profiles
-- Check if induction SAE features activate at pivots (Neuronpedia) 
+| Analysis | Finding | p-value |
+|----------|---------|---------|
+| Velocity → Correctness | **No relationship** | p=0.55 |
+| Low vs High velocity groups | 66.7% vs 71.4% correct | p=0.93 |
+| Self-corrections detected | Only 8.5% of samples | - |
+
+**Self-Correction Analysis** (samples where model changed a number after "Wait"/"But"):
+- Samples WITH self-corrections: **52.9% correct** (9/17)
+- Samples WITHOUT self-corrections: **71.0% correct** (130/183)
+- Self-corrections predict **worse** outcomes (though p=0.20, underpowered)
+
+**Velocity at True Self-Corrections**:
+- Correct samples: mean velocity = 15.97
+- Incorrect samples: mean velocity = 15.37
+- Cohen's d = **0.76** (medium-large effect)
+- p = 0.16 (underpowered, n=17 total samples)
+
+**Interpretation**:
+1. **Pivot words are stylistic**, not functional - they don't predict correctness
+2. **Self-corrections indicate trouble** - samples that need correction are harder problems
+3. **Higher velocity at corrections may predict success** - suggestive but needs larger sample
+4. **Induction heads** still plausible explanation for velocity slowdown
+
+**Conclusion**: Pivot velocity does NOT predict correction success. The d=-0.22 slowdown at pivots is likely induction-related or stylistic, not error-detection-related 
 
 ### Experiment C: Active Error Correction ✅ COMPLETE
 
