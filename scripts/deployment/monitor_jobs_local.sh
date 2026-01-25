@@ -4,6 +4,19 @@
 
 INTERVAL=${1:-60}  # Default 60 seconds
 
+# Function to safely run SSH command with retry
+ssh_cmd() {
+    local host=$1
+    shift
+    local result
+    result=$(ssh -o ConnectTimeout=10 -o BatchMode=yes "$host" "$@" 2>/dev/null)
+    if [ $? -eq 0 ]; then
+        echo "$result"
+    else
+        echo "  [SSH failed - VPN down?]"
+    fi
+}
+
 while true; do
     clear
     echo "╔══════════════════════════════════════════════════════════════╗"
@@ -13,17 +26,12 @@ while true; do
 
     # Get job status
     echo "┌─ Active Jobs ─────────────────────────────────────────────────┐"
-    JOBS=$(ssh -o ConnectTimeout=10 ai_inst "squeue -u ttdo 2>/dev/null")
-    if [ -n "$JOBS" ]; then
-        echo "$JOBS"
-    else
-        echo "  No jobs running or SSH failed"
-    fi
+    ssh_cmd ai_inst "squeue -u ttdo"
     echo "└────────────────────────────────────────────────────────────────┘"
 
     echo ""
     echo "┌─ Think Collection Progress ────────────────────────────────────┐"
-    THINK=$(ssh -o ConnectTimeout=10 ai_inst "grep 'olmo3_think' /home/ttdo/logiqa_think_2gpu_err.txt 2>/dev/null | tail -1")
+    THINK=$(ssh_cmd ai_inst "grep 'olmo3_think' /home/ttdo/logiqa_think_2gpu_err.txt | tail -1")
     if [ -n "$THINK" ]; then
         PCT=$(echo "$THINK" | grep -oE '[0-9]+%' | head -1)
         BATCHES=$(echo "$THINK" | grep -oE '[0-9]+/[0-9]+' | head -1)
@@ -41,7 +49,7 @@ while true; do
 
     echo ""
     echo "┌─ B2 Upload Status ─────────────────────────────────────────────┐"
-    UPLOAD_STATUS=$(ssh -o ConnectTimeout=10 ai_inst "grep -E '(Uploading|Done|fileName)' /home/ttdo/upload_b2_out.txt 2>/dev/null | tail -5")
+    UPLOAD_STATUS=$(ssh_cmd ai_inst "grep -E '(Uploading|Done|fileName)' /home/ttdo/upload_b2_out.txt | tail -5")
     if echo "$UPLOAD_STATUS" | grep -q "Done"; then
         echo "  ✓ Upload COMPLETE"
         # Show uploaded files
@@ -57,17 +65,12 @@ while true; do
 
     echo ""
     echo "┌─ B2 Cloud Files (LogiQA) ──────────────────────────────────────┐"
-    B2_FILES=$(ssh -o ConnectTimeout=10 eyecog "source ~/miniconda3/etc/profile.d/conda.sh && conda activate base && b2 ls -l b2://ml-activations-store/trajectories/ 2>/dev/null | grep logiqa | awk '{print \"  \" \$5/1e9 \"GB  \" \$6 \" \" \$7 \"  \" \$9}'" 2>/dev/null)
-    if [ -n "$B2_FILES" ]; then
-        echo "$B2_FILES"
-    else
-        echo "  Cannot check B2 (eyecog unreachable)"
-    fi
+    ssh_cmd eyecog "source ~/miniconda3/etc/profile.d/conda.sh && conda activate base && b2 ls -l b2://ml-activations-store/trajectories/ 2>/dev/null | grep logiqa | awk '{print \"  \" \$5/1e9 \"GB  \" \$6 \" \" \$7 \"  \" \$9}'"
     echo "└────────────────────────────────────────────────────────────────┘"
 
     echo ""
     echo "┌─ SLURM File Sizes ─────────────────────────────────────────────┐"
-    ssh -o ConnectTimeout=10 ai_inst "ls -lh /home/ttdo/maniver/ManiVer/data/trajectories/*/logiqa*.h5 2>/dev/null | awk '{print \"  \" \$5 \"  \" \$9}'" || echo "  Cannot check files"
+    ssh_cmd ai_inst "ls -lh /home/ttdo/maniver/ManiVer/data/trajectories/*/logiqa*.h5 | awk '{print \"  \" \$5 \"  \" \$9}'"
     echo "└────────────────────────────────────────────────────────────────┘"
 
     echo ""

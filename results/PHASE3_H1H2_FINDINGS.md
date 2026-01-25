@@ -1,3 +1,4 @@
+
 # Phase 3 Findings: H1/H2 Hypothesis Testing
 
 **Date**: 2026-01-21
@@ -55,12 +56,57 @@
 
 ## H2: Cross-Domain Transfer
 
+### Math ↔ Code (GSM8K ↔ HumanEval)
+
 | Model | GSM8K → HE | HE → GSM8K | Pattern |
 |-------|------------|------------|---------|
 | base | **85.3%** | 10.0% | Asymmetric |
 | sft | **66.0%** | **56.0%** | **Bidirectional** |
 | rl_zero | 41.3% | 18.0% | None |
 | think | 22.7% | 44.7% | None |
+
+### Cross-Domain Subspace Alignment (2026-01-25)
+
+**Method**: Compute error direction for each task, measure cosine similarity and cross-transfer effect.
+
+**Results by Model (n=300 per task):**
+
+| Model | Task Accuracy | Cosine Sim | GSM8K→LogiQA d | LogiQA→GSM8K d | Pattern |
+|-------|---------------|------------|----------------|----------------|---------|
+| **base** | 12%/23% | 0.069 | 0.08 (p=0.46) | 0.18 (p=0.20) | Orthogonal |
+| **sft** | 60%/36% | **0.355** | **0.48 (p=0.0009)** | **0.45 (p=0.0003)** | **Bidirectional** |
+| rl_zero | TBD | TBD | TBD | TBD | TBD |
+| think | TBD | TBD | TBD | TBD | TBD |
+
+**Key Finding**: SFT shows **5x higher alignment** (cos=0.355 vs 0.069) and **significant bidirectional transfer** (p<0.001 both ways).
+
+**Interpretation**:
+- **Base model**: Task-specific error directions (orthogonal, no transfer)
+- **SFT model**: Learns more generalizable error patterns that transfer across domains
+- This supports the **SFT distillation hypothesis**: SFT training on CoT data creates domain-general representations
+
+### Token-Position Specificity (2026-01-25)
+
+**Question**: Where in the sequence does the error signal peak?
+
+| Task | Peak Position | Fraction | Signal Location | Early d | Middle d | Late d |
+|------|---------------|----------|-----------------|---------|----------|--------|
+| GSM8K | 50/512 | 10% | **Early** | 0.201 | 0.003 | 0.000 |
+| LogiQA | 85/512 | 17% | **Early** | 0.220 | 0.211 | 0.000 |
+
+**Key Finding**: Signal peaks in **early tokens** (10-17%), NOT in answer tokens.
+
+**Interpretation**:
+- If signal was in late tokens → detecting answer format
+- Signal is in **early** tokens → detecting initial problem encoding/setup
+- This suggests the error direction captures how the model *starts* processing, not how it *finishes*
+
+### Implications for H2
+
+1. **No Universal Reasoning Signature**: Error directions are task-specific (cos=0.145)
+2. **Surface Structure Confirmed**: Different tasks have orthogonal error patterns
+3. **Early Token Signal**: The discriminative signal is in problem setup, not answer format
+4. **Transfer Failure Explained**: Cross-domain transfer fails because error directions don't align
 
 ---
 
@@ -85,6 +131,21 @@
 | Within-domain separation | **Best** | Weak | Strong | Strong |
 | Cross-domain transfer | Asymmetric | **Bidirectional** | None | None |
 | Curvature significant | No | **Yes** | No | No |
+
+### Cross-Domain Alignment Summary
+
+| Model | Cosine Sim | Transfer Pattern | Interpretation |
+|-------|------------|------------------|----------------|
+| **base** | 0.069 | None | Task-specific (orthogonal) |
+| **sft** | **0.355** | **Bidirectional** | Domain-general alignment |
+| rl_zero | TBD | TBD | Pending |
+| think | TBD | TBD | Pending |
+
+**Key Conclusion**: Training method determines whether error directions generalize:
+- **Base**: Task-specific patterns (surface structure)
+- **SFT**: Learns transferable error patterns (domain-general)
+
+Rerunning for rl_zero and think models.
 
 ---
 

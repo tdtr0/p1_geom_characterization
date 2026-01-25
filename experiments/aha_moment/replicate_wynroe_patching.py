@@ -37,6 +37,7 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 # Model configurations
 MODEL_CONFIGS = {
     'base': 'allenai/OLMo-3-1025-7B',
+    'sft': 'allenai/OLMo-3-7B-Think-SFT',  # SFT only (no RLVR)
     'rl_zero': 'allenai/OLMo-3-7B-RL-Zero-General',
     'think': 'allenai/OLMo-3-7B-Think',
     # DeepSeek-R1 distilled model (what Wynroe used)
@@ -234,19 +235,20 @@ def activation_patch_forward(
         def hook(module, input, output):
             # output is (hidden_states, ...) or just hidden_states
             # CRITICAL: Must clone before modifying - in-place ops don't propagate correctly
+            # METHODOLOGY FIX: Patch ONLY the final token position, not all positions
+            # This matches standard activation patching methodology (TransformerLens)
             if isinstance(output, tuple):
                 hidden_states = output[0].clone()  # Clone to ensure modification propagates
-                # Replace with clean activations
+                # Replace with clean activations at FINAL TOKEN ONLY
                 patched = clean_activations[layer_idx].to(hidden_states.device)
-                # Match sequence length
-                min_len = min(hidden_states.shape[1], patched.shape[1])
-                hidden_states[:, :min_len, :] = patched[:, :min_len, :]
+                # Patch only the last token position (where logit-diff is measured)
+                hidden_states[:, -1, :] = patched[:, -1, :]
                 return (hidden_states,) + output[1:]
             else:
                 new_output = output.clone()  # Clone to ensure modification propagates
                 patched = clean_activations[layer_idx].to(new_output.device)
-                min_len = min(new_output.shape[1], patched.shape[1])
-                new_output[:, :min_len, :] = patched[:, :min_len, :]
+                # Patch only the last token position
+                new_output[:, -1, :] = patched[:, -1, :]
                 return new_output
         return hook
 

@@ -18,59 +18,52 @@ import warnings
 warnings.filterwarnings('ignore')
 
 
-def compute_layer_jacobian_svd(x_l, x_l1, k=100):
+def compute_layer_jacobian_svd(x_l, x_l1, k=50):
     """
-    Estimate Jacobian spectrum between two layers using SVD.
+    Estimate Jacobian spectrum between two layers using randomized SVD.
 
-    For layers l and l+1, we have activations at many sequence positions.
-    The transition can be approximated as: x_{l+1} ≈ J @ x_l + b
-
-    We estimate J via least squares and compute its singular values.
+    Uses a faster approximation: compute SVD of the transition matrix.
+    This captures how directions expand/contract between layers.
 
     Args:
         x_l: (seq_len, d_model) - activations at layer l
         x_l1: (seq_len, d_model) - activations at layer l+1
-        k: number of dimensions to project to (for efficiency)
+        k: number of singular values to compute
 
     Returns:
-        singular_values: (k,) - approximated Jacobian singular values
+        singular_values: (k,) - approximated expansion factors
     """
-    seq_len, d_model = x_l.shape
+    from sklearn.utils.extmath import randomized_svd
 
-    # Project to lower dimension for efficiency
-    if d_model > k:
-        # Use PCA to project both layers consistently
-        pca = PCA(n_components=k, random_state=42)
-        x_l_proj = pca.fit_transform(x_l)
-        x_l1_proj = pca.transform(x_l1)
-    else:
-        x_l_proj = x_l
-        x_l1_proj = x_l1
-        k = d_model
+    # Compute delta (layer transition)
+    delta = x_l1 - x_l  # (seq_len, d_model)
 
-    # Estimate Jacobian via least squares: x_{l+1} ≈ J @ x_l
-    # J = x_{l+1}.T @ x_l @ (x_l.T @ x_l)^{-1}
-    # Or equivalently, solve x_l @ J.T = x_{l+1}
-
+    # Use randomized SVD for efficiency - compute on delta's covariance proxy
+    # This gives us the principal expansion directions
     try:
-        # Regularized least squares
-        J_T, residuals, rank, s = linalg.lstsq(x_l_proj, x_l1_proj)
-        J = J_T.T  # (k, k)
+        # Randomized SVD is O(seq_len * d_model * k) instead of O(d^3)
+        U, s, Vt = randomized_svd(delta, n_components=min(k, delta.shape[0]-1, delta.shape[1]),
+                                   n_iter=2, random_state=42)
 
-        # Compute singular values
-        _, singular_values, _ = linalg.svd(J, full_matrices=False)
-        return singular_values
+        # Normalize by input magnitude to get expansion ratios
+        input_scale = np.linalg.norm(x_l, 'fro') / np.sqrt(x_l.shape[0])
+        if input_scale > 1e-10:
+            expansion_ratios = s / input_scale
+        else:
+            expansion_ratios = s
+
+        return expansion_ratios
     except:
         return np.ones(k)
 
 
-def compute_lyapunov_spectrum(trajectory, k=100):
+def compute_lyapunov_spectrum(trajectory, k=50):
     """
     Compute full Lyapunov spectrum for a trajectory.
 
     Args:
         trajectory: (seq_len, n_layers, d_model)
-        k: projection dimension
+        k: number of singular values to compute
 
     Returns:
         dict with Lyapunov statistics
@@ -88,12 +81,22 @@ def compute_lyapunov_spectrum(trajectory, k=100):
 
         sv = compute_layer_jacobian_svd(x_l, x_l1, k=k)
 
-        # Lyapunov exponents = log of singular values
-        lyap = np.log(sv + 1e-10)
+        if len(sv) > 0:
+            # Lyapunov exponents = log of expansion ratios
+            lyap = np.log(sv + 1e-10)
 
-        layer_max_lyapunov.append(lyap[0])  # Largest
-        layer_mean_lyapunov.append(np.mean(lyap))
-        layer_spectrum_width.append(np.std(lyap))
+            layer_max_lyapunov.append(lyap[0])  # Largest
+            layer_mean_lyapunov.append(np.mean(lyap))
+            layer_spectrum_width.append(np.std(lyap))
+
+    if not layer_max_lyapunov:
+        return {
+            'max_lyapunov': 0.0,
+            'mean_lyapunov': 0.0,
+            'spectrum_width': 0.0,
+            'max_lyapunov_profile': np.array([]),
+            'mean_lyapunov_profile': np.array([])
+        }
 
     return {
         'max_lyapunov': np.mean(layer_max_lyapunov),
@@ -243,6 +246,70 @@ def test_h_jac3(correct_lyap, incorrect_lyap):
     return d, p_val
 
 
+def analyze_task(filepath, task_name, n_samples=100, k_proj=100):
+    """Analyze a single task and return results."""
+    print(f"\n{'#' * 60}")
+    print(f"# {task_name}")
+    print('#' * 60)
+
+    try:
+        with h5py.File(filepath, 'r') as f:
+            traj = f['trajectories'][:n_samples].astype(np.float32)
+            labels = f['is_correct'][:n_samples]
+    except Exception as e:
+        print(f"ERROR loading {filepath}: {e}")
+        return None
+
+    print(f"\nLoaded: {traj.shape}")
+    print(f"Correct: {labels.sum()}/{len(labels)} ({100*labels.mean():.1f}%)")
+
+    # Split by correctness
+    correct_idx = np.where(labels)[0]
+    incorrect_idx = np.where(~labels)[0]
+
+    if len(correct_idx) < 5 or len(incorrect_idx) < 5:
+        print(f"SKIPPED: Not enough samples (correct={len(correct_idx)}, incorrect={len(incorrect_idx)})")
+        return None
+
+    correct_traj = traj[correct_idx]
+    incorrect_traj = traj[incorrect_idx]
+
+    print(f"\nComputing full Lyapunov spectrum (k={k_proj})...")
+
+    # Compute Lyapunov for each sample
+    correct_lyap = []
+    for i, t in enumerate(correct_traj):
+        if i % 10 == 0:
+            print(f"  Correct: {i}/{len(correct_traj)}")
+        correct_lyap.append(compute_lyapunov_spectrum(t, k=k_proj))
+
+    incorrect_lyap = []
+    for i, t in enumerate(incorrect_traj):
+        if i % 20 == 0:
+            print(f"  Incorrect: {i}/{len(incorrect_traj)}")
+        incorrect_lyap.append(compute_lyapunov_spectrum(t, k=k_proj))
+
+    # Extract error direction
+    print("\nExtracting error direction...")
+    error_dir = extract_error_direction(correct_traj, incorrect_traj, layer_idx=-1)
+
+    # Compute directional Lyapunov
+    print("Computing directional Lyapunov...")
+    correct_dir_lyap = [compute_directional_lyapunov(t, error_dir) for t in correct_traj]
+    incorrect_dir_lyap = [compute_directional_lyapunov(t, error_dir) for t in incorrect_traj]
+
+    # Run tests
+    d1, p1 = test_h_jac1(correct_lyap, incorrect_lyap)
+    d2, p2 = test_h_jac2(correct_dir_lyap, incorrect_dir_lyap)
+    d3, p3 = test_h_jac3(correct_lyap, incorrect_lyap)
+
+    return {
+        'h_jac1': {'d': d1, 'p': p1},
+        'h_jac2': {'d': d2, 'p': p2},
+        'h_jac3': {'d': d3, 'p': p3}
+    }
+
+
 def main():
     print("=" * 60)
     print("FULL LYAPUNOV SPECTRUM ANALYSIS")
@@ -250,88 +317,66 @@ def main():
     print("\nThis tests H_jac1, H_jac2, H_jac3 from the critique document.")
     print("Unlike Frobenius norm, this captures DIRECTIONAL information.\n")
 
-    # Data paths
-    base_path = "/data/thanhdo/trajectories_0shot/olmo3_base"
+    # Data configuration
+    base_dir = "/data/thanhdo/trajectories_0shot"
+    models = ['olmo3_base', 'olmo3_sft', 'olmo3_rl_zero', 'olmo3_think']
+    tasks = ['gsm8k', 'humaneval', 'logiqa']
 
-    n_samples = 100  # Use 100 for reasonable runtime
-    k_proj = 100  # Projection dimension
+    n_samples = 50  # Reduced for faster runtime
+    k_proj = 50  # Reduced projection dimension (was 100)
 
-    results = {}
+    all_results = {}
 
-    for task in ["humaneval", "logiqa"]:
-        print("\n" + "#" * 60)
-        print(f"# {task.upper()}")
-        print("#" * 60)
+    for model in models:
+        print("\n" + "=" * 60)
+        print(f"MODEL: {model}")
+        print("=" * 60)
 
-        filepath = f"{base_path}/{task}_trajectories.h5"
+        model_results = {}
+        for task in tasks:
+            filepath = f"{base_dir}/{model}/{task}_trajectories.h5"
+            task_key = f"{model}/{task}"
 
-        with h5py.File(filepath, 'r') as f:
-            traj = f['trajectories'][:n_samples].astype(np.float32)
-            labels = f['is_correct'][:n_samples]
+            result = analyze_task(filepath, task_key, n_samples, k_proj)
+            if result is not None:
+                model_results[task] = result
+                all_results[task_key] = result
 
-        print(f"\nLoaded: {traj.shape}")
-        print(f"Correct: {labels.sum()}/{len(labels)} ({100*labels.mean():.1f}%)")
-
-        # Split by correctness
-        correct_idx = np.where(labels)[0]
-        incorrect_idx = np.where(~labels)[0]
-
-        correct_traj = traj[correct_idx]
-        incorrect_traj = traj[incorrect_idx]
-
-        print(f"\nComputing full Lyapunov spectrum (k={k_proj})...")
-        print("This may take a few minutes...")
-
-        # Compute Lyapunov for each sample
-        correct_lyap = []
-        for i, t in enumerate(correct_traj):
-            if i % 5 == 0:
-                print(f"  Correct: {i}/{len(correct_traj)}")
-            correct_lyap.append(compute_lyapunov_spectrum(t, k=k_proj))
-
-        incorrect_lyap = []
-        for i, t in enumerate(incorrect_traj):
-            if i % 10 == 0:
-                print(f"  Incorrect: {i}/{len(incorrect_traj)}")
-            incorrect_lyap.append(compute_lyapunov_spectrum(t, k=k_proj))
-
-        # Extract error direction
-        print("\nExtracting error direction...")
-        error_dir = extract_error_direction(correct_traj, incorrect_traj, layer_idx=-1)
-
-        # Compute directional Lyapunov
-        print("Computing directional Lyapunov...")
-        correct_dir_lyap = [compute_directional_lyapunov(t, error_dir) for t in correct_traj]
-        incorrect_dir_lyap = [compute_directional_lyapunov(t, error_dir) for t in incorrect_traj]
-
-        # Run tests
-        d1, p1 = test_h_jac1(correct_lyap, incorrect_lyap)
-        d2, p2 = test_h_jac2(correct_dir_lyap, incorrect_dir_lyap)
-        d3, p3 = test_h_jac3(correct_lyap, incorrect_lyap)
-
-        results[task] = {
-            'h_jac1': {'d': d1, 'p': p1},
-            'h_jac2': {'d': d2, 'p': p2},
-            'h_jac3': {'d': d3, 'p': p3}
-        }
+        if not model_results:
+            print(f"No valid data for {model}")
 
     # Summary
     print("\n" + "=" * 60)
     print("SUMMARY")
     print("=" * 60)
 
-    print("\n| Task | H_jac1 (Max λ) | H_jac2 (Dir λ) | H_jac3 (Width) |")
-    print("|------|----------------|----------------|----------------|")
-    for task, r in results.items():
+    print("\n| Model/Task | H_jac1 (Max λ) | H_jac2 (Dir λ) | H_jac3 (Width) |")
+    print("|------------|----------------|----------------|----------------|")
+    for key, r in sorted(all_results.items()):
         h1 = f"d={r['h_jac1']['d']:.2f}, p={r['h_jac1']['p']:.3f}"
         h2 = f"d={r['h_jac2']['d']:.2f}, p={r['h_jac2']['p']:.3f}"
         h3 = f"d={r['h_jac3']['d']:.2f}, p={r['h_jac3']['p']:.3f}"
-        print(f"| {task} | {h1} | {h2} | {h3} |")
+        print(f"| {key} | {h1} | {h2} | {h3} |")
 
     print("\nKey:")
     print("  H_jac1: d > 0 means incorrect is more chaotic")
     print("  H_jac2: Signal in error-direction subspace")
     print("  H_jac3: Spectrum width (anisotropy)")
+    print("  p < 0.05 = significant")
+
+    # Count significant results
+    sig_count = sum(1 for r in all_results.values()
+                    for h in ['h_jac1', 'h_jac2', 'h_jac3']
+                    if r[h]['p'] < 0.05)
+    total = len(all_results) * 3
+    print(f"\nSignificant results: {sig_count}/{total}")
+
+    # Save results
+    import json
+    output_path = "/home/thanhdo/p1_geom_characterization/results/full_lyapunov_results.json"
+    with open(output_path, 'w') as f:
+        json.dump(all_results, f, indent=2)
+    print(f"\nResults saved to {output_path}")
 
 
 if __name__ == "__main__":

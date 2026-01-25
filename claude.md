@@ -535,13 +535,13 @@ See [docs/guides/B2_SETUP.md](docs/guides/B2_SETUP.md) for detailed setup.
 
 ---
 
-## Core Hypotheses (H1-H5) — Reframed
+## Core Hypotheses (H1-H5) — Status Update (2026-01-24)
 
-**H1**: Correct vs incorrect solutions have distinguishable trajectory dynamics (within-domain)
-**H2**: Dynamical signatures share structure across domains (math → code → logic) - **CRITICAL TEST**
-**H3**: Signatures correlate with human judgments on non-verifiable domains
-**H4**: Trajectory interventions can improve task performance (causality test)
-**H5**: Correct solutions have more stable dynamics (lower Lyapunov exponents)
+**H1**: Correct vs incorrect solutions have distinguishable trajectory dynamics — ✅ TRUE via linear probe (AUC 0.68-0.75)
+**H2**: Dynamical signatures share structure across domains — ⚠️ WEAK (d ~ 0.4, not universal)
+**H3**: Signatures correlate with human judgments on non-verifiable domains — Not tested
+**H4**: Trajectory interventions can improve task performance — Not tested
+**H5**: Correct solutions have more stable dynamics (Lyapunov) — ❌ **FAILED** (worse than linear probe baseline)
 
 ### Original Concepts
 
@@ -559,15 +559,19 @@ See [docs/guides/B2_SETUP.md](docs/guides/B2_SETUP.md) for detailed setup.
 - **Attractor basin**: Region of state space converging to fixed point
 - **Activation regime**: High-SV (distributed) vs low-SV (localized) — proxy for curvature
 
-### Phase 3 Analysis Methods
+### Phase 3 Analysis Methods — Results
 
-| Method | What it Measures | Hypothesis |
-|--------|------------------|------------|
-| MARBLE vector field | Flow structure (potential vs rotational) | Correct = more potential (direct) flow |
-| Lyapunov exponents | Trajectory stability | Correct = more stable (λ < 0) |
-| Attractor analysis | Convergence targets | Correct/incorrect = different basins |
-| Activation regime | Weight direction usage | Correct = more distributed (high-SV) |
-| Path signatures | Trajectory shape (invariant) | Correct = more structured paths |
+| Method | What it Measures | Hypothesis | Status |
+|--------|------------------|------------|--------|
+| MARBLE vector field | Flow structure | Correct = more potential | Not tested |
+| Lyapunov exponents | Trajectory stability | Correct = more stable | ❌ **FAILED** |
+| Attractor analysis | Convergence targets | Different basins | Not tested |
+| Activation regime | Weight direction usage | Correct = more distributed | ❌ Failed (opposite) |
+| Path signatures | Trajectory shape | Correct = more structured | Not tested |
+| Menger curvature | Local bending | Lower curvature | ❌ Failed (architectural) |
+| **Linear probe** | Static geometry | — | ✅ **WORKS** (AUC 0.75) |
+
+**Key finding**: Static geometry (linear probe on mean activation) beats ALL dynamical measures tested.
 
 ---
 

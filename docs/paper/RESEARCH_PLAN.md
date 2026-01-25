@@ -69,11 +69,13 @@ This negative result supports the **interpolation view** (Allen-Zhu & Li, 2024):
 
 **Implication**: If reasoning isn't in the **space** (static subspace), it may be in the **flow** (trajectory dynamics).
 
-This motivates our focus on:
-- **Vector field analysis**: How activations flow through layers
-- **Lyapunov stability**: Whether correct solutions are more stable
-- **Attractor dynamics**: Which basins correct vs incorrect solutions converge to
-- **Path signatures**: Trajectory shape features (reparameterization-invariant)
+This motivated testing:
+- **Vector field analysis**: How activations flow through layers — Not tested
+- **Lyapunov stability**: Whether correct solutions are more stable — ❌ **FAILED** (worse than linear probe)
+- **Attractor dynamics**: Which basins correct vs incorrect solutions converge to — Not tested
+- **Path signatures**: Trajectory shape features — Not tested
+
+**Update (2026-01-24)**: Lyapunov analysis does NOT capture reasoning dynamics beyond static geometry. A simple linear probe (AUC 0.75) beats all dynamical measures (AUC 0.30). See H5 section for details.
 
 *Full analysis: `experiments/svd_reasoning_separability/` and `notebooks/working_notes/SVD_LINEAR_SEPARABILITY_FINDINGS.md`*
 
@@ -313,15 +315,24 @@ If geometry correlates with correctness, can we improve performance by steering 
 
 **What would failure mean**: Geometry reflects correctness but doesn't cause it; read-only signal
 
-### H5: Correct Solutions Have More Stable Dynamics (Exploratory)
+### H5: Correct Solutions Have More Stable Dynamics ❌ FAILED
 
-Hypothesis: Correct solutions show lower Lyapunov exponents (more stable attractor convergence).
+~~Hypothesis: Correct solutions show lower Lyapunov exponents (more stable attractor convergence).~~
 
-**Rationale**: From HRM analysis — correct solutions find the right attractor quickly; incorrect solutions wander or get trapped in wrong basins.
+**STATUS (2026-01-24): FAILED**
 
-**Test**: Compare Lyapunov spectra for correct vs incorrect trajectories.
+**Results**:
+1. **Within-dataset Lyapunov (H_jac2)**: Effect sizes inflated 10x by data leakage
+   - Original: d = -1.52 (significant)
+   - Cross-validated: d = -0.11 (not significant)
 
-**Alternative hypothesis**: Correct solutions might show *controlled* instability (exploration) followed by convergence (exploitation).
+2. **Baseline comparison**: Linear probe AUC = 0.75 BEATS H_jac2 AUC = 0.30
+   - The "dynamical" measure is WORSE than random chance
+   - Static geometry (mean activation) captures correctness better than dynamics
+
+3. **Task-specific inflation**: GSM8K results inflated 13-24x; HumanEval not inflated but still beaten by linear probe
+
+**Conclusion**: Lyapunov stability analysis does NOT capture reasoning dynamics beyond what static geometry already provides. H5 is not supported.
 
 ---
 
@@ -369,9 +380,9 @@ v = ∇φ + ∇×A
 - **Rotational component**: Cycling, oscillatory dynamics
 - **Hypothesis**: Correct solutions have higher potential/rotational ratio (more direct paths)
 
-**2. Lyapunov Exponent Analysis**
+**2. Lyapunov Exponent Analysis** ❌ FAILED (2026-01-24)
 
-Measure trajectory stability/instability:
+~~Measure trajectory stability/instability~~
 
 ```python
 # Local Jacobian of layer transition
@@ -381,11 +392,14 @@ J_l = ∂x_{l+1}/∂x_l
 λ = lim (1/L) Σ_l log(σ_max(J_l))
 ```
 
-- λ > 0: Divergent (chaotic, sensitive)
-- λ < 0: Convergent (stable, attractor)
-- λ ≈ 0: Neutral
+**RESULT**: Does NOT distinguish correct/incorrect beyond what linear probe captures.
 
-**Hypothesis**: Correct solutions show more stable dynamics (λ < 0) or controlled instability-then-convergence.
+- Fast Lyapunov (Frobenius norm): No significant difference
+- Directional Lyapunov (H_jac2): Inflated by data leakage; worse than linear probe baseline
+- Cross-validated: d = -0.11 (not significant)
+- AUC comparison: Linear probe = 0.75, H_jac2 = 0.30 (worse than chance)
+
+**Conclusion**: Lyapunov analysis does NOT capture reasoning dynamics.
 
 **3. Attractor Analysis**
 
@@ -407,14 +421,15 @@ Inspired by Merullo et al. (2025), but using structural proxies (we lack gradien
 
 #### Feature Summary
 
-| Feature | What it Captures | Hypothesis for Correct Solutions |
-|---------|------------------|----------------------------------|
-| Path signature | Trajectory shape (invariant) | More structured, less chaotic |
-| Frenet-Serret curvature | Local bending | Lower curvature (straighter paths) |
-| Vector field potential/curl | Flow structure | Higher potential ratio (direct paths) |
-| Lyapunov exponent | Stability | More stable (λ < 0) |
-| Attractor basin | Convergence target | Different basin than incorrect |
-| Activation regime (proxy) | Weight direction usage (structural proxy) | More distributed (high-SV) activation |
+| Feature | What it Captures | Hypothesis | Status |
+|---------|------------------|------------|--------|
+| Path signature | Trajectory shape (invariant) | More structured | Not tested |
+| Frenet-Serret curvature | Local bending | Lower curvature | ❌ Failed (architectural) |
+| Vector field potential/curl | Flow structure | Higher potential ratio | Not tested |
+| Lyapunov exponent | Stability | More stable (λ < 0) | ❌ **FAILED** (worse than linear probe) |
+| Attractor basin | Convergence target | Different basin | Not tested |
+| Activation regime (proxy) | Weight direction usage | More distributed | ❌ Failed (SVD opposite) |
+| **Linear probe** (baseline) | Static geometry | — | ✅ **WORKS** (AUC 0.68-0.75) |
 
 ### Classification Pipeline
 
