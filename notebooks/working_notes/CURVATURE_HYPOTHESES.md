@@ -1,106 +1,174 @@
-# Sequence Flow Hypotheses (Residual Stream Dynamics)
+# Hypotheses About Menger Curvature Findings
 
 **Date**: 2026-01-20
-**Status**: Active hypotheses for testing
+**Context**: We found r=0.996 curvature profile correlation between HumanEval and LogiQA on olmo3_base
 
 ---
 
-## Background
+## The Puzzle
 
-Previous analysis computed Menger curvature on **layer trajectories** (path through layers 0→30). This captured purely architectural patterns (r≈1.0 for all comparisons), not task or correctness signals.
+If the curvature profile correlation is ~1.0 between domains, what does this tell us?
 
-**Key insight**: Raw activations are superpositioned — geometric measures on layer paths capture transformer architecture, not semantic content.
+**Two interpretations**:
 
-**New approach**: Compute geometry on **sequence trajectories at the last layer** — the path through token positions (token 0→1→...→512) at layer 30. This is the "belief state flow" as the model generates its answer.
+1. **Strong (exciting)**: Correct solutions have a universal geometric structure that transfers
+2. **Weak (concerning)**: Curvature profile is just an architectural property, not task-dependent
 
-**Why this might work**:
-- Last layer is closest to output — encodes the "answer state"
-- Sequence dynamics depend on actual content (what's being generated)
-- Aligns with belief dynamics literature (Shai et al.) — residual stream tracks belief updates
-- Less architectural, more semantic
+The weak interpretation seems more likely because:
+- We computed curvature on ALL samples (correct + incorrect mixed)
+- The r=0.996 is for the mean curvature profile, not conditioned on correctness
+- Within-domain effect (correct vs incorrect) was NOT significant (d~0.3, p>0.2)
 
 ---
 
-## Hypotheses
+## Hypotheses to Test
 
-### H_flow1: Velocity distribution at last layer
+### H_curv1: Curvature profile is architecture-dependent, not task-dependent
 
-**Motivation**: The "speed" of representation change across tokens may differ for correct vs incorrect solutions.
-
-**Prediction**:
-- Correct solutions have different velocity distribution (mean, variance, or shape)
-- Possible: Correct solutions "settle" more (lower velocity near end)
-- Possible: Incorrect solutions "oscillate" more (higher variance)
-
-**Measure**:
-```
-velocity_t = ||x_{t+1} - x_t||  at layer 30
-```
+**Prediction**: All OLMo-3 models (base, sft, rl_zero, think) will have nearly identical curvature profiles (r > 0.95) regardless of training.
 
 **Test**:
-1. Extract last layer activations: `(n_samples, 512, 4096)` → layer 30 only
-2. Compute velocity at each token position
-3. Compare distributions: correct vs incorrect
-4. Metrics: mean velocity, velocity variance, velocity at end vs start
+- Compute curvature profiles for same task across all 4 models
+- If r > 0.95 across models → architecture property
+- If r varies significantly → training affects curvature
 
-**Compute**: ~10 min on CPU (existing data, simple computation)
+**Implication**: If true, curvature profile is a "null feature" for our purposes.
 
 ---
 
-### H_flow2: Curvature of sequence path at last layer
+### H_curv2: Curvature profile reflects layer specialization
 
-**Motivation**: The "turning" of the representation path may capture reasoning structure.
-
-**Prediction**:
-- Correct solutions have different curvature profiles across sequence
-- Possible: More "direct" paths (lower curvature) for correct
-- Possible: Characteristic curvature patterns at decision points
-
-**Measure**:
-```
-curvature_t = Menger(x_{t-1}, x_t, x_{t+1})  at layer 30
-```
+**Prediction**: The curvature profile shape (high at certain layers, low at others) corresponds to layers with different "roles" (e.g., early=tokenization, middle=reasoning, late=output).
 
 **Test**:
-1. Extract last layer activations
-2. Compute Menger curvature at each token transition
-3. Compare: curvature profile correlation (correct vs incorrect)
-4. If correlation < 0.95, we have signal (unlike layer curvature which was r≈1.0)
+- Compare curvature peaks to known layer functions (from probing studies)
+- Check if curvature correlates with attention entropy or MLP activation patterns
 
-**Compute**: ~15 min on CPU
+**Implication**: Would explain WHY architecture determines curvature.
 
 ---
 
-### H_flow3: Cross-domain flow comparison (manifold structure)
+### H_curv3: Curvature MAGNITUDE (not profile shape) differs by correctness
 
-**Motivation**: If we have flow statistics for each dataset, we can compare the "manifold of flows" across domains.
+**Observation**: Correct solutions had slightly higher mean curvature (d~0.3, not significant)
 
-**Prediction**:
-- Within-domain: correct/incorrect have different flow manifolds
-- Cross-domain: correct flows from HumanEval may resemble correct flows from LogiQA
-- This tests if "correct reasoning flow" is domain-invariant
-
-**Measure**:
-```
-For each sample: flow_features = [mean_velocity, var_velocity, mean_curvature, var_curvature, convergence_rate]
-```
+**Prediction**: This effect should be stronger in reasoning-trained models:
+- think > rl_zero > sft > base (in terms of curvature separation)
 
 **Test**:
-1. Extract flow features for all samples in HumanEval and LogiQA
-2. Train classifier on flow features (correct vs incorrect) within domain
-3. Test cross-domain transfer of flow-based classifier
-4. Compare to error-direction transfer (which was asymmetric)
-
-**Compute**: ~30 min on CPU
+- Compute effect size for curvature (correct vs incorrect) across all 4 models
+- If pattern holds → reasoning training amplifies curvature signal
+- If no pattern → curvature magnitude is also not useful
 
 ---
 
-### Priority Order for Sequence Flow Experiments
+### H_curv4: Cross-domain correlation holds for ALL task pairs
 
-| Priority | Hypothesis | Effort | Key Question |
-|----------|------------|--------|--------------|
-| 1 | H_flow1 (velocity) | Low (~10 min) | Does generation "speed" differ? |
-| 2 | H_flow2 (curvature) | Low (~15 min) | Is sequence curvature content-dependent? |
-| 3 | H_flow3 (cross-domain) | Medium (~30 min) | Does flow structure transfer? |
+**Prediction**: Adding GSM8K (math) will still show r > 0.95 with HumanEval/LogiQA
 
-**Recommendation**: Run all three in sequence. H_flow2 is the key test — if sequence curvature shows r < 0.95 for correct vs incorrect (unlike layer curvature r≈1.0), we have found a content-dependent geometric signal.
+**Test**:
+- Need to recollect GSM8K (currently corrupted for base model)
+- Compute 3×3 curvature correlation matrix
+
+**Alternative H_curv4b**: Dissimilar tasks will have lower correlation
+- E.g., HumanEval↔LogiQA: r=0.99 (both "reasoning")
+- E.g., HumanEval↔Translation: r=0.70 (different cognitive demands)
+
+**Implication**: Would tell us if "reasoning tasks" form a curvature cluster.
+
+---
+
+### H_curv5: Correct-vs-incorrect curvature correlation differs from all-samples correlation
+
+**Key insight**: We computed r=0.996 on ALL samples. What if we condition on correctness?
+
+**Prediction**:
+- Correct_HumanEval ↔ Correct_LogiQA: r ≈ 0.99 (correct solutions similar across domains)
+- Incorrect_HumanEval ↔ Incorrect_LogiQA: r ≈ 0.99 (incorrect also similar)
+- Correct ↔ Incorrect (within domain): r < 0.90 (correct and incorrect differ)
+
+**Test**:
+- Compute curvature profiles separately for correct and incorrect
+- Compare within-correctness cross-domain vs cross-correctness within-domain
+
+**Implication**: If correct≠incorrect curvature profiles, we have a useful signal even if cross-domain transfers.
+
+---
+
+## The Geodesic Question
+
+You asked: "If we think of the path as the geodesic on whichever manifold, there will be different geodesics on different model manifolds that all transfer well"
+
+**Interpretation**:
+- Each model (base/sft/rl_zero/think) defines a different "manifold"
+- Trajectories are paths on these manifolds
+- If all manifolds have similar curvature structure → the "shape" of the manifold is preserved by training
+
+**What training might change**:
+1. **Location** on manifold where correct solutions land
+2. **Attractor basins** that pull trajectories toward correct answers
+3. **Direction** that separates correct/incorrect
+
+**What training might NOT change**:
+1. **Curvature profile** (intrinsic geometry of transformer computation)
+2. **Layer-wise processing structure** (early/middle/late layer roles)
+
+---
+
+## Proposed Experiments (Priority Order)
+
+### Experiment 1: Cross-model curvature comparison
+**Goal**: Test H_curv1 (is curvature architectural?)
+**Data needed**: Same task on multiple models
+**Currently available**: HumanEval on olmo3_base, olmo3_sft, olmo3_rl_zero, olmo3_think
+**Compute**: ~30 min on eyecog
+
+### Experiment 2: Correctness-conditioned curvature
+**Goal**: Test H_curv5 (do correct/incorrect have different curvature?)
+**Data needed**: Already have (current data)
+**Compute**: ~10 min on eyecog
+
+### Experiment 3: Add GSM8K to correlation matrix
+**Goal**: Test H_curv4 (does math task fit the pattern?)
+**Data needed**: Need to recollect GSM8K for olmo3_base
+**Compute**: Need GPU (~1 hr collection)
+
+### Experiment 4: Non-reasoning task comparison
+**Goal**: Test H_curv4b (do non-reasoning tasks differ?)
+**Data needed**: Need to collect on translation/QA task
+**Compute**: Need GPU + new task setup
+
+---
+
+## Quick Test We Can Do Now
+
+**H_curv5 quick test**: Compute curvature profile separately for correct vs incorrect samples in existing data.
+
+```python
+# Pseudocode
+correct_mask = labels == True
+incorrect_mask = labels == False
+
+curv_correct = [compute_profile(t) for t in traj[correct_mask]]
+curv_incorrect = [compute_profile(t) for t in traj[incorrect_mask]]
+
+# Compare within-correctness cross-domain
+r_correct_crossdomain = corr(mean(curv_correct_humaneval), mean(curv_correct_logiqa))
+r_incorrect_crossdomain = corr(mean(curv_incorrect_humaneval), mean(curv_incorrect_logiqa))
+
+# Compare cross-correctness within-domain
+r_humaneval_cross_correctness = corr(mean(curv_correct_humaneval), mean(curv_incorrect_humaneval))
+```
+
+**If** r_cross_correctness < r_cross_domain → curvature distinguishes correct/incorrect better than domain
+**If** r_cross_correctness ≈ r_cross_domain → curvature is domain-invariant AND correctness-invariant (not useful)
+
+---
+
+## Summary
+
+The r=0.996 finding is potentially a **red herring**:
+- It might just mean "transformers process information similarly through layers regardless of task"
+- The *interesting* question is whether curvature differs by CORRECTNESS, not by domain
+
+**Priority**: Test H_curv5 (correctness-conditioned curvature) before drawing conclusions about transfer.

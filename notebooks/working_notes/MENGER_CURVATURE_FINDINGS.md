@@ -1,7 +1,8 @@
 # Menger Curvature Analysis: Findings and Next Steps
 
-**Date**: 2026-01-21
-**Status**: Layer curvature abandoned → Sequence flow analysis next
+**Date**: 2026-01-20 (Updated with critical correction)
+**Model**: olmo3_base (0-shot)
+**Tasks**: HumanEval, LogiQA
 
 ---
 
@@ -9,14 +10,17 @@
 
 Menger curvature on **layer trajectories** (path through layers 0→30) is purely architectural:
 
-| Comparison | Correlation (r) |
-|------------|-----------------|
-| Correct ↔ Incorrect (same domain) | 0.9999 |
-| Cross-domain (HumanEval ↔ LogiQA) | 0.996 |
+1. **Within-domain**: Curvature does NOT significantly distinguish correct vs incorrect (p > 0.2)
+2. **Cross-domain**: Curvature profiles are HIGHLY correlated (r = 0.996, p < 0.0001)
 
-**Conclusion**: Curvature profile is determined by transformer architecture, not task or correctness. All trajectories through OLMo-3 have nearly identical curvature profiles regardless of content.
+**CRITICAL UPDATE**: The r=0.996 finding is a **RED HERRING / NULL RESULT**!
 
-**Why this happened**: Raw activations are superpositioned — geometric measures on layer paths capture how the transformer processes information through layers, not semantic content.
+Further analysis showed that curvature profiles are identical across:
+- Correct vs Incorrect (within domain): r = 0.9999
+- Correct vs Correct (cross domain): r = 0.9961
+- All pairwise combinations: r > 0.995
+
+This means curvature profile is an **architectural property** of the transformer, not a signal related to reasoning or correctness.
 
 ---
 
@@ -96,11 +100,65 @@ Instead of curvature on **layer paths** (0→30), compute geometry on **token se
 | 2 | H_flow2 | ~15 min | Is sequence curvature content-dependent? |
 | 3 | H_flow3 | ~30 min | Does flow structure transfer? |
 
-**Critical test**: H_flow2 — if sequence curvature shows r < 0.95 for correct vs incorrect, we've found a content-dependent geometric signal.
+| Task | Correct Curvature | Incorrect Curvature | Effect Size (d) | p-value |
+|------|-------------------|---------------------|-----------------|---------|
+| HumanEval | 2.383 | 2.111 | 0.315 | 0.291 |
+| LogiQA | 1.266 | 1.196 | 0.244 | 0.322 |
+
+**Interpretation**: The effect sizes are small (d ~ 0.2-0.3) and not statistically significant. This confirms that curvature alone is not a strong discriminator for correctness within a single domain.
+
+### Cross-Domain Correlation
+
+**Layer-wise curvature profiles** were computed by averaging curvature at each layer transition:
+
+| Comparison | Correlation (r) | p-value |
+|------------|-----------------|---------|
+| HumanEval ↔ LogiQA | **0.996** | < 0.0001 |
+
+**Initial Interpretation** (INCORRECT): ~~Despite being different tasks (code vs logic), the curvature profiles across layers are nearly identical. This suggests a domain-invariant geometric structure.~~
 
 ---
 
-## Results (2026-01-21)
+## CRITICAL CORRECTION: Correctness-Conditioned Analysis
+
+After the initial finding, we tested whether curvature differs by correctness:
+
+### Pairwise Curvature Profile Correlations
+
+| Comparison | Correlation (r) |
+|------------|-----------------|
+| HumanEval Correct ↔ HumanEval Incorrect | **0.9999** |
+| LogiQA Correct ↔ LogiQA Incorrect | **0.9998** |
+| HumanEval Correct ↔ LogiQA Correct | 0.9961 |
+| HumanEval Incorrect ↔ LogiQA Incorrect | 0.9963 |
+
+### Interpretation
+
+**ALL correlations are essentially r ≈ 1.0!**
+
+This means:
+1. Curvature profile is **identical** whether the solution is correct or incorrect
+2. Curvature profile is **identical** across tasks (code vs logic)
+3. **Curvature profile is a property of the ARCHITECTURE, not the task or correctness**
+
+The r=0.996 cross-domain finding tells us **nothing** about reasoning transfer. It just shows that OLMo-3 processes information similarly through layers regardless of content.
+
+---
+
+## What About Curvature Magnitude?
+
+Even though the **profile shape** is identical, could the **magnitude** differ?
+
+| Task | Correct | Incorrect | Cohen's d | p-value |
+|------|---------|-----------|-----------|---------|
+| HumanEval | 2.38 ± 0.96 | 2.11 ± 0.84 | 0.319 | 0.291 |
+| LogiQA | 1.27 ± 0.22 | 1.20 ± 0.30 | 0.246 | 0.322 |
+
+**Result**: Small positive effect (correct has higher curvature) but not significant (p > 0.2).
+
+---
+
+## CORRECTED Key Finding: Curvature is Architectural, Not Task-Related
 
 ### H_flow1: Velocity Distribution — NO SIGNAL
 
@@ -109,29 +167,18 @@ Instead of curvature on **layer paths** (0→30), compute geometry on **token se
 | HumanEval | 15.8 ± 5.7 | 18.5 ± 8.6 | -0.32 | 0.29 |
 | LogiQA | 28.0 ± 5.1 | 30.2 ± 7.8 | -0.30 | 0.23 |
 
-Correct solutions have slightly lower velocity (d ~ -0.3) but not significant.
+**Initially we thought**: The geometric structure (curvature profile) DOES transfer (r = 0.996).
 
-### H_flow2: Sequence Curvature — STILL ARCHITECTURAL
+**CORRECTED**: The r=0.996 is **NOT evidence for transfer**. Curvature profiles are identical whether:
+- Solution is correct or incorrect (r=0.9999)
+- Task is code or logic (r=0.996)
 
-| Task | Profile Correlation (r) |
-|------|------------------------|
-| HumanEval | 0.9769 |
-| LogiQA | 0.9903 |
+**What this actually tells us**:
+1. Curvature profile is determined by **transformer architecture**, not task or correctness
+2. All trajectories through OLMo-3 have nearly identical curvature profiles
+3. The r=0.996 cross-domain finding is a **null result** - it doesn't support H2
 
-Both r > 0.95, meaning sequence curvature profile at last layer is **also architectural**, not content-dependent.
-
-### H_flow3: Cross-Domain Flow Transfer — WEAK SIGNAL
-
-| Metric | HumanEval | LogiQA | HE→LQ | LQ→HE |
-|--------|-----------|--------|-------|-------|
-| Within-domain AUC | 0.560 | **0.662** | — | — |
-| Cross-domain AUC | — | — | 0.629 | 0.541 |
-
-- LogiQA shows moderate within-domain signal (AUC=0.662)
-- LogiQA → HumanEval transfer works (0.629)
-- HumanEval → LogiQA transfer weak (0.541)
-
-**Note**: This is the opposite direction from error-direction transfer (which was HE→LQ).
+**Analogy**: It's like measuring the "bumpiness" of different roads and finding they're all equally bumpy. This doesn't tell you which roads lead to the right destination - it just tells you the asphalt was laid the same way everywhere.
 
 ---
 

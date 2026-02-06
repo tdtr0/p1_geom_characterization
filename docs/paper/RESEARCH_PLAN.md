@@ -69,53 +69,13 @@ This negative result supports the **interpolation view** (Allen-Zhu & Li, 2024):
 
 **Implication**: If reasoning isn't in the **space** (static subspace), it may be in the **flow** (trajectory dynamics).
 
-This motivated testing:
-- **Vector field analysis**: How activations flow through layers — Not tested
-- **Lyapunov stability**: Whether correct solutions are more stable — ❌ **FAILED** (worse than linear probe)
-- **Attractor dynamics**: Which basins correct vs incorrect solutions converge to — Not tested
-- **Path signatures**: Trajectory shape features — Not tested
-
-**Update (2026-01-24)**: Lyapunov analysis does NOT capture reasoning dynamics beyond static geometry. A simple linear probe (AUC 0.75) beats all dynamical measures (AUC 0.30). See H5 section for details.
+This motivates our focus on:
+- **Vector field analysis**: How activations flow through layers
+- **Lyapunov stability**: Whether correct solutions are more stable
+- **Attractor dynamics**: Which basins correct vs incorrect solutions converge to
+- **Path signatures**: Trajectory shape features (reparameterization-invariant)
 
 *Full analysis: `experiments/svd_reasoning_separability/` and `notebooks/working_notes/SVD_LINEAR_SEPARABILITY_FINDINGS.md`*
-
-### Geometric Measures on Activations: Also Insufficient
-
-After the SVD analysis, we tested whether **geometric measures** (Menger curvature) on activation trajectories could distinguish correct from incorrect solutions.
-
-**Method**: Computed Menger curvature (second-order geometry) across layer trajectories for HumanEval and LogiQA tasks.
-
-**Initial finding**: Cross-domain curvature profile correlation r=0.996 (p<0.0001). We initially thought this supported H2 (geometric structure transfers).
-
-**Critical correction**: We then tested curvature profiles conditioned on correctness:
-
-| Comparison | Correlation |
-|------------|-------------|
-| Correct vs Incorrect (same domain) | r = 0.9999 |
-| Correct vs Correct (cross-domain) | r = 0.9961 |
-| All pairwise combinations | r > 0.995 |
-
-**Conclusion**: The r=0.996 is a **NULL RESULT**. Curvature profile is identical whether:
-- Solution is correct or incorrect
-- Task is code or logic
-- Representation is raw, centered, or normalized
-
-**Why this happens**: Activations are highly **superpositioned** (Elhage et al., 2022):
-- Each dimension doesn't correspond to a single interpretable feature
-- Features are distributed across many dimensions
-- Geometric measures on raw activations capture **architectural patterns**, not semantic content
-
-**Implications for methodology**:
-1. **Raw activation geometry** reflects transformer architecture, not task-relevant computation
-2. **Linear projections** (PCA, SVD) don't extract task-relevant structure
-3. **Need learned representations**: Probes, sparse autoencoders, or error-specific directions
-4. **The error direction works** (d~1.0) because it's explicitly trained to separate correct/incorrect
-
-**What still works**:
-- Error-detection direction (Wynroe-style): Separates correct/incorrect with d~1.0
-- Asymmetric transfer: Code→Logic direction transfers (75%), Logic→Code fails (19%)
-
-*Full analysis: `notebooks/working_notes/MENGER_CURVATURE_FINDINGS.md` and `notebooks/working_notes/CURVATURE_HYPOTHESES.md`*
 
 ---
 
