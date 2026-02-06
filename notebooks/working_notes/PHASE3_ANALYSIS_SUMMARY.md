@@ -1,7 +1,7 @@
 # Phase 3 Analysis Summary
 
-**Date**: 2026-01-23 (updated)
-**Status**: Primary analyses complete, Full Lyapunov complete with positive result
+**Date**: 2026-01-29 (updated)
+**Status**: Primary analyses complete. Lyapunov: NEGATIVE (data leakage + invalid proxy). True Jacobian: NULL. Cross-domain: SFT and Think aligned.
 
 ---
 
@@ -207,93 +207,146 @@ This should be expected from the first order results - confirming the hypothesis
 
 ---
 
-### 8. Full Lyapunov Spectrum Analysis ✅ POSITIVE RESULT
+### 8. Full Lyapunov Spectrum Analysis ❌ NEGATIVE RESULT (Data Leakage)
 
 **Script**: `scripts/analysis/full_lyapunov_analysis.py`
 
-**Date**: 2026-01-23
+**Date**: 2026-01-23 (initial), 2026-01-27 (corrected)
 
 **Method**:
-1. Compute SVD-based Lyapunov at each layer transition (not Frobenius norm)
+1. Compute SVD-based Lyapunov at each layer transition
 2. Extract error-detection direction using difference-in-means
-3. Compute directional Lyapunov: expansion rate in error-direction subspace
-4. Test three hypotheses:
-   - **H_jac1**: Max Lyapunov differs (incorrect = more chaotic?)
-   - **H_jac2**: Directional Lyapunov in error-direction subspace differs
-   - **H_jac3**: Spectrum width (anisotropy) differs
+3. Compute directional Lyapunov (H_jac2): expansion rate in error-direction subspace
+4. Test H_jac1 (max Lyapunov), H_jac2 (directional), H_jac3 (spectrum width)
 
-**Results** (n=50 samples per task, k=50 SVD components):
+**⚠️ CRITICAL: Initial results were INVALID due to circular analysis (data leakage)**
 
-| Model/Task | H_jac1 (d, p) | **H_jac2 (d, p)** | H_jac3 (d, p) |
-|------------|---------------|-------------------|---------------|
-| olmo3_base/gsm8k | -0.12, 0.80 | **+1.68, 0.001** ✓ | +0.41, 0.38 |
-| olmo3_base/humaneval | -0.16, 0.74 | **+1.42, 0.004** ✓ | -0.19, 0.69 |
-| olmo3_base/logiqa | +0.61, 0.07 | **+1.41, 0.000** ✓ | -0.66, 0.05 |
-| olmo3_sft/gsm8k | +0.10, 0.74 | **-1.12, 0.000** ✓ | +0.55, 0.06 |
-| olmo3_sft/humaneval | -0.68, 0.13 | +0.81, 0.07 | +0.88, 0.05 |
-| olmo3_rl_zero/gsm8k | -0.67, 0.06 | **+1.63, 0.000** ✓ | +0.06, 0.86 |
-| olmo3_rl_zero/humaneval | -0.46, 0.12 | +0.39, 0.18 | +0.52, 0.07 |
-| olmo3_think/gsm8k | -0.19, 0.52 | **-1.39, 0.000** ✓ | +0.15, 0.59 |
-| olmo3_think/humaneval | -0.49, 0.23 | **+1.37, 0.002** ✓ | +0.74, 0.08 |
-
-**Significance Count**: 8/27 (30%)
-- H_jac1: 0/9 significant
-- **H_jac2: 7/9 significant** (78%)
-- H_jac3: 1/9 significant
-
----
-
-### ⚠️ CRITICAL UPDATE: Data Leakage Detected (2026-01-23)
-
-**The above effect sizes are INFLATED by ~10x due to circular analysis.**
-
-The error direction is computed from the SAME data it's tested on:
+The error direction was computed from the SAME data it was tested on:
 ```python
-# Direction computed from ALL samples
-error_dir = mean(incorrect) - mean(correct)
-# Then tested on SAME samples → CIRCULAR
+# CIRCULAR: Direction computed from ALL samples, then tested on SAME samples
+error_dir = mean(incorrect) - mean(correct)  # Uses test data!
 ```
 
-**Cross-Validation Results** (proper test):
+This inflated effect sizes by ~45-100%. The "7/9 significant H_jac2" finding was an ARTIFACT.
 
-| Test | Cohen's d | p-value | Notes |
-|------|-----------|---------|-------|
-| Original (same-data) | -1.52 | <0.001 | ❌ **LEAKY — inflated** |
-| **Cross-validated** | **-0.11** ± 0.44 | 0.50 | Signal disappears |
-| Cross-model (base→rl) | **+0.53** | 0.005 | ✅ REAL TRANSFER |
-| Cross-task (HE→GSM8K) | **-0.37** | 0.048 | ✅ REAL TRANSFER |
+**Corrected Results (5-fold Cross-Validation)**:
 
-**TRUE effect sizes**: d ~ 0.4-0.5 (medium), NOT d ~ 1.5 (large)
+| Model/Task | H_jac2 (circular) | H_jac2 (CV) | Real Signal? |
+|------------|-------------------|-------------|--------------|
+| base/gsm8k | d=1.68 | **d=0.54** | ✅ Weak (45% inflation) |
+| base/logiqa | d=0.79 | **d=0.01** | ❌ **Complete artifact** |
+| sft/gsm8k | d=-1.12 | d=0.01 | ❌ Artifact |
+| rl_zero/gsm8k | d=1.63 | d=0.06 | ❌ Artifact |
 
-**What remains valid**:
-- Cross-model transfer IS significant (d=0.53)
-- Cross-task transfer IS significant (d=0.37)
-- The error direction DOES capture a semantic signal
+**Summary**: Only 1/11 model-task combinations significant after proper CV (base/gsm8k: d=0.54)
 
-**What needs correction**:
-- All within-dataset H_jac2 results in the table above are inflated
-- The "7/9 significant" claim needs recomputation with proper CV
+**Baseline Comparison** — Linear probe BEATS H_jac2:
+
+| Model | Linear Probe AUC | H_jac2 AUC | Winner |
+|-------|------------------|------------|--------|
+| base | **0.679** | 0.413 | Probe (+0.27) |
+| rl_zero | **0.752** | 0.303 | Probe (+0.45) |
+
+**H_jac2 AUC < 0.5 = WORSE than random chance!**
+
+**Conclusion**: ❌ **Lyapunov analysis does NOT add value beyond static geometry (linear probe)**
 
 ---
 
-**Key findings** (CORRECTED):
+### 8b. True Empirical Jacobian Analysis ❌ NULL RESULT (2026-01-29)
 
-1. ⚠️ **H_jac2 signal is REAL but WEAKER** — Within-dataset effect sizes are inflated by ~10x. True effect is d ~ 0.4-0.5, not d ~ 1.5
+**Script**: `scripts/analysis/empirical_jacobian_lyapunov.py`
 
-2. ✅ **Cross-model transfer works** — Direction from base model distinguishes correct/incorrect on rl_zero data (d=0.53, p=0.005)
+**Motivation**: The delta-based SVD (previous method) computes SVD(X_{l+1} - X_l), which measures **displacement magnitude**. The true Jacobian solves X_{l+1} ≈ X_l @ J.T and computes SVD(J), measuring **local sensitivity**.
 
-3. ✅ **Cross-task transfer works** — Direction from HumanEval works on GSM8K (d=0.37, p=0.048)
+**Results**:
 
-4. ⚠️ **Sign reversal across transfer types** — Different directions capture different aspects of "error"
+| Model/Task | True Jacobian d | p-value | Delta Proxy d | Note |
+|------------|-----------------|---------|---------------|------|
+| base/gsm8k | 0.284 | 0.395 | 0.406 | ❌ |
+| base/logiqa | -0.242 | 0.326 | -0.399 | ❌ |
+| sft/gsm8k | 0.239 | 0.238 | -0.226 | ❌ |
+| sft/logiqa | -0.035 | 0.865 | 0.311 | ❌ |
+| rl_zero/gsm8k | **0.152** | **0.568** | **0.732** | ❌ Delta inflated 5x |
+| rl_zero/logiqa | -0.057 | 0.800 | 0.050 | ❌ |
 
-5. ❌ **H_jac1 and H_jac3 show no signal** — Only directional analysis works
+**Key Finding**: The delta-based proxy is **methodologically invalid** for transformers:
 
-**Interpretation** (REVISED):
+**Diagnostic Analysis** (`scripts/analysis/jacobian_diagnostic.py`):
+- **cos(X_l, X_l1) ≈ 0.1**: Layers are nearly orthogonal (subspace reshuffling)
+- **mean(SV(J)) ≈ 1.3**: Jacobian is mildly expansive but near-isometric
+- **Implication**: Delta measures "subspace jumps" (displacement), not dynamical sensitivity
 
-The directional Lyapunov captures a REAL but MODEST semantic signal:
-- Cross-model/cross-task transfer proves it's not purely task-specific
-- Effect is medium (d ~ 0.4-0.5), not large (d ~ 1.5)
-- The "universal reasoning signature" hypothesis is NOT supported — different sources give different directions
+**Why Delta ≠ Jacobian**:
+- When layers are orthogonal, the representation "jumps" to different subspaces
+- Delta-SVD captures the magnitude of these jumps
+- True Jacobian captures how perturbations propagate locally
+- These are fundamentally different quantities!
+
+**Conclusion**: ❌ **True Jacobian shows NULL results for all model/task combinations**. The previous delta-based H_jac1 signal (d=-0.73 for RL-Zero) was an artifact of measuring displacement, not dynamical instability.
+
+---
+
+### 8c. Path Signature Analysis ⚠️ WEAK SIGNAL (2026-01-31)
+
+**Script**: `scripts/analysis/path_signature_analysis.py`
+
+**Method**:
+1. Treat layer activations as a path through representation space
+2. Compute depth-3 path signatures (reparameterization-invariant features)
+3. Compare signature norms and train classifiers
+
+**Results** (n=50 samples per task):
+
+| Model/Task | sig_norm_d | p | AUC | Note |
+|------------|------------|---|-----|------|
+| base/gsm8k | -0.38 | 0.31 | 0.64 | ❌ |
+| base/humaneval | -0.16 | 0.45 | 0.58 | ❌ |
+| base/logiqa | -0.37 | 0.10 | 0.50 | ❌ |
+| sft/gsm8k | +0.24 | 0.83 | 0.58 | ❌ |
+| **sft/humaneval** | **-0.39** | **0.003** | **0.82** | ✅ Significant |
+| rl_zero/gsm8k | -0.27 | 0.48 | 0.52 | ❌ |
+| rl_zero/humaneval | -0.36 | 0.39 | 0.71 | ⚠️ |
+
+**Cross-Domain Transfer**:
+| Model | GSM8K→HumanEval | HumanEval→GSM8K |
+|-------|-----------------|-----------------|
+| base | 0.578 | 0.564 |
+| **sft** | **0.780** | 0.544 |
+| rl_zero | 0.545 | 0.387 |
+
+**Key Finding**: ⚠️ **SFT shows strong cross-domain transfer (0.78)** — consistent with error-direction findings. Most other results are null or weak.
+
+---
+
+### 9. Cross-Domain Subspace Alignment ✅ SFT + THINK ALIGNED (2026-01-27)
+
+**Script**: `scripts/analysis/cross_domain_all_models.py`
+
+**Method**:
+1. Compute error direction for each task (GSM8K, LogiQA) using difference-in-means
+2. Measure cosine similarity between error directions across tasks
+3. Test cross-transfer: apply task A's direction to classify task B
+
+**Results** (n=300 per task):
+
+| Model | Task Accuracy | Cosine Sim | GSM8K→LogiQA d | LogiQA→GSM8K d | Pattern |
+|-------|---------------|------------|----------------|----------------|---------|
+| **base** | 12%/23% | 0.069 | 0.08 (p=0.46) | 0.18 (p=0.20) | Orthogonal |
+| **sft** | 60%/36% | **0.355** | **0.48 (p=0.0009)** | **0.45 (p=0.0003)** | **Strong** |
+| **rl_zero** | 14%/30% | 0.098 | 0.12 (p=0.42) | 0.11 (p=0.83) | Orthogonal |
+| **think** | 40%/34% | **0.258** | **0.33 (p=0.028)** | **0.21 (p=0.027)** | **Moderate** |
+
+**Key Finding**: ✅ **SFT and Think show cross-domain alignment; Base and RL-Zero do not**
+
+- **Base & RL-Zero**: Error directions orthogonal (cos ≈ 0.07-0.10), no transfer
+- **SFT**: Strongest alignment (cos=0.355, bidirectional p<0.001)
+- **Think**: Moderate alignment (cos=0.258, bidirectional p<0.03) — SFT preserved through DPO+RLVR
+- Pure RL (RL-Zero) does NOT create domain-general patterns
+
+**Interpretation — The SFT Distillation Hypothesis**:
+
+SFT models are trained on CoT data from stronger models (GPT-4, Claude), creating knowledge distillation that produces domain-general representations. RL training optimizes for task-specific rewards, creating specialists not generalists.
 
 ---
 
@@ -322,29 +375,21 @@ The directional Lyapunov captures a REAL but MODEST semantic signal:
 
 ---
 
-**Comparison to Fast Lyapunov (Section 5)**:
-
-| Method | Signal? | Why |
-|--------|---------|-----|
-| Fast (Frobenius) | ❌ NO | Averages over all directions, loses signal |
-| Full (Directional) | ✅ YES | Isolates error-direction subspace |
-
-This validates the critique that Frobenius norm is too crude — **directional information matters**.
-
----
-
 ## Summary of Findings
 
 | Analysis | Signal? | Notes |
 |----------|---------|-------|
-| Error-Direction (linear probing) | ✅ YES | Strong within-domain, model-dependent transfer |
+| Error-Direction (linear probing) | ✅ YES | Strong within-domain (AUC 0.68-0.75), model-dependent transfer |
+| **Cross-Domain Alignment** | ✅ **SFT + Think** | SFT cos=0.355, Think cos=0.258 (bidirectional); Base/RL-Zero cos≈0.07-0.10 (orthogonal) |
 | Menger Curvature (layers) | ❌ NO | Purely architectural (r≈1.0) |
 | SVD Linear Separability | ❌ NO | Tail changes MORE than top (opposite of prediction) |
 | Sequence Flow Velocity | ❌ NO | d ~ -0.3, not significant |
 | Sequence Flow Curvature | ❌ NO | Still architectural (r > 0.95) |
 | Flow Feature Transfer | ⚠️ WEAK | AUC 0.54-0.66, opposite direction |
 | Lyapunov (fast/Frobenius) | ❌ NO | Not significant (too crude) |
-| **Lyapunov (full/directional)** | ❌ **NO VALUE** | Linear probe AUC=0.75 beats H_jac2 AUC=0.30 |
+| **Lyapunov (full/directional)** | ❌ **NO** | Initial "7/9 significant" was DATA LEAKAGE. CV shows 1/11 sig. Probe beats H_jac2. |
+| **True Empirical Jacobian** | ❌ **NO** | All p > 0.2. Delta proxy invalid (measures displacement, not sensitivity). |
+| **Path Signatures** | ⚠️ **WEAK** | sft/humaneval sig: p=0.003, AUC=0.82. Transfer: SFT GSM8K→HE = 0.78. Most others null. |
 | **Wynroe Patching (causal)** | ⚠️ DIFFERENT | 100% recovery at all layers (distributed, not localized) |
 | **Pivot Velocity → Success** | ❌ NO | p=0.55, pivot words are stylistic not functional |
 
@@ -357,40 +402,68 @@ This validates the critique that Frobenius norm is too crude — **directional i
 
 ## Key Takeaways
 
-1. **Error-detection direction works** — BUT within-dataset effect sizes (d=1-2) are INFLATED by data leakage. True cross-validated effect is d ~ 0.1-0.4
+1. **Linear probe works well** — Static geometry (mean activation) predicts correctness with AUC 0.68-0.75. Simple and effective.
 
-2. **Cross-model/cross-task transfer IS real** (d=0.4-0.5):
-   - Direction from base model works on rl_zero (d=0.53, p=0.005)
-   - Direction from HumanEval works on GSM8K (d=0.37, p=0.048)
-   - This proves the signal is NOT purely noise
+2. **Cross-domain alignment is SFT and Think**:
+   - **SFT**: cos=0.355, bidirectional transfer (p<0.001) — learns domain-general patterns
+   - **Think**: cos=0.258, bidirectional transfer (p<0.03) — SFT preserved through DPO+RLVR
+   - **Base/RL-Zero**: cos≈0.07-0.10 (orthogonal) — task-specific patterns only
+   - Pure RL (RL-Zero) does NOT improve generalization over base
 
-3. **Geometric measures on raw activations fail** — Curvature/velocity capture architecture, not semantics (r>0.95)
+3. **Lyapunov analysis FAILED** — Multiple issues revealed:
+   - **Data leakage**: Initial "7/9 significant H_jac2" was circular analysis (CV: 1/11 significant)
+   - **Invalid proxy**: Delta-based SVD measures displacement, not sensitivity (true Jacobian: all p > 0.2)
+   - **Subspace reshuffling**: cos(X_l, X_l1) ≈ 0.1 means layers are orthogonal — delta captures "jumps" not dynamics
+   - Linear probe AUC=0.75 beats H_jac2 AUC=0.30 (worse than random!)
 
-4. **H_jac2 adds NO value over linear probe** — Linear probe AUC=0.68-0.75 beats H_jac2 AUC=0.30-0.41. The "dynamical" measure is actually WORSE than static geometry.
+4. **Geometric measures on raw activations fail** — Curvature/velocity capture architecture, not semantics (r>0.95)
 
 5. **"Universal reasoning signature" NOT supported**:
-   - Different sources (models, tasks) give different error directions
-   - Sign reversal across transfer types (cross-model: d > 0, cross-task: d < 0)
-   - Static geometry (linear probe) captures the signal better than dynamics
+   - Error directions are task-specific (orthogonal across domains)
+   - Only SFT shows cross-domain alignment
+   - Static geometry beats dynamical measures
 
 6. **Critical methodological lessons**:
-   - Always use cross-validation when computing directions (inflates effect sizes ~10x otherwise)
+   - Always use cross-validation for direction-based analyses (prevents data leakage)
    - Always compare to baseline (linear probe) before claiming dynamical measures add value
+   - Initial positive results should be verified with proper CV
 
-7. **Linear methods insufficient for EXPLAINING, but sufficient for PREDICTING** — SVD analysis shows RLVR changes are distributed, but a simple linear probe predicts correctness well
+7. **SFT distillation hypothesis supported** — SFT training on CoT data creates domain-general representations, while RL optimizes task-specific patterns
+
+---
+
+### 10. Token-Position Specificity ✅ DONE (2026-01-25)
+
+**Script**: `scripts/analysis/additional_analyses.py`
+
+**Method**: Compute Cohen's d for error signal at each token position, identify where signal peaks.
+
+**Results** (olmo3_base):
+
+| Task | Peak Position | Fraction | Signal Location | Early d | Middle d | Late d |
+|------|---------------|----------|-----------------|---------|----------|--------|
+| GSM8K | 50/512 | 10% | **Early** | 0.201 | 0.003 | 0.000 |
+| LogiQA | 85/512 | 17% | **Early** | 0.220 | 0.211 | 0.000 |
+
+**Key Finding**: Signal peaks in **early tokens** (10-17%), NOT at answer tokens.
+
+**Interpretation**: The error direction detects **problem encoding/setup**, not answer format. This is consistent with the "surface structure" interpretation — the model's initial representation of the problem determines correctness, not the answer generation process.
 
 ---
 
 ## Analyses NOT Done (Secondary)
 
-| Analysis | Reason Pending |
-|----------|----------------|
-| Attractor Analysis | Not yet implemented |
-| ~~Full Lyapunov Spectrum~~ | ✅ **DONE** — See Section 8 |
-| Vector Field Decomposition | Not yet implemented |
-| Baseline Comparisons | Not yet done |
-| Difficulty Stratification | Not yet done |
-| SV Regime Projection | Skip (SVD analysis suggests null) |
+| Analysis | Status | Notes |
+|----------|--------|-------|
+| ~~Full Lyapunov Spectrum~~ | ✅ DONE | Section 8. CV shows NEGATIVE result (data leakage) |
+| **Cross-Domain Alignment** | ✅ **DONE** | Section 9. SFT cos=0.355, Think cos=0.258 (both aligned) |
+| **Token-Position Specificity** | ✅ **DONE** | Section 10. Signal peaks early (10-17%) |
+| Difficulty Stratification | ✅ DONE | LogiQA confounded by difficulty, GSM8K not |
+| **Order Sensitivity** | ❌ NOT DONE | Would test if scrambling input changes signal |
+| **Length Conditioning** | ❌ NOT DONE | Is signal confounded by output length? |
+| **Path Signatures** | ❌ BLOCKED | Needs `signatory` library (install failed) |
+| Attractor Analysis | ❌ Skip | Lyapunov covers this (negative result) |
+| SV Regime Projection | ❌ Skip | SVD analysis suggests null |
 
 ---
 
@@ -399,19 +472,22 @@ This validates the critique that Frobenius norm is too crude — **directional i
 | Analysis | Script |
 |----------|--------|
 | Error-Direction (probing) | `scripts/analysis/phase3_dynamical_analysis.py` |
+| **Cross-Domain Alignment** | `scripts/analysis/cross_domain_all_models.py` |
+| **Token-Position Specificity** | `scripts/analysis/additional_analyses.py` |
 | Menger Curvature | `scripts/analysis/phase3_dynamical_analysis.py` |
 | SVD Separability | `experiments/svd_reasoning_separability/analyze_svd_delta.py` |
 | Sequence Flow | `scripts/analysis/sequence_flow_analysis.py` |
 | Curvature Magnitude | `scripts/analysis/curvature_magnitude_test.py` |
-| Lyapunov Test (fast) | `scripts/analysis/test_lyapunov.py` |
-| **Lyapunov (full/directional)** | `scripts/analysis/full_lyapunov_analysis.py` |
-| **Wynroe Patching** | `experiments/aha_moment/replicate_wynroe_patching.py` |
-| **Pivot Velocity** | `experiments/aha_moment/analyze_pivot_outcome_geometry.py` |
+| Lyapunov (full/directional) | `scripts/analysis/full_lyapunov_analysis.py` |
+| H3 Extended (CV, transfer) | `scripts/analysis/h3_remaining_analyses.py` |
+| Wynroe Patching | `experiments/aha_moment/replicate_wynroe_patching.py` |
+| Pivot Velocity | `experiments/aha_moment/analyze_pivot_outcome_geometry.py` |
 
 ---
 
 ## Related Documents
 
+- [**PHASE3_COMPLETE_FINDINGS.md**](../../results/PHASE3_COMPLETE_FINDINGS.md) — **Comprehensive findings: all 9 positive + 11 null results with methodology-specific scope**
 - [PHASE3_H1H2_FINDINGS.md](../../results/PHASE3_H1H2_FINDINGS.md) — Main results with discussion
 - [FULL_LYAPUNOV_FINDINGS.md](./FULL_LYAPUNOV_FINDINGS.md) — **Full Lyapunov methodology and analysis**
 - [MENGER_CURVATURE_FINDINGS.md](./MENGER_CURVATURE_FINDINGS.md) — Curvature analysis details

@@ -301,6 +301,36 @@ def compute_belief_curve(sample_data: Dict, probe, mean: np.ndarray, std: np.nda
     # Compute accumulation rate (average delta)
     accumulation_rate = np.nanmean(deltas) if len(deltas) > 0 else 0
 
+    # ---- Probe-free validation metrics ----
+    # Clause-to-clause cosine distance at final layer (no probe needed)
+    clause_activations = []
+    for pos in clause_token_positions:
+        if pos < trajectory.shape[0]:
+            clause_activations.append(trajectory[pos, final_layer, :].copy())
+
+    act_cosine_distances = []
+    act_norms = []
+    if len(clause_activations) >= 2:
+        for k in range(len(clause_activations) - 1):
+            h_a = clause_activations[k]
+            h_b = clause_activations[k + 1]
+            norm_a = np.linalg.norm(h_a)
+            norm_b = np.linalg.norm(h_b)
+            if norm_a > 1e-10 and norm_b > 1e-10:
+                cos_sim = np.dot(h_a, h_b) / (norm_a * norm_b)
+                act_cosine_distances.append(1.0 - cos_sim)  # distance
+            act_norms.append(norm_a)
+        act_norms.append(np.linalg.norm(clause_activations[-1]))
+    elif len(clause_activations) == 1:
+        act_norms.append(np.linalg.norm(clause_activations[0]))
+
+    # Activation-based smoothness: total variation of cosine distances
+    # Lower = smoother (representation barely changes between clauses)
+    act_total_variation = float(np.sum(act_cosine_distances)) if act_cosine_distances else np.nan
+    act_mean_cosine_dist = float(np.mean(act_cosine_distances)) if act_cosine_distances else np.nan
+    act_max_cosine_dist = float(np.max(act_cosine_distances)) if act_cosine_distances else np.nan
+    act_norm_std = float(np.std(act_norms)) if len(act_norms) >= 2 else np.nan
+
     return {
         'clause_beliefs': beliefs.tolist(),
         'clause_types': [c[2] for c in clauses],
@@ -308,7 +338,12 @@ def compute_belief_curve(sample_data: Dict, probe, mean: np.ndarray, std: np.nda
         'smoothness': float(smoothness) if not np.isnan(smoothness) else None,
         'accumulation_rate': float(accumulation_rate),
         'n_clauses': len(clauses),
-        'final_belief': float(beliefs[-1]) if len(beliefs) > 0 and not np.isnan(beliefs[-1]) else None
+        'final_belief': float(beliefs[-1]) if len(beliefs) > 0 and not np.isnan(beliefs[-1]) else None,
+        # Probe-free metrics
+        'act_total_variation': act_total_variation if not np.isnan(act_total_variation) else None,
+        'act_mean_cosine_dist': act_mean_cosine_dist if not np.isnan(act_mean_cosine_dist) else None,
+        'act_max_cosine_dist': act_max_cosine_dist if not np.isnan(act_max_cosine_dist) else None,
+        'act_norm_std': act_norm_std if not np.isnan(act_norm_std) else None,
     }
 
 
@@ -390,6 +425,16 @@ def analyze_model(data: Dict, model_name: str) -> Dict:
     correct_nclauses = [c['n_clauses'] for c in correct_curves]
     incorrect_nclauses = [c['n_clauses'] for c in incorrect_curves]
 
+    # Probe-free metrics
+    correct_act_tv = extract_metric(correct_curves, 'act_total_variation')
+    incorrect_act_tv = extract_metric(incorrect_curves, 'act_total_variation')
+    correct_act_mean_cos = extract_metric(correct_curves, 'act_mean_cosine_dist')
+    incorrect_act_mean_cos = extract_metric(incorrect_curves, 'act_mean_cosine_dist')
+    correct_act_max_cos = extract_metric(correct_curves, 'act_max_cosine_dist')
+    incorrect_act_max_cos = extract_metric(incorrect_curves, 'act_max_cosine_dist')
+    correct_norm_std = extract_metric(correct_curves, 'act_norm_std')
+    incorrect_norm_std = extract_metric(incorrect_curves, 'act_norm_std')
+
     def compute_stats(correct_vals, incorrect_vals, name):
         if len(correct_vals) < 2 or len(incorrect_vals) < 2:
             return {'d': 0, 'p': 1, 'correct_mean': 0, 'incorrect_mean': 0}
@@ -406,26 +451,89 @@ def analyze_model(data: Dict, model_name: str) -> Dict:
             'incorrect_std': float(np.std(incorrect_vals))
         }
 
+    metrics = {
+        'smoothness': compute_stats(correct_smoothness, incorrect_smoothness, 'smoothness'),
+        'accumulation_rate': compute_stats(correct_accum, incorrect_accum, 'accumulation_rate'),
+        'final_belief': compute_stats(correct_final, incorrect_final, 'final_belief'),
+        'n_clauses': compute_stats(correct_nclauses, incorrect_nclauses, 'n_clauses'),
+        # Probe-free validation
+        'act_total_variation': compute_stats(correct_act_tv, incorrect_act_tv, 'act_total_variation'),
+        'act_mean_cosine_dist': compute_stats(correct_act_mean_cos, incorrect_act_mean_cos, 'act_mean_cosine_dist'),
+        'act_max_cosine_dist': compute_stats(correct_act_max_cos, incorrect_act_max_cos, 'act_max_cosine_dist'),
+        'act_norm_std': compute_stats(correct_norm_std, incorrect_norm_std, 'act_norm_std'),
+    }
+
+    # ---- Permutation test for probe-based smoothness ----
+    print("  Running permutation test (1000 iterations)...")
+    observed_d = metrics['smoothness']['d']
+    all_smoothness = correct_smoothness + incorrect_smoothness
+    all_smoothness_arr = np.array(all_smoothness)
+    n_c = len(correct_smoothness)
+    rng = np.random.RandomState(42)
+    perm_ds = []
+    for _ in range(1000):
+        perm_idx = rng.permutation(len(all_smoothness_arr))
+        perm_correct = all_smoothness_arr[perm_idx[:n_c]]
+        perm_incorrect = all_smoothness_arr[perm_idx[n_c:]]
+        perm_d = cohens_d(perm_correct.tolist(), perm_incorrect.tolist())
+        perm_ds.append(perm_d)
+    perm_ds = np.array(perm_ds)
+    perm_p = float(np.mean(np.abs(perm_ds) >= np.abs(observed_d)))
+    print(f"    Permutation test: observed d={observed_d:.3f}, null mean={np.mean(perm_ds):.3f} ± {np.std(perm_ds):.3f}, p={perm_p:.4f}")
+
+    # ---- Permutation test for activation cosine distance ----
+    observed_act_d = metrics['act_mean_cosine_dist']['d']
+    all_act_cos = correct_act_mean_cos + incorrect_act_mean_cos
+    all_act_cos_arr = np.array(all_act_cos) if all_act_cos else np.array([])
+    n_c_act = len(correct_act_mean_cos)
+    perm_act_ds = []
+    if len(all_act_cos_arr) > 4:
+        for _ in range(1000):
+            perm_idx = rng.permutation(len(all_act_cos_arr))
+            perm_correct = all_act_cos_arr[perm_idx[:n_c_act]]
+            perm_incorrect = all_act_cos_arr[perm_idx[n_c_act:]]
+            perm_d = cohens_d(perm_correct.tolist(), perm_incorrect.tolist())
+            perm_act_ds.append(perm_d)
+        perm_act_ds = np.array(perm_act_ds)
+        perm_act_p = float(np.mean(np.abs(perm_act_ds) >= np.abs(observed_act_d)))
+        print(f"    Act cosine perm test: observed d={observed_act_d:.3f}, null mean={np.mean(perm_act_ds):.3f} ± {np.std(perm_act_ds):.3f}, p={perm_act_p:.4f}")
+    else:
+        perm_act_p = 1.0
+        perm_act_ds = np.array([0.0])
+
     results = {
         'model': model_name,
         'n_samples': n_samples,
         'n_correct': int(n_correct),
         'n_incorrect': int(n_incorrect),
         'probe_auc': float(probe_auc),
-        'metrics': {
-            'smoothness': compute_stats(correct_smoothness, incorrect_smoothness, 'smoothness'),
-            'accumulation_rate': compute_stats(correct_accum, incorrect_accum, 'accumulation_rate'),
-            'final_belief': compute_stats(correct_final, incorrect_final, 'final_belief'),
-            'n_clauses': compute_stats(correct_nclauses, incorrect_nclauses, 'n_clauses')
+        'metrics': metrics,
+        'permutation_tests': {
+            'probe_smoothness': {
+                'observed_d': float(observed_d),
+                'null_mean': float(np.mean(perm_ds)),
+                'null_std': float(np.std(perm_ds)),
+                'perm_p': perm_p
+            },
+            'act_cosine_dist': {
+                'observed_d': float(observed_act_d),
+                'null_mean': float(np.mean(perm_act_ds)),
+                'null_std': float(np.std(perm_act_ds)),
+                'perm_p': perm_act_p
+            }
         },
         'all_curves': all_curves  # For detailed analysis
     }
 
     # Print summary
     print(f"  Results:")
-    print(f"    Smoothness: d={results['metrics']['smoothness']['d']:.3f}, p={results['metrics']['smoothness']['p']:.4f}")
-    print(f"    Accumulation: d={results['metrics']['accumulation_rate']['d']:.3f}, p={results['metrics']['accumulation_rate']['p']:.4f}")
-    print(f"    Final belief: d={results['metrics']['final_belief']['d']:.3f}, p={results['metrics']['final_belief']['p']:.4f}")
+    print(f"    Probe smoothness:     d={metrics['smoothness']['d']:.3f}, p={metrics['smoothness']['p']:.4f}")
+    print(f"    Act cosine dist:      d={metrics['act_mean_cosine_dist']['d']:.3f}, p={metrics['act_mean_cosine_dist']['p']:.4f}")
+    print(f"    Act total variation:  d={metrics['act_total_variation']['d']:.3f}, p={metrics['act_total_variation']['p']:.4f}")
+    print(f"    Act max jump:         d={metrics['act_max_cosine_dist']['d']:.3f}, p={metrics['act_max_cosine_dist']['p']:.4f}")
+    print(f"    Act norm stability:   d={metrics['act_norm_std']['d']:.3f}, p={metrics['act_norm_std']['p']:.4f}")
+    print(f"    Accumulation:         d={metrics['accumulation_rate']['d']:.3f}, p={metrics['accumulation_rate']['p']:.4f}")
+    print(f"    Final belief:         d={metrics['final_belief']['d']:.3f}, p={metrics['final_belief']['p']:.4f}")
 
     return results
 
@@ -612,7 +720,7 @@ def main():
             'task': args.task,
             'max_samples': args.max_samples
         },
-        'per_model': {m: {k: v for k, v in r.items() if k != 'all_curves'}
+        'per_model': {m: {k: v for k, v in r.items() if k not in ('all_curves',)}
                       for m, r in all_results.items()},
         'transfer_matrix': transfer_matrix,
         'transfer_details': transfer_results

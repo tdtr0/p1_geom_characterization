@@ -156,6 +156,8 @@ ManiVer/
 │       └── *.log
 │
 ├── results/                       # Analysis results
+│   ├── PHASE3_COMPLETE_FINDINGS.md # **COMPREHENSIVE Phase 3 findings (all methods)**
+│   ├── PHASE3_H1H2_FINDINGS.md    # H1/H2 results + belief tracking + cross-model alignment
 │   ├── phase1_summary.json
 │   ├── statistical_tests.json
 │   └── figures/
@@ -591,6 +593,16 @@ See [docs/guides/B2_SETUP.md](docs/guides/B2_SETUP.md) for detailed setup.
 ---
 
 ## File Update Log
+
+**2026-02-05**:
+- **Created controlled experiments to isolate LayerNorm confound**
+  - Modified `src/activation_collector.py` - Added `hook_point` parameter ('pre', 'mid', 'post')
+  - Added `scripts/analysis/pre_ln_comparison.py` - Compares cos(X_l, X_{l+1}) for pre vs post LN
+  - Added `scripts/analysis/gsm8k_problem_classifier.py` - Classifies problems by type (rate/distance, arithmetic, fraction, algebra, etc.)
+  - Added `scripts/analysis/controlled_subset_analysis.py` - Runs analyses on homogeneous problem subsets
+  - **Hypothesis**: LayerNorm sphericalizes representations → orthogonality → meaningless Jacobian
+  - **Test**: Pre-LN should have cos >> 0.5 (vs current 0.10)
+  - **Plan file**: `/Users/thanhdo/.claude/plans/resilient-inventing-allen.md`
 
 **2026-01-19**:
 - **Added SVD Linear Separability Experiment** — Motivating negative result for dynamical analysis

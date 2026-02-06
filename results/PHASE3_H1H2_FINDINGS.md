@@ -1,7 +1,7 @@
 
 # Phase 3 Findings: H1/H2 Hypothesis Testing
 
-**Date**: 2026-01-21
+**Date**: 2026-01-28 (updated with belief tracking)
 **Models**: olmo3_base, olmo3_sft, olmo3_rl_zero, olmo3_think
 **Tasks**: GSM8K (math), HumanEval (code)
 **Samples**: 150 per task per model
@@ -65,7 +65,7 @@
 | rl_zero | 41.3% | 18.0% | None |
 | think | 22.7% | 44.7% | None |
 
-### Cross-Domain Subspace Alignment (2026-01-25)
+### Cross-Domain Subspace Alignment (2026-01-27)
 
 **Method**: Compute error direction for each task, measure cosine similarity and cross-transfer effect.
 
@@ -74,16 +74,20 @@
 | Model | Task Accuracy | Cosine Sim | GSM8K→LogiQA d | LogiQA→GSM8K d | Pattern |
 |-------|---------------|------------|----------------|----------------|---------|
 | **base** | 12%/23% | 0.069 | 0.08 (p=0.46) | 0.18 (p=0.20) | Orthogonal |
-| **sft** | 60%/36% | **0.355** | **0.48 (p=0.0009)** | **0.45 (p=0.0003)** | **Bidirectional** |
-| rl_zero | TBD | TBD | TBD | TBD | TBD |
-| think | TBD | TBD | TBD | TBD | TBD |
+| **sft** | 60%/36% | **0.355** | **0.48 (p=0.0009)** | **0.45 (p=0.0003)** | **Strong** |
+| **rl_zero** | 14%/30% | 0.098 | 0.12 (p=0.42) | 0.11 (p=0.83) | Orthogonal |
+| **think** | 40%/34% | **0.258** | **0.33 (p=0.028)** | **0.21 (p=0.027)** | **Moderate** |
 
-**Key Finding**: SFT shows **5x higher alignment** (cos=0.355 vs 0.069) and **significant bidirectional transfer** (p<0.001 both ways).
+**Key Finding**: **SFT and Think show cross-domain alignment**, Base and RL-Zero are orthogonal.
+
+**Alignment order**: SFT (0.355) > Think (0.258) > RL-Zero (0.098) ≈ Base (0.069)
 
 **Interpretation**:
 - **Base model**: Task-specific error directions (orthogonal, no transfer)
-- **SFT model**: Learns more generalizable error patterns that transfer across domains
-- This supports the **SFT distillation hypothesis**: SFT training on CoT data creates domain-general representations
+- **SFT model**: Learns generalizable error patterns that transfer across domains (strongest)
+- **RL-Zero model**: Despite RL training, shows orthogonal patterns like base
+- **Think model**: Shows moderate alignment (SFT component preserved through DPO+RLVR)
+- **SFT distillation hypothesis supported**: The SFT component creates domain-general representations
 
 ### Token-Position Specificity (2026-01-25)
 
@@ -103,10 +107,11 @@
 
 ### Implications for H2
 
-1. **No Universal Reasoning Signature**: Error directions are task-specific (cos=0.145)
-2. **Surface Structure Confirmed**: Different tasks have orthogonal error patterns
-3. **Early Token Signal**: The discriminative signal is in problem setup, not answer format
-4. **Transfer Failure Explained**: Cross-domain transfer fails because error directions don't align
+1. **No Universal Reasoning Signature (for base/RL-Zero)**: Error directions are task-specific (cos≈0.07-0.10)
+2. **SFT Creates Domain-General Patterns**: SFT training produces aligned error directions (cos=0.355)
+3. **SFT Survives RL**: Think model (SFT+DPO+RLVR) preserves alignment (cos=0.258)
+4. **Pure RL Fails to Generalize**: RL-Zero (cos=0.098) is as orthogonal as base (cos=0.069)
+5. **Early Token Signal**: The discriminative signal is in problem setup, not answer format
 
 ---
 
@@ -129,23 +134,25 @@
 |----------|------|-----|---------|-------|
 | Task accuracy | Low | High | Medium | High |
 | Within-domain separation | **Best** | Weak | Strong | Strong |
-| Cross-domain transfer | Asymmetric | **Bidirectional** | None | None |
+| Cross-domain transfer | None | **Strong** | None | **Moderate** |
 | Curvature significant | No | **Yes** | No | No |
+| Belief smoothness (correct) | — | Jumpy | **Smooth** | Jumpy |
+| Belief probe transfer | — | **Best** | Moderate | Moderate |
 
 ### Cross-Domain Alignment Summary
 
 | Model | Cosine Sim | Transfer Pattern | Interpretation |
 |-------|------------|------------------|----------------|
 | **base** | 0.069 | None | Task-specific (orthogonal) |
-| **sft** | **0.355** | **Bidirectional** | Domain-general alignment |
-| rl_zero | TBD | TBD | Pending |
-| think | TBD | TBD | Pending |
+| **sft** | **0.355** | **Strong bidirectional** | Domain-general (strongest) |
+| **rl_zero** | 0.098 | None | Task-specific (orthogonal) |
+| **think** | **0.258** | **Moderate bidirectional** | Partial domain-general |
 
-**Key Conclusion**: Training method determines whether error directions generalize:
-- **Base**: Task-specific patterns (surface structure)
-- **SFT**: Learns transferable error patterns (domain-general)
-
-Rerunning for rl_zero and think models.
+**Key Conclusion**: **SFT and Think show cross-domain alignment; Base and RL-Zero do not.**
+- **Base & RL-Zero**: Orthogonal patterns (cos ≈ 0.07-0.10), no transfer
+- **SFT**: Strongest alignment (cos=0.355, p<0.001)
+- **Think**: Moderate alignment (cos=0.258, p<0.03) — SFT component preserved through DPO+RLVR
+- Pure RL (RL-Zero) does NOT create domain-general patterns
 
 ---
 
@@ -179,18 +186,17 @@ The pretrained base model shows asymmetric transfer (math→code works, code→m
 
 2. **Code is specialized**: Code generation requires specific syntax/API knowledge not captured by math
 
-### Think Model: Verbose Noise
+### Think Model: Preserved SFT Alignment
 
-Despite SFT+DPO+RLVR training, think model shows no transfer:
+Despite DPO+RLVR training on top of SFT, think model preserves **moderate cross-domain alignment**:
 
-1. **Early layer localization**: GSM8K signal at layer 2 is anomalous (others: layer 26-28)
+1. **Cosine similarity**: cos=0.258 (between SFT's 0.355 and base's 0.069)
 
-2. **Token dilution**: 10K+ reasoning tokens may obscure the underlying geometric signal
+2. **Bidirectional transfer**: Significant in both directions (p<0.03)
 
-3. **Possible interpretation**: Verbose thinking adds noise that masks transferable patterns
+3. **Interpretation**: The SFT component's domain-general patterns survive additional RL training
 
-
-This just shows that h1 is true, and validates h1. nothing new. 
+4. **Contrast with RL-Zero**: Pure RL (cos=0.098) does NOT create alignment — the alignment in Think comes from SFT, not from RLVR 
 ---
 
 ## Implications
@@ -198,3 +204,196 @@ This just shows that h1 is true, and validates h1. nothing new.
 1. **For verification**: SFT models are better candidates for cross-domain verifiers
 2. **For training**: RL-Zero creates specialists; SFT creates generalists
 3. **For interpretability**: The geometric signature of "correct" depends on training method, not just correctness
+
+---
+
+## Belief State Tracking Analysis (2026-01-25)
+
+### Motivation
+
+Previous analyses used **static geometry** (mean activations). This analysis tracks **belief state evolution** per-clause within model generations.
+
+**Key insight**: Token probability P(next_token | context) ≠ belief state P(task_success | understanding). We use activation-based correctness probes to track task-level belief.
+
+### Methodology
+
+1. **Clause detection**: Parse model outputs into clauses using sentence boundaries + reasoning markers ("So", "Therefore", "First", "Wait")
+2. **Belief probe**: Train logistic regression on mean final-layer activations to predict correctness (cross-validated)
+3. **Belief curve**: Apply probe retroactively to each clause boundary position
+4. **Metrics**: Smoothness (1/total_variation), accumulation rate (mean delta), final belief
+
+### Results: Opposite Patterns by Training Method
+
+| Model | Probe AUC | Smoothness d | Direction | p-value |
+|-------|-----------|--------------|-----------|---------|
+| **rl_zero** | 0.66 | **+1.72** | Correct = SMOOTH | <1e-17 |
+| think | 0.62 | **-1.05** | Correct = JUMPY | <1e-11 |
+| sft | 0.57 | **-0.90** | Correct = JUMPY | <1e-9 |
+
+**Key Finding**: RL-Zero shows expected pattern (smooth belief = correct), but Think/SFT show the **opposite** — correct samples have more belief fluctuations.
+
+### Number of Clauses: Correct Answers are Shorter (Think/SFT)
+
+| Model | n_clauses d | Correct mean | Incorrect mean | p-value |
+|-------|-------------|--------------|----------------|---------|
+| rl_zero | -0.04 | 30.2 | 30.3 | 0.83 |
+| **think** | **-0.98** | 28.2 | 34.3 | <1e-10 |
+| **sft** | **-0.61** | 25.8 | 30.6 | <1e-4 |
+
+Think/SFT: Correct answers are more concise. Incorrect answers ramble with more clauses.
+
+### Cross-Model Belief Transfer
+
+```
+Transfer Matrix (AUC):
+              | rl_zero | think | sft   |
+rl_zero_train |  1.00   | 0.61  | 0.62  |
+think_train   |  0.57   | 1.00  | 0.68  |
+sft_train     |  0.66   | 0.68  | 1.00  | ← Best transfer
+```
+
+**SFT probe transfers best** (0.66-0.68 AUC). This beats H2 static baseline (d~0.4 ≈ AUC 0.57).
+
+### Interpretation
+
+The opposite smoothness patterns reveal different belief dynamics by training paradigm:
+
+| Training | Correct Samples | Incorrect Samples | Interpretation |
+|----------|-----------------|-------------------|----------------|
+| **RL-Zero** | Smooth, confident | Jumpy, uncertain | "Honest" uncertainty |
+| **Think/SFT** | Jumpy (self-correction) | Smooth (confidently wrong) | "Performative" patterns |
+
+**Possible explanations:**
+
+1. **Think/SFT learn performative patterns**: Backtracking, verification phrases, self-correction behaviors that cause belief fluctuations even when correct
+
+2. **Incorrect samples in Think/SFT are "confidently wrong"**: Smooth belief evolution because the model doesn't doubt itself — no self-correction attempts
+
+3. **RL-Zero is more "honest"**: Smooth when actually correct, fluctuating when uncertain
+
+### Connection to Previous Findings
+
+1. **Wynroe L16-18 spike in SFT**: May be where "performative patterns" activate — explains belief jumps in correct samples
+
+2. **RL-Zero distributed processing**: Explains smooth belief evolution (no localized circuit activation)
+
+3. **Cross-model transfer works** (AUC 0.61-0.68): Better than H2 static geometry transfer (d~0.4), suggesting belief dynamics capture something additional
+
+4. **SFT creates generalists** (from H2): Confirmed here — SFT probe transfers best across models
+
+### Implications
+
+1. **H_belief is TRUE but nuanced**: Training paradigm determines the *direction* of the smoothness effect
+
+2. **H_style partially supported**: Think/SFT jumps may be style (performative patterns) rather than substance (reasoning progress)
+
+3. **For verification**: Can't use smoothness naively — must account for training paradigm
+
+4. **For interpretability**: "Correct = smooth" only applies to RL-Zero; Think/SFT show the opposite
+
+---
+
+## Cross-Model Alignment Analysis (2026-02-02)
+
+### Motivation
+
+Previous analyses measured cross-domain transfer **within** a single model (GSM8K error direction applied to LogiQA). But the key mechanistic question is: **What changes between base and RL-Zero that destroys transfer?** This requires comparing representations **across models** on the same inputs.
+
+### Methodology
+
+**Cross-model alignment** (same task, different models):
+- Load activations for same prompts (seed=42) from base, SFT, RL-Zero, Think
+- For each pair (base→SFT, base→RL-Zero, base→Think):
+  - **CKA**: Rotation-invariant representation similarity
+  - **Eigenvector diagonal dominance**: Do SVD eigenvectors map 1-to-1?
+  - **Error direction cosine**: Does base's error direction align with target's?
+  - **Probe transfer AUC**: Does base's correctness probe work on target?
+
+**Cross-task within-model CKA** (different tasks, same model):
+- Compare GSM8K vs HumanEval activations within each model
+- Measure CKA (overall space similarity) and error direction cosine (correctness-specific similarity)
+
+**Scripts**: `scripts/analysis/cross_model_alignment.py`, `scripts/analysis/cross_task_within_model_cka.py`
+
+### Results: Cross-Model Alignment (Same Task, Different Models)
+
+| Pair | Task | CKA | Error Dir Cos | Eigenvec Diag Dom | Probe Transfer AUC |
+|------|------|-----|---------------|-------------------|--------------------|
+| base→**rl_zero** | GSM8K | **0.995** | **0.67** | **0.90** | **0.83** |
+| base→sft | GSM8K | 0.810 | 0.34 | 0.19 | 0.57 |
+| base→think | GSM8K | 0.812 | 0.36 | 0.18 | 0.57 |
+| base→**rl_zero** | HumanEval | **1.000** | **0.96** | **0.96** | **0.89** |
+| base→sft | HumanEval | 0.991 | 0.71 | 0.39 | 0.84 |
+| base→think | HumanEval | 0.991 | 0.69 | 0.38 | 0.84 |
+
+**Key Finding**: RL-Zero is nearly **identical** to base (CKA ≈ 1.0, eigenvectors preserved 90-96%). SFT and Think **reshape** the space (eigenvector preservation only 18-39%).
+
+### Results: Cross-Task Within-Model CKA (Different Tasks, Same Model)
+
+| Model | Cross-Task CKA | Error Dir Cos (GSM8K↔HE) |
+|-------|----------------|--------------------------|
+| base | 0.022 | 0.337 |
+| **sft** | 0.022 | **0.553** (most aligned) |
+| **rl_zero** | 0.025 | **0.235** (most orthogonal) |
+| think | 0.022 | 0.430 |
+
+**Key Finding**: Overall cross-task CKA is identical (~0.02) for all models. But error direction alignment differs dramatically.
+
+### Mechanistic Interpretation
+
+#### The Paradox Resolved
+
+| What We Expected | What We Found |
+|------------------|---------------|
+| RL-Zero destroys base's features | RL-Zero **preserves** base's features (CKA ≈ 1.0) |
+| SFT preserves base's features | SFT **reshapes** the space (eigenvec diag dom = 0.19) |
+
+The cross-domain transfer difference is NOT about the overall representation space (CKA ~0.02 for all models). It is specifically about **where "error" points within that space**.
+
+#### Error Direction Rotation
+
+```
+error_dir = mean(incorrect_activations) - mean(correct_activations)
+```
+
+This direction separates correct from incorrect in activation space. Each task (GSM8K, HumanEval) has its own error direction. The question is: do these directions align across tasks?
+
+| Training | Effect | Error Dir Cos | Transfer |
+|----------|--------|---------------|----------|
+| **RL-Zero** | Specializes error direction per task | 0.235 (↓ from base) | Worse |
+| **Base** | Weakly shared error concept | 0.337 | Asymmetric |
+| **Think** | Partially generalizes | 0.430 (↑ from base) | Moderate |
+| **SFT** | Generalizes error direction across tasks | 0.553 (↑↑ from base) | Bidirectional |
+
+**RL-Zero makes error directions MORE orthogonal** (0.235 vs base's 0.337). It "sharpens" what counts as an error into task-specific patterns: what makes a math answer wrong becomes different from what makes a code answer wrong.
+
+**SFT makes error directions MORE aligned** (0.553 vs base's 0.337). It creates a shared "wrongness" concept: similar patterns indicate errors regardless of domain.
+
+#### Implications
+
+1. **The mechanism is direction rotation, not feature destruction**: The overall space is preserved, but the error-relevant direction within that space is rotated
+2. **RL-Zero is too faithful to base**: It preserves base's task-specific patterns rather than creating new cross-domain structure
+3. **SFT adds cross-domain structure**: The CoT training signal creates domain-general error patterns that didn't exist in base
+4. **Potential regularization**: During RL training, constraining error direction alignment (`L = 1 - cos(e_task1, e_task2)`) could preserve cross-domain transfer while still improving task performance
+
+### Scripts and Data
+
+**Analysis scripts**:
+- `scripts/analysis/cross_model_alignment.py` — Cross-model Procrustes, CKA, eigenvector correspondence, error direction rotation test, and cross-model probe transfer. Compares base→SFT, base→RL-Zero, base→Think on same inputs.
+- `scripts/analysis/cross_task_within_model_cka.py` — Cross-task CKA and error direction cosine within each model (GSM8K vs HumanEval).
+
+**Output files**:
+- `results/cross_model_alignment/cross_model_alignment_summary.csv` — Full metrics for all model pairs and tasks
+- `results/cross_model_alignment/eigenvector_correspondence.npz` — Eigenvector correspondence matrices (50×50) for visualization
+
+**Data used**:
+- `/data/thanhdo/trajectories_0shot/` — 0-shot trajectories, 200 samples per model/task
+- All models used identical prompts (seed=42), enabling matched cross-model comparison
+- Last layer activations, mean-pooled over sequence (512 tokens → 4096-dim vector per sample)
+
+**Methods applied**:
+1. **CKA** (Kornblith et al., 2019): Linear centered kernel alignment, rotation-invariant similarity
+2. **Procrustes alignment** (scipy.linalg.orthogonal_procrustes): Optimal rotation R and scale to align source→target, plus Frobenius residual
+3. **Eigenvector correspondence**: Randomized SVD (k=50), correspondence matrix C = |V_source @ V_target.T|, diagonal dominance and row entropy
+4. **Error direction**: Difference-in-means (incorrect − correct), normalized, cosine similarity across tasks/models
+5. **Probe transfer**: Logistic regression trained on source, evaluated on target (with and without Procrustes rotation)

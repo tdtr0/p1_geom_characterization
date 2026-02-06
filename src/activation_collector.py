@@ -26,6 +26,11 @@ class ActivationCollector:
       3. Sufficient for geometric analysis
     - Store both pre-MLP and post-MLP for each layer to capture full trajectory
     - Use float16 to halve storage (precision sufficient for SVD)
+
+    Hook points available (TransformerLens):
+    - 'pre': hook_resid_pre - BEFORE LayerNorm (raw input to layer)
+    - 'mid': hook_resid_mid - After attention+residual, before MLP LayerNorm
+    - 'post': hook_resid_post - After full layer (MLP+residual)
     """
 
     def __init__(
@@ -33,7 +38,8 @@ class ActivationCollector:
         model_name: str,
         device: str = "cuda",
         dtype: torch.dtype = torch.float16,
-        use_transformer_lens: bool = True
+        use_transformer_lens: bool = True,
+        hook_point: str = "post"  # 'pre', 'mid', or 'post'
     ):
         """
         Initialize activation collector with a model.
@@ -43,11 +49,19 @@ class ActivationCollector:
             device: Device to load model on
             dtype: Data type for model weights
             use_transformer_lens: Whether to use TransformerLens (recommended)
+            hook_point: Which hook point to collect from:
+                - 'pre': Before LayerNorm (raw input to layer)
+                - 'mid': After attention+residual, before MLP LayerNorm
+                - 'post': After full layer (MLP+residual) [default]
         """
         self.model_name = model_name
         self.device = device
         self.dtype = dtype
         self.use_transformer_lens = use_transformer_lens
+        self.hook_point = hook_point
+
+        if hook_point not in ('pre', 'mid', 'post'):
+            raise ValueError(f"hook_point must be 'pre', 'mid', or 'post', got '{hook_point}'")
 
         print(f"Loading model: {model_name}")
 
@@ -90,18 +104,33 @@ class ActivationCollector:
             if device_map_arg == "auto":
                 print(f"  Device map: {self.model.hf_device_map}")
 
-    def get_hook_names(self) -> List[str]:
-        """Return hook names for residual stream at each layer."""
+    def get_hook_names(self, layers: Optional[List[int]] = None) -> List[str]:
+        """Return hook names for residual stream at each layer.
+
+        Args:
+            layers: Optional list of layer indices. If None, use all layers.
+
+        Returns:
+            List of hook names based on self.hook_point setting.
+        """
         if not self.use_transformer_lens:
             warnings.warn("Hook names only available for TransformerLens models")
             return []
 
+        if layers is None:
+            layers = list(range(self.n_layers))
+
+        # Map hook_point to TransformerLens hook name suffix
+        hook_suffix_map = {
+            'pre': 'hook_resid_pre',    # Before LayerNorm
+            'mid': 'hook_resid_mid',    # After attention, before MLP
+            'post': 'hook_resid_post',  # After full layer
+        }
+        suffix = hook_suffix_map[self.hook_point]
+
         hooks = []
-        for layer in range(self.n_layers):
-            # Post-attention, pre-MLP
-            hooks.append(f"blocks.{layer}.hook_resid_mid")
-            # Post-MLP (full layer output)
-            hooks.append(f"blocks.{layer}.hook_resid_post")
+        for layer in layers:
+            hooks.append(f"blocks.{layer}.{suffix}")
         return hooks
 
     def collect_activations(
