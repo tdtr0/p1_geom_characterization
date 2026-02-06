@@ -3,7 +3,6 @@
 #SBATCH --output=results/pre_ln_%j.out
 #SBATCH --error=results/pre_ln_%j.err
 #SBATCH --partition=defq
-#SBATCH --nodelist=h100
 #SBATCH --gres=gpu:1
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=64G

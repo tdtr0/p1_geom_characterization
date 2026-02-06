@@ -159,7 +159,8 @@ def main():
     # Prepare data
     print(f"\nPreparing GSM8K data (n={args.n_samples})...")
     data = prepare_gsm8k(n_shot=0, n_samples=args.n_samples, seed=args.seed)
-    prompts = [item['prompt'] for item in data]
+    # prepare_gsm8k returns List[Tuple[prompt, answer, metadata]]
+    prompts = [item[0] for item in data]
 
     # Load model
     model_name = MODELS[args.model]
