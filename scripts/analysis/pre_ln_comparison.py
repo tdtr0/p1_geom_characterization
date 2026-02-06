@@ -20,6 +20,7 @@ import torch
 import numpy as np
 from pathlib import Path
 from tqdm import tqdm
+from transformers import AutoModelForCausalLM, AutoTokenizer
 
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
@@ -39,64 +40,91 @@ MODELS = {
 LAYERS = list(range(0, 32, 2))  # [0, 2, 4, ..., 30]
 
 
-def load_model(model_name: str, hook_point: str = 'post'):
-    """Load model with TransformerLens."""
-    from transformer_lens import HookedTransformer
+def load_model(model_name: str):
+    """Load model with HuggingFace transformers."""
+    print(f"Loading model: {model_name}")
 
-    print(f"Loading model: {model_name} (hook_point={hook_point})")
-    model = HookedTransformer.from_pretrained(
+    tokenizer = AutoTokenizer.from_pretrained(model_name)
+    model = AutoModelForCausalLM.from_pretrained(
         model_name,
-        device='cuda' if torch.cuda.is_available() else 'cpu',
-        dtype=torch.float16,
-        fold_ln=False,  # Keep LayerNorm separate
-        center_writing_weights=False,
-        center_unembed=False,
+        torch_dtype=torch.float16,
+        device_map='cuda' if torch.cuda.is_available() else 'cpu',
     )
     model.eval()
-    return model
+
+    print(f"✓ Loaded: {model.config.num_hidden_layers} layers, d_model={model.config.hidden_size}")
+    return model, tokenizer
 
 
-def get_hook_names(hook_point: str, layers: list) -> list:
-    """Get hook names for specified hook point."""
-    suffix_map = {
-        'pre': 'hook_resid_pre',
-        'mid': 'hook_resid_mid',
-        'post': 'hook_resid_post',
-    }
-    return [f"blocks.{layer}.{suffix_map[hook_point]}" for layer in layers]
+def collect_activations_hf(model, tokenizer, prompts: list, hook_point: str, layers: list):
+    """Collect mean-pooled activations using HuggingFace hooks.
 
-
-def collect_activations_simple(model, prompts: list, hook_point: str, layers: list):
-    """Collect mean-pooled activations for comparison.
+    hook_point:
+        'pre': Input to each layer (before LayerNorm)
+        'post': Output of each layer (after LayerNorm + attention + MLP)
 
     Returns:
         np.ndarray of shape (n_samples, n_layers, d_model)
     """
-    hook_names = get_hook_names(hook_point, layers)
     n_samples = len(prompts)
     n_layers = len(layers)
-    d_model = model.cfg.d_model
+    d_model = model.config.hidden_size
+    device = next(model.parameters()).device
 
     activations = np.zeros((n_samples, n_layers, d_model), dtype=np.float32)
 
     with torch.no_grad():
         for i, prompt in enumerate(tqdm(prompts, desc=f"Collecting {hook_point}")):
-            tokens = model.to_tokens(prompt, prepend_bos=True)
+            # Tokenize
+            tokens = tokenizer(prompt, return_tensors="pt", truncation=True, max_length=512)
+            tokens = {k: v.to(device) for k, v in tokens.items()}
 
-            # Truncate if too long
-            if tokens.shape[1] > 512:
-                tokens = tokens[:, :512]
+            # Storage for this sample
+            layer_acts = {}
 
-            _, cache = model.run_with_cache(
-                tokens,
-                names_filter=hook_names,
-                remove_batch_dim=False
-            )
+            if hook_point == 'pre':
+                # Hook the INPUT to each layer (before LayerNorm)
+                def make_pre_hook(layer_idx):
+                    def hook(module, input, output):
+                        # input[0] is the hidden states BEFORE this layer processes them
+                        if isinstance(input, tuple) and len(input) > 0:
+                            layer_acts[layer_idx] = input[0].detach()
+                    return hook
 
-            for j, hook_name in enumerate(hook_names):
-                # Mean pool over sequence dimension
-                act = cache[hook_name][0].mean(dim=0).cpu().numpy()
-                activations[i, j] = act.astype(np.float32)
+                handles = []
+                for j, layer_idx in enumerate(layers):
+                    layer = model.model.layers[layer_idx]
+                    handle = layer.register_forward_hook(make_pre_hook(j))
+                    handles.append(handle)
+            else:  # 'post'
+                # Hook the OUTPUT of each layer (after full layer computation)
+                def make_post_hook(layer_idx):
+                    def hook(module, input, output):
+                        if isinstance(output, tuple):
+                            layer_acts[layer_idx] = output[0].detach()
+                        else:
+                            layer_acts[layer_idx] = output.detach()
+                    return hook
+
+                handles = []
+                for j, layer_idx in enumerate(layers):
+                    layer = model.model.layers[layer_idx]
+                    handle = layer.register_forward_hook(make_post_hook(j))
+                    handles.append(handle)
+
+            try:
+                # Forward pass
+                _ = model(**tokens)
+
+                # Extract and mean-pool activations
+                for j in range(n_layers):
+                    if j in layer_acts:
+                        act = layer_acts[j][0].mean(dim=0).cpu().numpy()
+                        activations[i, j] = act.astype(np.float32)
+            finally:
+                # Remove hooks
+                for handle in handles:
+                    handle.remove()
 
     return activations
 
@@ -164,18 +192,18 @@ def main():
 
     # Load model
     model_name = MODELS[args.model]
-    model = load_model(model_name)
+    model, tokenizer = load_model(model_name)
 
     # Collect activations for both hook points
     print("\n" + "="*60)
     print("Collecting POST-LayerNorm activations (current baseline)...")
     print("="*60)
-    post_acts = collect_activations_simple(model, prompts, 'post', LAYERS)
+    post_acts = collect_activations_hf(model, tokenizer, prompts, 'post', LAYERS)
 
     print("\n" + "="*60)
     print("Collecting PRE-LayerNorm activations (test hypothesis)...")
     print("="*60)
-    pre_acts = collect_activations_simple(model, prompts, 'pre', LAYERS)
+    pre_acts = collect_activations_hf(model, tokenizer, prompts, 'pre', LAYERS)
 
     # Compute cosine similarities
     print("\n" + "="*60)
