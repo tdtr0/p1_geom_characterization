@@ -40,7 +40,7 @@ from task_data import prepare_gsm8k, prepare_humaneval, prepare_logiqa
 # Configuration
 # =============================================================================
 
-MAX_NEW_TOKENS = 256  # Reduced from 512 - most answers are <100 tokens
+MAX_NEW_TOKENS = 512  # Keep full length, stop sequences handle early stopping
 MAX_SEQ_LEN = 512
 
 # Stop sequences by task (to avoid generating past the answer)
@@ -412,6 +412,9 @@ class GenerationCollector:
         generated_ids = outputs.sequences[0][prompt_len:]
         text = self.tokenizer.decode(generated_ids, skip_special_tokens=True)
 
+        # Check if generation was truncated (hit max_new_tokens limit)
+        was_truncated = (gen_len >= max_new_tokens)
+
         return {
             'text': text,
             'hidden_states': hidden_states,
@@ -421,6 +424,7 @@ class GenerationCollector:
             'top_k_probs': top_probs,
             'prompt_len': prompt_len,
             'gen_len': gen_len,
+            'was_truncated': was_truncated,
         }
 
     def cleanup(self):
@@ -504,6 +508,7 @@ def collect_for_task(
                 g.attrs['is_correct'] = is_correct
                 g.attrs['prompt_len'] = result['prompt_len']
                 g.attrs['gen_len'] = result['gen_len']
+                g.attrs['was_truncated'] = result['was_truncated']
                 g.attrs['prompt_hash'] = prompt_hash
 
                 # Data
