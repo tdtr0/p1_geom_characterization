@@ -538,7 +538,7 @@ def main():
         raise ValueError(f"Unknown model: {args.model}")
 
     model_config = models_config[args.model]
-    model_name = model_config['name']
+    model_name = model_config['model_name']  # 'model_name' in YAML config
 
     # Load task data
     print(f"Loading {args.task} data...")
