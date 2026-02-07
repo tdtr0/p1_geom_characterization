@@ -40,7 +40,7 @@ from task_data import prepare_gsm8k, prepare_humaneval, prepare_logiqa
 # Configuration
 # =============================================================================
 
-MAX_NEW_TOKENS = 512  # Keep full length, stop sequences handle early stopping
+MAX_NEW_TOKENS = 1024  # Large enough for full answers, stop sequences handle early stopping
 MAX_SEQ_LEN = 512
 
 # Stop sequences by task (to avoid generating past the answer)
