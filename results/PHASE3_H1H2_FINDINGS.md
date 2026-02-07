@@ -339,6 +339,80 @@ Previous analyses measured cross-domain transfer **within** a single model (GSM8
 
 **Key Finding**: Overall cross-task CKA is identical (~0.02) for all models. But error direction alignment differs dramatically.
 
+---
+
+## Per-Sample CKA Analysis (2026-02-06)
+
+### Motivation
+
+Previous analyses focused on **static geometry** (mean activations) or **global alignments** (Procrustes on all samples). This analysis tracks **per-sample representational similarity** using CKA at each layer transition.
+
+**Key insight**: CKA measures how well the token-token similarity pattern (Gram matrix) is preserved across layers. If correct solutions "work harder", they should have LOWER CKA (more transformation per layer).
+
+### Methodology
+
+1. **Per-sample CKA**: For each sample, compute CKA(X_l, X_{l+1}) using the Gram matrices K_l = X_l @ X_l.T
+2. **Layer profile**: Compare CKA at each layer transition between correct/incorrect
+3. **Gram matrix structure**: Analyze eigenspectrum and change magnitude at most discriminative layer
+
+**Script**: `scripts/analysis/cka_deep_analysis.py`
+
+### Results: Correct Solutions Have LOWER CKA
+
+| Layer | Correct CKA | Incorrect CKA | Cohen's d | p-value | Sig |
+|-------|-------------|---------------|-----------|---------|-----|
+| L0 | 0.9628 | 0.9655 | -0.513 | 0.078 | . |
+| L6 | 0.9885 | 0.9925 | -0.541 | 0.063 | . |
+| **L7** | 0.9885 | 0.9912 | **-0.639** | **0.029** | * |
+| L9 | 0.9930 | 0.9937 | -0.531 | 0.068 | . |
+
+**Most discriminative layer**: L7 (d=-0.639, p=0.029)
+
+**Effect direction**: Incorrect solutions have **HIGHER** CKA (more preserved token-token similarity)
+
+### CKA Trajectory Shape
+
+| Metric | Cohen's d | p-value | Interpretation |
+|--------|-----------|---------|----------------|
+| **Mean CKA** | -0.584 | **0.045** | Incorrect has higher mean CKA |
+| CKA variance | 0.327 | 0.26 | Not significant |
+| CKA slope | 0.078 | 0.79 | Not significant |
+| Early-Late diff | -0.222 | 0.44 | Not significant |
+| Min CKA | -0.264 | 0.36 | Not significant |
+
+### Gram Matrix Structure at L7
+
+| Metric | Correct | Incorrect | Interpretation |
+|--------|---------|-----------|----------------|
+| Effective rank | 39.3 | 43.2 | Incorrect uses more dimensions |
+| Gram change magnitude | **0.137** | 0.122 | Correct changes 13% MORE |
+
+### Interpretation
+
+**Correct solutions are "working harder":**
+- Lower CKA = token-token similarity patterns change MORE between layers
+- Higher Gram change = representations undergo more transformation
+- Correct solutions do ~13% more representational work per layer
+
+**Incorrect solutions are "coasting":**
+- Higher CKA = token relationships stay similar across layers
+- Lower Gram change = minimal transformation
+- Possibly stuck in pattern-matching mode without active computation
+
+**Connection to Linear Probe Success**:
+This explains why mean-pooled linear probes work (AUC 0.68-0.75): correct solutions have different representational **dynamics** that leave signatures in the mean activation. The CKA finding reveals the mechanism: correct solutions transform token relationships more aggressively.
+
+### CKA as Classifier
+
+| Feature | AUC | Notes |
+|---------|-----|-------|
+| Best single layer (L12) | 0.66 | Modest signal |
+| All layers combined | 0.52 | Combining doesn't help |
+
+**Conclusion**: CKA is informative but weaker than direct linear probes. The value is in understanding the **mechanism**, not as a standalone classifier.
+
+---
+
 ### Mechanistic Interpretation
 
 #### The Paradox Resolved
