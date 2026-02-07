@@ -441,10 +441,9 @@ def collect_for_task(
     output_file = output_dir / f"{task}_generation.h5"
 
     # Process samples
+    # Task data is list of (prompt, answer, metadata) tuples
     for sample_idx, sample in tqdm(samples_to_process, desc=f"{model_key}/{task}"):
-        prompt = sample['prompt']
-        ground_truth = sample['ground_truth']
-        metadata = sample.get('metadata', {})
+        prompt, ground_truth, metadata = sample  # Unpack tuple
 
         # Check for duplicates
         prompt_hash = hash_prompt(prompt)
