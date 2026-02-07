@@ -5,9 +5,8 @@
 #SBATCH --time=0-24:00
 #SBATCH --mem=64000
 #SBATCH --gres=gpu:1
-# Use quadro2 (48GB Quadro RTX 8000) since H100 is busy
-# Change to --nodelist=h100 when H100 is available (faster)
-#SBATCH --nodelist=quadro2
+# H100 is fastest (2-3x faster than Quadro)
+#SBATCH --nodelist=h100
 
 #
 # Generation Trajectory Collection
