@@ -53,8 +53,9 @@ MAX_SAMPLES=500
 # === Setup ===
 cd $WORK_DIR
 
-# Activate conda
-source activate $CONDA_ENV || {
+# Initialize and activate conda
+source ~/miniconda3/etc/profile.d/conda.sh
+conda activate $CONDA_ENV || {
     echo "ERROR: Could not activate conda environment: $CONDA_ENV"
     exit 1
 }
