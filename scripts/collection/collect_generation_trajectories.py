@@ -40,8 +40,15 @@ from task_data import prepare_gsm8k, prepare_humaneval, prepare_logiqa
 # Configuration
 # =============================================================================
 
-MAX_NEW_TOKENS = 512
+MAX_NEW_TOKENS = 256  # Reduced from 512 - most answers are <100 tokens
 MAX_SEQ_LEN = 512
+
+# Stop sequences by task (to avoid generating past the answer)
+STOP_SEQUENCES = {
+    'gsm8k': ["\n\nQuestion:", "\n\n\n", "Question:"],
+    'humaneval': ["\ndef ", "\nclass ", "\n#", "\nif __name__"],
+    'logiqa': ["\n\nContext:", "\n\n\n", "Context:"],
+}
 
 # Even layers for hidden states: [0, 2, 4, ..., 30] = 16 layers
 HIDDEN_LAYERS = list(range(0, 32, 2))
@@ -276,8 +283,13 @@ class GenerationCollector:
             self.step_attentions.append(dict(self._current_step_attn))
         self._clear_step_buffers()
 
-    def generate_with_capture(self, prompt: str, max_new_tokens: int = MAX_NEW_TOKENS):
+    def generate_with_capture(self, prompt: str, task: str = None, max_new_tokens: int = MAX_NEW_TOKENS):
         """Generate response and capture all data.
+
+        Args:
+            prompt: Input prompt
+            task: Task name for stop sequences ('gsm8k', 'humaneval', 'logiqa')
+            max_new_tokens: Maximum tokens to generate
 
         Returns:
             dict with:
@@ -300,18 +312,37 @@ class GenerationCollector:
         inputs = {k: v.to(self.device) for k, v in inputs.items()}
         prompt_len = inputs['input_ids'].shape[1]
 
+        # Get stop sequences for task
+        stop_strings = STOP_SEQUENCES.get(task, [])
+
         # Generate with scores and attentions
         with torch.no_grad():
-            outputs = self.model.generate(
-                inputs['input_ids'],
-                attention_mask=inputs['attention_mask'],
-                max_new_tokens=max_new_tokens,
-                do_sample=False,
-                output_scores=True,
-                output_attentions=True,
-                return_dict_in_generate=True,
-                pad_token_id=self.tokenizer.pad_token_id,
-            )
+            # Try using stop_strings if available in this transformers version
+            try:
+                outputs = self.model.generate(
+                    inputs['input_ids'],
+                    attention_mask=inputs['attention_mask'],
+                    max_new_tokens=max_new_tokens,
+                    do_sample=False,
+                    output_scores=True,
+                    output_attentions=True,
+                    return_dict_in_generate=True,
+                    pad_token_id=self.tokenizer.pad_token_id,
+                    stop_strings=stop_strings if stop_strings else None,
+                    tokenizer=self.tokenizer if stop_strings else None,
+                )
+            except TypeError:
+                # Fallback for older transformers without stop_strings
+                outputs = self.model.generate(
+                    inputs['input_ids'],
+                    attention_mask=inputs['attention_mask'],
+                    max_new_tokens=max_new_tokens,
+                    do_sample=False,
+                    output_scores=True,
+                    output_attentions=True,
+                    return_dict_in_generate=True,
+                    pad_token_id=self.tokenizer.pad_token_id,
+                )
 
         # Process scores -> entropy + top-k
         if outputs.scores:
@@ -449,8 +480,8 @@ def collect_for_task(
         prompt_hash = hash_prompt(prompt)
 
         try:
-            # Generate with capture
-            result = collector.generate_with_capture(prompt)
+            # Generate with capture (pass task for stop sequences)
+            result = collector.generate_with_capture(prompt, task=task)
 
             # Check correctness
             is_correct = check_correctness(result['text'], ground_truth, task, metadata)
