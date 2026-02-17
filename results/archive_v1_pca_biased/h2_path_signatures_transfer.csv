@@ -1,0 +1,7 @@
+model,train_task,test_task,transfer_auc
+olmo3_base,gsm8k,humaneval,0.5777777777777777
+olmo3_base,humaneval,gsm8k,0.5644444444444444
+olmo3_sft,gsm8k,humaneval,0.7803030303030303
+olmo3_sft,humaneval,gsm8k,0.5435139573070608
+olmo3_rl_zero,gsm8k,humaneval,0.5451559934318555
+olmo3_rl_zero,humaneval,gsm8k,0.38694638694638694

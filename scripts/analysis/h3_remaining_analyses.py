@@ -1,12 +1,33 @@
 #!/usr/bin/env python3
 """
+⚠️  PARTIALLY DEPRECATED — Analysis 1 (PCA Velocity) has known bias.
+
+Known issues:
+- Analysis 1 (PCA Velocity): Splits velocity field into "architectural" (top-k PCA)
+  and "semantic" (remaining PCA). This assumes top PCA = architecture, which is unfounded.
+  PCA finds high-variance, not functionally-important directions. In superposition,
+  features are distributed across many directions; PCA systematically misses rare features.
+  Use h3_remaining_analyses_v2.py which uses velocity-space random projections.
+
+- Analysis 2 (Jacobian/Lyapunov): H_jac1 and H_jac3 use delta-based SVD which is
+  inflated 1.4-8.9x vs true Jacobian. H_jac2 is properly cross-validated but null.
+  The Jacobian analysis itself is valid code but the measure is uninformative on OLMo-3.
+
+- Analysis 3 (Vector Field): Uses SVD on velocity vectors — this is legitimate
+  and not PCA-biased (operating on the right object).
+
+- Analysis 4 (Difficulty Stratification): Valid, no PCA issues.
+
 H3 Remaining Analyses - Phase 3 Completion
 
-Implements 4 analyses not yet completed:
-1. PCA Velocity Field Analysis (semantic vs architectural flow)
-2. Full Jacobian/Lyapunov Analysis (H_jac1, H_jac2, H_jac3)
-3. Vector Field Decomposition (potential ratio, consistency)
-4. Difficulty Stratification (cross-stratum transfer)
+Implements 4+3 analyses:
+1. PCA Velocity Field Analysis (semantic vs architectural flow) ⚠️ PCA-BIASED
+2. Full Jacobian/Lyapunov Analysis (H_jac1, H_jac2, H_jac3) ⚠️ Delta-SVD inflated
+3. Vector Field Decomposition (potential ratio, consistency) ✅ VALID
+4. Difficulty Stratification (cross-stratum transfer) ✅ VALID
+5. Cross-Domain Direction Transfer ✅ VALID
+6. Cross-Model Direction Transfer ✅ VALID
+7. Layer-by-Layer Separation ✅ VALID
 
 Usage:
     python h3_remaining_analyses.py --data-dir /path/to/trajectories_0shot --output-dir /path/to/results

@@ -247,6 +247,66 @@ Only 175/512 tokens are non-padding (short sequences).
 
 ---
 
+## Where Does RL-Zero's Improvement Come From?
+
+### The Puzzle
+
+RL-Zero improves correctness (17% vs 10%) while barely changing representations (cos_sim 0.995). Where does the gain come from?
+
+### Key Finding: Same Changes, Different Outcomes
+
+When comparing RL-Zero wins vs losses:
+- **Correlation of change patterns**: r = 0.971 (near identical!)
+- **Same sign changes**: 87.2% of dimensions
+- **Conclusion**: RL-Zero applies the **same transformation** regardless of outcome
+
+### Magnitude Matters Slightly
+
+| Outcome | Change Magnitude | n |
+|---------|------------------|---|
+| RL wins | 3.545 | 9 |
+| Both correct | 3.342 | 8 |
+| Both wrong | 3.217 | 81 |
+| Base wins | 3.219 | 2 |
+
+When RL-Zero applies a **larger** change, it's slightly more likely to be correct (d = 0.41).
+
+### Predictive Power of Input Representations
+
+| Predictor | AUC | Interpretation |
+|-----------|-----|----------------|
+| Base activation norm | **0.643** | Input complexity predicts correctness |
+| Change magnitude | 0.619 | Larger change → more likely correct |
+| Win direction projection | 0.608 | Weak directional signal |
+
+### Critical Insight
+
+**The input representations don't capture where RL-Zero's improvement comes from.**
+
+The real improvement must be in:
+1. **Attention patterns during generation** (not captured)
+2. **Token probability distributions** (not captured)
+3. **Multi-step reasoning dynamics** (not captured)
+
+What we CAN see in input representations:
+- RL-Zero applies a consistent transformation
+- Larger transformations correlate weakly with success
+- But AUC 0.64 is barely above chance
+
+### Theoretical Implication
+
+RL-Zero's "reasoning improvement" is **invisible to input trajectory analysis**. The gains happen:
+- In the generation process (autoregressive)
+- In attention reweighting (not residual stream)
+- In subtle probability shifts (final logits)
+
+This explains why:
+- Linear probes work (AUC 0.75) — they see the full representation
+- CKA works (d = -0.64) — it captures token-token relationships
+- But trajectory dynamics don't work — they miss the generation process
+
+---
+
 ## 9. Next Steps
 
 ### Completed

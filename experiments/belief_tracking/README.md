@@ -59,3 +59,5 @@ tail -f ~/belief_tracking_out.txt
 - Must beat static probe baseline (AUC ~0.75)
 - Explains Wynroe findings (L16-18 spike = style vs reasoning?)
 - Tests if sequence-wise dynamics succeed where layer-wise (Lyapunov) failed
+
+ 

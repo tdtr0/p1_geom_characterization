@@ -1,33 +1,47 @@
 #!/usr/bin/env python3
 """
-⚠️  PARTIALLY DEPRECATED — Lyapunov (Section 3) and Attractor (Section 4) have known issues.
+Phase 3 Dynamical Systems Analysis — v2 (PCA-bias fixes)
 
-Known issues in this script:
-- Section 3 (Lyapunov): Uses Frobenius norm ratio as proxy — this measures displacement,
-  NOT Jacobian sensitivity. Proven invalid by jacobian_diagnostic.py (1.4-8.9x inflation).
-  True Jacobian shows λ ≈ 0 due to OLMo-3 orthogonality (cos(X_l, X_{l+1}) ≈ 0.1).
-- Section 4 (Attractor): Uses PCA→50 before K-means. PCA biased toward high-variance
-  directions, missing tail features where correctness signal may live.
-  Use phase3_dynamical_analysis_v2.py for random-projection-based clustering.
+This is a corrected version of phase3_dynamical_analysis.py. Two sections had
+methodological issues that are fixed here:
 
-Sections 1 (Error Direction) and 2 (Menger Curvature) are valid and still canonical.
+  Section 3 (Lyapunov) — KNOWN INVALID, kept for reference
+      The original used Frobenius norm ratio as a proxy for Lyapunov exponents.
+      This measures bulk displacement (||x_{l+1}||/||x_l||), NOT sensitivity to
+      perturbation (the Jacobian spectral radius). On OLMo-3 the layer-to-layer
+      cosine similarity is ~0.1, meaning activations are nearly orthogonal across
+      layers. The true Jacobian Lyapunov exponents are ~0 (neutral), making the
+      Frobenius proxy inflated by 1.4-8.9x (see jacobian_diagnostic.py). This
+      section is retained for comparison purposes only, with explicit warnings.
 
-Phase 3 Dynamical Systems Analysis
+  Section 4 (Attractor Analysis) — PCA replaced with random projection
+      The original applied PCA(n_components=50) before K-means clustering. PCA
+      selects directions of maximum variance, which biases clustering toward
+      high-variance dimensions. Correctness-related signal may live in lower-
+      variance "tail" dimensions (as shown by SVD separability analysis). The
+      fix uses GaussianRandomProjection (Johnson-Lindenstrauss lemma) which
+      preserves pairwise distances without variance bias. A new velocity-space
+      clustering variant is also added: instead of clustering final-layer
+      activations, we cluster mean velocity vectors (layer transitions),
+      testing whether correct/incorrect solutions traverse the manifold
+      differently.
 
-Implements analyses from PHASE3_DETAILED_PLAN.md:
-1. Error-Detection Direction Analysis (Wynroe-style) ✅ VALID
-2. Menger Curvature Analysis (Zhou et al., 2025) ✅ VALID (but architectural on OLMo-3)
-3. Lyapunov Exponent Analysis ❌ INVALID (Frobenius ≠ Jacobian; orthogonality bottleneck)
-4. Attractor Analysis ⚠️ PCA-BIASED (use v2 with random projections)
+  Sections 1 (Error Direction) and 2 (Menger Curvature) are unchanged —
+  they operate in full ambient space and have no PCA dependency.
 
 Usage:
-    python phase3_dynamical_analysis.py --data-dir /path/to/trajectories --model olmo3_base --tasks humaneval,logiqa
+    python phase3_dynamical_analysis_v2.py \\
+        --data-dir /path/to/trajectories \\
+        --model olmo3_base \\
+        --tasks humaneval,logiqa \\
+        --output results/phase3_dynamical_v2.json
 """
 
 import argparse
 import json
 import os
 import sys
+import warnings
 from pathlib import Path
 
 import h5py
@@ -36,12 +50,11 @@ import pandas as pd
 from scipy import stats
 from scipy.spatial.distance import pdist, squareform
 from sklearn.cluster import KMeans
-from sklearn.decomposition import PCA
-from sklearn.manifold import TSNE
+from sklearn.random_projection import GaussianRandomProjection
 
 
 # ============================================================================
-# 1. ERROR-DETECTION DIRECTION ANALYSIS (Wynroe-style)
+# 1. ERROR-DETECTION DIRECTION ANALYSIS (Wynroe-style)  [VALID]
 # ============================================================================
 
 def extract_error_detection_direction(correct_trajectories, incorrect_trajectories, layer_idx=-1):
@@ -181,13 +194,13 @@ def test_direction_transfer(train_traj, train_labels, test_traj, test_labels, la
 
 
 # ============================================================================
-# 2. MENGER CURVATURE ANALYSIS (Zhou et al., 2025)
+# 2. MENGER CURVATURE ANALYSIS (Zhou et al., 2025)  [VALID]
 # ============================================================================
 
 def compute_menger_curvature(p1, p2, p3):
     """
     Compute Menger curvature for three consecutive points.
-    κ = 4 * Area(triangle) / (|p1-p2| * |p2-p3| * |p3-p1|)
+    kappa = 4 * Area(triangle) / (|p1-p2| * |p2-p3| * |p3-p1|)
     """
     a = np.linalg.norm(p2 - p1)
     b = np.linalg.norm(p3 - p2)
@@ -290,7 +303,7 @@ def compute_curvature_correlation(traj1, labels1, traj2, labels2):
     try:
         pearson_r, pearson_p = stats.pearsonr(mean_profile1, mean_profile2)
         spearman_r, spearman_p = stats.spearmanr(mean_profile1, mean_profile2)
-    except:
+    except Exception:
         pearson_r, pearson_p = 0, 1
         spearman_r, spearman_p = 0, 1
 
@@ -303,24 +316,50 @@ def compute_curvature_correlation(traj1, labels1, traj2, labels2):
 
 
 # ============================================================================
-# 3. LYAPUNOV EXPONENT ANALYSIS
+# 3. LYAPUNOV EXPONENT ANALYSIS  [KNOWN INVALID — for reference only]
+#
+# WARNING: This section uses Frobenius norm ratio as a proxy for Lyapunov
+# exponents. This is KNOWN TO BE INVALID on OLMo-3 because:
+#
+#   1. Frobenius norm ratio measures bulk displacement (||x_{l+1}||/||x_l||),
+#      NOT sensitivity to perturbation (Jacobian spectral radius).
+#   2. OLMo-3 layer activations are nearly orthogonal: cos(x_l, x_{l+1}) ~ 0.1
+#   3. True Jacobian analysis shows lambda ~ 0 (neutral dynamics), while this
+#      proxy reports inflated values (1.4-8.9x, per jacobian_diagnostic.py).
+#
+# Results from this section should NOT be used to draw conclusions about
+# trajectory stability. They are retained for comparison with the v1 script
+# and to document what does NOT work.
 # ============================================================================
+
+_LYAPUNOV_WARNING = """
+================================================================================
+WARNING: Lyapunov analysis (Section 3) is KNOWN INVALID on OLMo-3.
+
+The Frobenius norm ratio measures displacement, NOT Jacobian sensitivity.
+OLMo-3 has near-orthogonal layer activations (cos ~ 0.1), making true
+Lyapunov exponents ~0 (neutral). This proxy inflates by 1.4-8.9x.
+
+These results are for REFERENCE ONLY — do not use for conclusions.
+See: jacobian_diagnostic.py, empirical_jacobian_lyapunov.py
+================================================================================
+"""
+
 
 def compute_lyapunov_exponents(trajectory, method='fast'):
     """
     Compute local Lyapunov exponents along a trajectory.
 
-    For discrete dynamics x_{l+1} = f(x_l), estimate expansion/contraction
-    using either:
-    - 'fast': Frobenius norm ratio (instant, good proxy)
-    - 'svd': Full SVD singular value ratio (slow but more accurate)
+    KNOWN INVALID: Frobenius norm ratio is NOT a valid Lyapunov proxy when
+    layer activations are near-orthogonal (as in OLMo-3). Retained for
+    comparison with v1 only.
 
     Args:
         trajectory: (seq_len, n_layers, d_model)
-        method: 'fast' (default) or 'svd'
+        method: 'fast' (Frobenius ratio) or 'svd' (singular value ratio)
 
     Returns:
-        dict with Lyapunov statistics
+        dict with Lyapunov statistics (all marked as invalid)
     """
     seq_len, n_layers, d_model = trajectory.shape
 
@@ -346,7 +385,7 @@ def compute_lyapunov_exponents(trajectory, method='fast'):
                     expansion = np.log(s[0] / (s[-1] + 1e-8))
                 else:
                     expansion = 0
-            except:
+            except Exception:
                 expansion = 0
 
         layer_lyapunov.append(expansion)
@@ -364,14 +403,18 @@ def compute_lyapunov_exponents(trajectory, method='fast'):
         'max_lyapunov': float(layer_lyapunov.max()),
         'min_lyapunov': float(layer_lyapunov.min()),
         'lyapunov_std': float(layer_lyapunov.std()),
-        'lyapunov_trend': float(trend),  # Positive = diverging through layers
-        'layer_lyapunov': layer_lyapunov.tolist()
+        'lyapunov_trend': float(trend),
+        'layer_lyapunov': layer_lyapunov.tolist(),
+        '_validity': 'KNOWN_INVALID'
     }
 
 
 def analyze_lyapunov(trajectories, labels):
     """
     Analyze Lyapunov exponents for correct vs incorrect solutions.
+
+    KNOWN INVALID — Frobenius ratio does not measure Jacobian sensitivity.
+    Retained for reference only.
     """
     results = []
 
@@ -380,19 +423,45 @@ def analyze_lyapunov(trajectories, labels):
         lyap['sample_idx'] = i
         lyap['is_correct'] = bool(labels[i])
         # Remove list for DataFrame
-        lyap_profile = lyap.pop('layer_lyapunov')
+        lyap.pop('layer_lyapunov')
+        lyap.pop('_validity')
         results.append(lyap)
 
     return pd.DataFrame(results)
 
 
 # ============================================================================
-# 4. ATTRACTOR ANALYSIS
+# 4. ATTRACTOR ANALYSIS  [FIXED: random projection replaces PCA]
+#
+# v1 bug: PCA(n_components=50) before K-means biases clustering toward
+# high-variance directions. Correctness signal may live in tail dimensions
+# (low variance), which PCA discards.
+#
+# v2 fix: GaussianRandomProjection(n_components=64) preserves ALL pairwise
+# distances (Johnson-Lindenstrauss lemma) without variance bias.
+#
+# New addition: Velocity-space clustering. Instead of clustering final-layer
+# activations, cluster on mean velocity vectors v_l = x_{l+1} - x_l averaged
+# across layers. This tests whether correct/incorrect solutions use different
+# layer-to-layer transition dynamics.
 # ============================================================================
 
 def analyze_attractors(trajectories, labels, n_clusters=10):
     """
-    Characterize attractor structure in trajectory space.
+    Characterize attractor structure in trajectory space using random projection.
+
+    Uses GaussianRandomProjection instead of PCA to avoid variance bias.
+    The Johnson-Lindenstrauss lemma guarantees that pairwise distances are
+    preserved up to (1 +/- eps) with high probability, meaning clustering
+    structure in the projected space faithfully reflects the original space.
+
+    Args:
+        trajectories: (n_samples, seq_len, n_layers, d_model)
+        labels: (n_samples,) boolean array
+        n_clusters: Number of K-means clusters
+
+    Returns:
+        DataFrame with cluster composition statistics
     """
     n_samples = trajectories.shape[0]
 
@@ -400,9 +469,10 @@ def analyze_attractors(trajectories, labels, n_clusters=10):
     final_states = trajectories[:, :, -1, :]  # (n_samples, seq_len, d_model)
     final_mean = final_states.mean(axis=1)    # (n_samples, d_model)
 
-    # Reduce dimensionality for clustering
-    pca = PCA(n_components=min(50, final_mean.shape[1]))
-    final_reduced = pca.fit_transform(final_mean)
+    # Random projection (JL lemma) instead of PCA
+    n_components = min(64, final_mean.shape[1], n_samples)
+    projector = GaussianRandomProjection(n_components=n_components, random_state=42)
+    final_reduced = projector.fit_transform(final_mean)
 
     # Cluster final states
     n_clusters = min(n_clusters, n_samples // 2)
@@ -411,6 +481,66 @@ def analyze_attractors(trajectories, labels, n_clusters=10):
 
     kmeans = KMeans(n_clusters=n_clusters, random_state=42, n_init=10)
     cluster_labels = kmeans.fit_predict(final_reduced)
+
+    # Analyze cluster composition
+    cluster_stats = []
+    for cluster_id in range(n_clusters):
+        mask = cluster_labels == cluster_id
+        n_total = mask.sum()
+        if n_total > 0:
+            n_correct = labels[mask].sum()
+            purity = max(n_correct, n_total - n_correct) / n_total
+            correct_rate = n_correct / n_total
+            cluster_stats.append({
+                'cluster_id': cluster_id,
+                'n_samples': int(n_total),
+                'n_correct': int(n_correct),
+                'n_incorrect': int(n_total - n_correct),
+                'purity': float(purity),
+                'correct_rate': float(correct_rate)
+            })
+
+    return pd.DataFrame(cluster_stats)
+
+
+def analyze_attractors_velocity(trajectories, labels, n_clusters=10):
+    """
+    Cluster trajectories based on mean velocity vectors (layer transitions).
+
+    Instead of clustering where trajectories end up (final-layer activations),
+    cluster on HOW they get there (mean velocity across layers). This captures
+    the dynamics of the layer-to-layer computation.
+
+    Velocity at layer l: v_l = x_{l+1} - x_l
+    Feature vector: mean(v_l) across all layers, averaged across sequence.
+
+    Args:
+        trajectories: (n_samples, seq_len, n_layers, d_model)
+        labels: (n_samples,) boolean array
+        n_clusters: Number of K-means clusters
+
+    Returns:
+        DataFrame with cluster composition statistics
+    """
+    n_samples, seq_len, n_layers, d_model = trajectories.shape
+
+    # Compute mean velocity vector for each sample
+    # v_l = x_{l+1} - x_l, then average across layers and sequence positions
+    velocities = trajectories[:, :, 1:, :] - trajectories[:, :, :-1, :]  # (n, seq, L-1, d)
+    mean_velocity = velocities.mean(axis=(1, 2))  # (n_samples, d_model)
+
+    # Random projection
+    n_components = min(64, d_model, n_samples)
+    projector = GaussianRandomProjection(n_components=n_components, random_state=42)
+    velocity_reduced = projector.fit_transform(mean_velocity)
+
+    # Cluster
+    n_clusters = min(n_clusters, n_samples // 2)
+    if n_clusters < 2:
+        return pd.DataFrame()
+
+    kmeans = KMeans(n_clusters=n_clusters, random_state=42, n_init=10)
+    cluster_labels = kmeans.fit_predict(velocity_reduced)
 
     # Analyze cluster composition
     cluster_stats = []
@@ -451,7 +581,7 @@ def analyze_convergence(trajectories, labels):
 
         distances = np.array(distances)
 
-        # Fit exponential decay: d(l) = d_0 * exp(-λ * l)
+        # Fit exponential decay: d(l) = d_0 * exp(-lambda * l)
         if len(distances) > 1 and distances[0] > 1e-8:
             log_dist = np.log(distances + 1e-8)
             decay_rate, _ = np.polyfit(range(len(distances)), log_dist, 1)
@@ -471,7 +601,7 @@ def analyze_convergence(trajectories, labels):
 
 
 # ============================================================================
-# MAIN
+# UTILITIES
 # ============================================================================
 
 def load_trajectories(filepath, max_samples=None):
@@ -523,13 +653,24 @@ def compute_statistics(df, metric_col, group_col='is_correct'):
     }
 
 
+# ============================================================================
+# MAIN
+# ============================================================================
+
 def main():
-    parser = argparse.ArgumentParser(description='Phase 3 Dynamical Systems Analysis')
-    parser.add_argument('--data-dir', required=True, help='Directory containing trajectory HDF5 files')
-    parser.add_argument('--model', required=True, help='Model name (e.g., olmo3_base)')
-    parser.add_argument('--tasks', required=True, help='Comma-separated tasks (e.g., humaneval,logiqa)')
-    parser.add_argument('--output', default='results/phase3_dynamical.json', help='Output JSON file')
-    parser.add_argument('--max-samples', type=int, default=300, help='Max samples per task')
+    parser = argparse.ArgumentParser(
+        description='Phase 3 Dynamical Systems Analysis v2 (PCA-bias fixes)'
+    )
+    parser.add_argument('--data-dir', required=True,
+                        help='Directory containing trajectory HDF5 files')
+    parser.add_argument('--model', required=True,
+                        help='Model name (e.g., olmo3_base)')
+    parser.add_argument('--tasks', required=True,
+                        help='Comma-separated tasks (e.g., humaneval,logiqa)')
+    parser.add_argument('--output', default='results/phase3_dynamical_v2.json',
+                        help='Output JSON file')
+    parser.add_argument('--max-samples', type=int, default=300,
+                        help='Max samples per task')
 
     args = parser.parse_args()
 
@@ -537,10 +678,17 @@ def main():
     results = {
         'model': args.model,
         'tasks': tasks,
+        'version': 'v2',
+        'fixes': [
+            'Section 3: Lyapunov marked KNOWN_INVALID (Frobenius != Jacobian)',
+            'Section 4: PCA replaced with GaussianRandomProjection (JL lemma)',
+            'Section 4: Added velocity-space clustering variant'
+        ],
         'error_direction': {},
         'menger_curvature': {},
         'lyapunov': {},
         'attractor': {},
+        'attractor_velocity': {},
         'convergence': {},
         'transfer': {}
     }
@@ -566,10 +714,10 @@ def main():
         sys.exit(1)
 
     # ========================================================================
-    # 1. Error-Detection Direction Analysis
+    # 1. Error-Detection Direction Analysis  [VALID]
     # ========================================================================
     print("\n" + "="*70)
-    print("1. ERROR-DETECTION DIRECTION ANALYSIS")
+    print("1. ERROR-DETECTION DIRECTION ANALYSIS  [VALID]")
     print("="*70)
 
     for task, data in task_data.items():
@@ -597,10 +745,10 @@ def main():
             print(f"  Insufficient data for analysis")
 
     # ========================================================================
-    # 2. Menger Curvature Analysis
+    # 2. Menger Curvature Analysis  [VALID]
     # ========================================================================
     print("\n" + "="*70)
-    print("2. MENGER CURVATURE ANALYSIS")
+    print("2. MENGER CURVATURE ANALYSIS  [VALID]")
     print("="*70)
 
     for task, data in task_data.items():
@@ -637,14 +785,15 @@ def main():
                 results['menger_curvature'][f'{task1}_vs_{task2}_correlation'] = corr
 
     # ========================================================================
-    # 3. Lyapunov Exponent Analysis
+    # 3. Lyapunov Exponent Analysis  [KNOWN INVALID - for reference only]
     # ========================================================================
     print("\n" + "="*70)
-    print("3. LYAPUNOV EXPONENT ANALYSIS")
+    print("3. LYAPUNOV EXPONENT ANALYSIS  [KNOWN INVALID - reference only]")
     print("="*70)
+    print(_LYAPUNOV_WARNING)
 
     for task, data in task_data.items():
-        print(f"\n{task.upper()}:")
+        print(f"\n{task.upper()} (INVALID - Frobenius proxy, not Jacobian):")
         traj, labels = data['trajectories'], data['labels']
 
         lyapunov_df = analyze_lyapunov(traj, labels)
@@ -655,48 +804,76 @@ def main():
         print(f"  Mean Lyapunov - Correct: {stats_mean['correct_mean']:.3f}, Incorrect: {stats_mean['incorrect_mean']:.3f}")
         print(f"    Effect size: {stats_mean['effect_size']:.3f}, p={stats_mean['p_value']:.4f}")
         print(f"  Lyapunov trend - Correct: {stats_trend['correct_mean']:.3f}, Incorrect: {stats_trend['incorrect_mean']:.3f}")
+        print(f"  ** These values are INFLATED 1.4-8.9x vs true Jacobian **")
 
         results['lyapunov'][task] = {
+            '_validity': 'KNOWN_INVALID',
+            '_reason': 'Frobenius norm ratio measures displacement, not Jacobian sensitivity. '
+                       'OLMo-3 cos(x_l, x_{l+1}) ~ 0.1 makes true Lyapunov ~ 0 (neutral).',
             'mean_lyapunov_stats': stats_mean,
             'lyapunov_trend_stats': stats_trend
         }
 
     # ========================================================================
-    # 4. Attractor Analysis
+    # 4. Attractor Analysis  [FIXED: GaussianRandomProjection + velocity space]
     # ========================================================================
     print("\n" + "="*70)
-    print("4. ATTRACTOR ANALYSIS")
+    print("4. ATTRACTOR ANALYSIS  [FIXED: random projection, no PCA bias]")
     print("="*70)
+    print("  Using GaussianRandomProjection(n=64) instead of PCA(n=50)")
+    print("  JL lemma preserves pairwise distances without variance bias\n")
 
     for task, data in task_data.items():
         print(f"\n{task.upper()}:")
         traj, labels = data['trajectories'], data['labels']
 
-        # Cluster analysis
+        # --- Final-layer attractor clustering (random projection) ---
+        print(f"  [A] Final-layer clustering (random projection):")
         cluster_df = analyze_attractors(traj, labels, n_clusters=8)
         if len(cluster_df) > 0:
             mean_purity = cluster_df['purity'].mean()
-            print(f"  Mean cluster purity: {mean_purity:.1%}")
+            print(f"    Mean cluster purity: {mean_purity:.1%}")
 
-            # Identify correct-dominated vs incorrect-dominated clusters
             correct_clusters = cluster_df[cluster_df['correct_rate'] > 0.5]
             incorrect_clusters = cluster_df[cluster_df['correct_rate'] <= 0.5]
-            print(f"  Correct-dominated clusters: {len(correct_clusters)}, Incorrect-dominated: {len(incorrect_clusters)}")
+            print(f"    Correct-dominated clusters: {len(correct_clusters)}, Incorrect-dominated: {len(incorrect_clusters)}")
 
             results['attractor'][task] = {
+                'projection': 'GaussianRandomProjection(n_components=64)',
                 'mean_purity': float(mean_purity),
                 'n_correct_clusters': len(correct_clusters),
                 'n_incorrect_clusters': len(incorrect_clusters),
                 'clusters': cluster_df.to_dict('records')
             }
 
-        # Convergence analysis
+        # --- Velocity-space attractor clustering (random projection) ---
+        print(f"  [B] Velocity-space clustering (random projection):")
+        velocity_cluster_df = analyze_attractors_velocity(traj, labels, n_clusters=8)
+        if len(velocity_cluster_df) > 0:
+            vel_mean_purity = velocity_cluster_df['purity'].mean()
+            print(f"    Mean cluster purity: {vel_mean_purity:.1%}")
+
+            vel_correct = velocity_cluster_df[velocity_cluster_df['correct_rate'] > 0.5]
+            vel_incorrect = velocity_cluster_df[velocity_cluster_df['correct_rate'] <= 0.5]
+            print(f"    Correct-dominated clusters: {len(vel_correct)}, Incorrect-dominated: {len(vel_incorrect)}")
+
+            results['attractor_velocity'][task] = {
+                'projection': 'GaussianRandomProjection(n_components=64)',
+                'feature': 'mean_velocity_vector',
+                'mean_purity': float(vel_mean_purity),
+                'n_correct_clusters': len(vel_correct),
+                'n_incorrect_clusters': len(vel_incorrect),
+                'clusters': velocity_cluster_df.to_dict('records')
+            }
+
+        # --- Convergence analysis (unchanged) ---
         conv_df = analyze_convergence(traj, labels)
         stats_decay = compute_statistics(conv_df, 'decay_rate')
         stats_ratio = compute_statistics(conv_df, 'distance_ratio')
 
-        print(f"  Decay rate - Correct: {stats_decay['correct_mean']:.3f}, Incorrect: {stats_decay['incorrect_mean']:.3f}")
-        print(f"    Effect size: {stats_decay['effect_size']:.3f}, p={stats_decay['p_value']:.4f}")
+        print(f"  [C] Convergence:")
+        print(f"    Decay rate - Correct: {stats_decay['correct_mean']:.3f}, Incorrect: {stats_decay['incorrect_mean']:.3f}")
+        print(f"      Effect size: {stats_decay['effect_size']:.3f}, p={stats_decay['p_value']:.4f}")
 
         results['convergence'][task] = {
             'decay_rate_stats': stats_decay,
@@ -704,11 +881,11 @@ def main():
         }
 
     # ========================================================================
-    # 5. Error Direction Transfer Test
+    # 5. Error Direction Transfer Test  [VALID]
     # ========================================================================
     if len(task_data) >= 2:
         print("\n" + "="*70)
-        print("5. ERROR DIRECTION TRANSFER TEST")
+        print("5. ERROR DIRECTION TRANSFER TEST  [VALID]")
         print("="*70)
 
         task_list = list(task_data.keys())
@@ -738,7 +915,7 @@ def main():
     with open(output_path, 'w') as f:
         json.dump(results, f, indent=2)
 
-    print(f"\n✓ Results saved to {output_path}")
+    print(f"\nResults saved to {output_path}")
 
     # ========================================================================
     # Summary
@@ -747,29 +924,33 @@ def main():
     print("SUMMARY")
     print("="*70)
 
-    print("\n1. Error-Detection Direction:")
-    for task, stats in results['error_direction'].items():
-        print(f"   {task}: Best layer {stats['best_layer']}, d={stats['best_effect_size']:.3f}, acc={stats['best_accuracy']:.1%}")
+    print("\n1. Error-Detection Direction [VALID]:")
+    for task, task_stats in results['error_direction'].items():
+        print(f"   {task}: Best layer {task_stats['best_layer']}, d={task_stats['best_effect_size']:.3f}, acc={task_stats['best_accuracy']:.1%}")
 
-    print("\n2. Menger Curvature:")
-    for task, stats in results['menger_curvature'].items():
-        if 'mean_curvature_stats' in stats:
-            s = stats['mean_curvature_stats']
+    print("\n2. Menger Curvature [VALID]:")
+    for task, task_stats in results['menger_curvature'].items():
+        if 'mean_curvature_stats' in task_stats:
+            s = task_stats['mean_curvature_stats']
             print(f"   {task}: d={s['effect_size']:.3f}, p={s['p_value']:.4f}")
 
-    print("\n3. Lyapunov Exponents:")
-    for task, stats in results['lyapunov'].items():
-        s = stats['mean_lyapunov_stats']
-        print(f"   {task}: d={s['effect_size']:.3f}, p={s['p_value']:.4f}")
+    print("\n3. Lyapunov Exponents [KNOWN INVALID - reference only]:")
+    for task, task_stats in results['lyapunov'].items():
+        s = task_stats['mean_lyapunov_stats']
+        print(f"   {task}: d={s['effect_size']:.3f}, p={s['p_value']:.4f}  ** INVALID **")
 
-    print("\n4. Attractor Purity:")
-    for task, stats in results['attractor'].items():
-        print(f"   {task}: Mean purity {stats['mean_purity']:.1%}")
+    print("\n4a. Attractor Purity (final-layer, random projection) [FIXED]:")
+    for task, task_stats in results['attractor'].items():
+        print(f"   {task}: Mean purity {task_stats['mean_purity']:.1%}")
 
-    print("\n5. Direction Transfer:")
-    for key, stats in results['transfer'].items():
-        status = "✓" if stats['test_accuracy'] > 0.55 else "✗"
-        print(f"   {key}: {stats['test_accuracy']:.1%} {status}")
+    print("\n4b. Attractor Purity (velocity-space, random projection) [NEW]:")
+    for task, task_stats in results['attractor_velocity'].items():
+        print(f"   {task}: Mean purity {task_stats['mean_purity']:.1%}")
+
+    print("\n5. Direction Transfer [VALID]:")
+    for key, task_stats in results['transfer'].items():
+        status = "PASS" if task_stats['test_accuracy'] > 0.55 else "FAIL"
+        print(f"   {key}: {task_stats['test_accuracy']:.1%} [{status}]")
 
 
 if __name__ == '__main__':

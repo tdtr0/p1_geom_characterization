@@ -1,5 +1,18 @@
 #!/usr/bin/env python3
 """
+⚠️  DEPRECATED — Use path_signature_analysis_v2.py instead.
+
+This script uses PCA for dimensionality reduction before computing path signatures.
+PCA is biased toward high-variance directions and systematically discards tail components
+where RLVR-specific features live (SVD experiment showed tail changes 3-8x more than top).
+Additionally, PCA eigenvectors ≠ functionally important directions (Jacobian singular vectors).
+
+See path_signature_analysis_v2.py which uses:
+- Random projections (Johnson-Lindenstrauss) to preserve pairwise distances without bias
+- Velocity-space projection for vector field analysis
+- Cross-validated probe-informed projection as optional method
+
+Original description:
 Path Signature Analysis - Phase 3 Extension
 
 Computes reparameterization-invariant path signatures from layer activations.
@@ -20,6 +33,12 @@ Usage:
         --models olmo3_base,olmo3_sft,olmo3_rl_zero \
         --output-dir results
 """
+import warnings
+warnings.warn(
+    "path_signature_analysis.py is DEPRECATED. "
+    "Use path_signature_analysis_v2.py which fixes PCA bias via random projections.",
+    DeprecationWarning, stacklevel=2
+)
 
 import argparse
 import os

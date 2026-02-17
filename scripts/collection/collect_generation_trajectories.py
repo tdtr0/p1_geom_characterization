@@ -28,6 +28,7 @@ from datetime import datetime
 from tqdm import tqdm
 import argparse
 import warnings
+from transformers import LogitsProcessor
 
 warnings.filterwarnings("ignore", category=UserWarning)
 
@@ -283,6 +284,23 @@ class GenerationCollector:
             self.step_attentions.append(dict(self._current_step_attn))
         self._clear_step_buffers()
 
+    def _make_logits_processor(self):
+        """Create a LogitsProcessor that flushes hook buffers after each step.
+
+        Hooks fire during the forward pass but we need to move the captured
+        data into step_hidden_states/step_attentions before the next step
+        overwrites it.  A LogitsProcessor is called once per generated token,
+        right after the forward pass, making it the ideal place to flush.
+        """
+        collector = self
+
+        class _FlushHooks(LogitsProcessor):
+            def __call__(self, input_ids, scores):
+                collector._save_step_data()
+                return scores  # pass-through, no modification
+
+        return _FlushHooks()
+
     def generate_with_capture(self, prompt: str, task: str = None, max_new_tokens: int = MAX_NEW_TOKENS):
         """Generate response and capture all data.
 
@@ -316,6 +334,11 @@ class GenerationCollector:
         stop_strings = STOP_SEQUENCES.get(task, [])
 
         # Generate with scores and attentions
+        # The _FlushHooks processor calls _save_step_data() after every
+        # forward pass so that hook-captured hidden states / attention are
+        # persisted before the next step overwrites the buffers.
+        flush_processor = self._make_logits_processor()
+
         with torch.no_grad():
             # Try using stop_strings if available in this transformers version
             try:
@@ -330,6 +353,7 @@ class GenerationCollector:
                     pad_token_id=self.tokenizer.pad_token_id,
                     stop_strings=stop_strings if stop_strings else None,
                     tokenizer=self.tokenizer if stop_strings else None,
+                    logits_processor=[flush_processor],
                 )
             except TypeError:
                 # Fallback for older transformers without stop_strings
@@ -342,6 +366,7 @@ class GenerationCollector:
                     output_attentions=True,
                     return_dict_in_generate=True,
                     pad_token_id=self.tokenizer.pad_token_id,
+                    logits_processor=[flush_processor],
                 )
 
         # Process scores -> entropy + top-k
@@ -366,8 +391,9 @@ class GenerationCollector:
         gen_len = len(entropy)
 
         # Process hidden states from hooks
-        # The hooks capture at each forward pass during generate()
-        # We need to extract the generation-time states
+        # The _FlushHooks LogitsProcessor calls _save_step_data() after each
+        # generation step, so step_hidden_states has exactly gen_len entries
+        # (prompt forward pass data is overwritten, not saved).
         if self.step_hidden_states:
             hidden_list = []
             for step_data in self.step_hidden_states[-gen_len:]:  # Take last gen_len steps

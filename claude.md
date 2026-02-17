@@ -85,11 +85,13 @@ ManiVer/
 │   │   ├── collect_thinking_traces.py
 │   │   ├── analyze_pivot_points.py
 │   │   └── data/                 # Local data for this experiment
-│   └── svd_reasoning_separability/  # **NEW: Linear separability test**
-│       ├── README.md             # Experiment overview
-│       ├── analyze_svd_delta.py  # Main analysis script
-│       ├── dashboard.sh          # Monitoring dashboard
-│       └── results/              # Output plots and JSON
+│   ├── svd_reasoning_separability/  # Linear separability test
+│   │   ├── README.md             # Experiment overview
+│   │   ├── analyze_svd_delta.py  # Main analysis script
+│   │   ├── dashboard.sh          # Monitoring dashboard
+│   │   └── results/              # Output plots and JSON
+│   └── generation_dynamics/       # **NEW: Generation-time activation analysis**
+│       └── README.md             # Experiment plan & evaluation design
 │
 ├── scripts/                       # Executable scripts
 │   ├── collection/                # Data collection scripts
@@ -209,6 +211,7 @@ ManiVer/
 
 ### For Subexperiments
 - **Aha Moment Analysis**: [experiments/aha_moment/](experiments/aha_moment/) - Phase transition at correction points
+- **Generation Dynamics**: [experiments/generation_dynamics/](experiments/generation_dynamics/) - Where RL-Zero's improvement comes from (generation-time activations)
 
 ### For Results
 - **Phase 1 Results**: [docs/plans/phase1_implementation_plan.md](docs/plans/phase1_implementation_plan.md) lines 21-73
