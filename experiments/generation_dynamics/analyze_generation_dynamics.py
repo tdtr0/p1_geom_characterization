@@ -582,6 +582,284 @@ def phase_c_divergence(data_dir, tasks):
 
 
 # =============================================================================
+# Phase D: Velocity-Space PCA on Generation Increments
+# =============================================================================
+
+def phase_d_velocity_pca(data_dir, models, tasks, max_steps=300, layer_idx=-1):
+    """Phase D: PCA on Δx_t = x_{t+1} - x_t to find slow manifold / spectral gap.
+
+    For each model/task:
+    1. Stream hidden states at final layer
+    2. Compute velocity increments Δx_t = x_{t+1} - x_t
+    3. Collect across traces, split by correct/incorrect
+    4. PCA on pooled velocities → eigenvalue spectrum
+    5. Check for spectral gap (reasoning progress vs token noise)
+    6. Compare PC alignment between correct/incorrect and between models
+    """
+    print("\n" + "=" * 60)
+    print("  PHASE D: VELOCITY-SPACE PCA ON GENERATION INCREMENTS")
+    print("=" * 60)
+
+    results = {}
+
+    for task in tasks:
+        print(f"\n--- {task} ---")
+        task_results = {}
+
+        # Collect velocities per model
+        model_velocities = {}  # model -> {"correct": ndarray, "incorrect": ndarray, "all": ndarray}
+
+        for model in models:
+            path = Path(data_dir) / model / f"{task}_generation.h5"
+            if not path.exists():
+                print(f"  {model}: No data")
+                continue
+
+            print(f"  {model}: Streaming velocity increments...")
+
+            vels_correct = []
+            vels_incorrect = []
+            n_samples_used = 0
+
+            with h5py.File(path, "r") as f:
+                keys = sorted([k for k in f.keys() if k.startswith("sample_")])
+                for key in keys:
+                    g = f[key]
+                    if "hidden_states" not in g:
+                        continue
+                    gen_len = int(g.attrs.get("gen_len", 0))
+                    if gen_len < 3:
+                        continue
+
+                    is_correct = bool(g.attrs.get("is_correct", False))
+
+                    # Stream final layer only: (gen_len, d_model)
+                    hs = g["hidden_states"][:min(gen_len, max_steps), layer_idx, :].astype(np.float32)
+
+                    # Filter zero rows
+                    valid = np.any(hs != 0, axis=1)
+                    hs = hs[valid]
+                    if len(hs) < 3:
+                        continue
+
+                    # Compute velocity increments: Δx_t = x_{t+1} - x_t
+                    deltas = np.diff(hs, axis=0)  # (T-1, d_model)
+
+                    # Filter out near-zero deltas (padding artifacts)
+                    norms = np.linalg.norm(deltas, axis=1)
+                    valid_deltas = deltas[norms > 1e-6]
+
+                    if len(valid_deltas) == 0:
+                        continue
+
+                    if is_correct:
+                        vels_correct.append(valid_deltas)
+                    else:
+                        vels_incorrect.append(valid_deltas)
+
+                    n_samples_used += 1
+
+            if not vels_correct and not vels_incorrect:
+                print(f"    No valid velocity data")
+                continue
+
+            # Stack into matrices
+            V_correct = np.vstack(vels_correct) if vels_correct else np.zeros((0, hs.shape[1]))
+            V_incorrect = np.vstack(vels_incorrect) if vels_incorrect else np.zeros((0, hs.shape[1]))
+            V_all = np.vstack([V_correct, V_incorrect]) if (len(V_correct) + len(V_incorrect)) > 0 else np.zeros((0, hs.shape[1]))
+
+            print(f"    Samples: {n_samples_used}, Velocity vectors: {len(V_all)} (correct={len(V_correct)}, incorrect={len(V_incorrect)})")
+
+            model_velocities[model] = {
+                "correct": V_correct,
+                "incorrect": V_incorrect,
+                "all": V_all,
+            }
+
+            # --- PCA on all velocities ---
+            n_components = min(50, len(V_all) - 1, V_all.shape[1])
+            if n_components < 2:
+                print(f"    Insufficient data for PCA")
+                continue
+
+            # Center the data
+            V_centered = V_all - np.mean(V_all, axis=0)
+
+            # SVD-based PCA (memory efficient)
+            print(f"    Running PCA (n={len(V_all)}, d={V_all.shape[1]}, k={n_components})...")
+            U, S, Vt = np.linalg.svd(V_centered, full_matrices=False)
+            eigenvalues = (S ** 2) / (len(V_all) - 1)
+            eigenvalues = eigenvalues[:n_components]
+            total_var = np.sum(eigenvalues)
+            var_explained = np.cumsum(eigenvalues) / total_var
+
+            # Spectral gap analysis: λ_k / λ_{k+1}
+            ratios = eigenvalues[:-1] / (eigenvalues[1:] + 1e-10)
+
+            # Find largest gap
+            gap_idx = int(np.argmax(ratios))
+            gap_ratio = float(ratios[gap_idx])
+
+            print(f"    Eigenvalue spectrum (top 10): {', '.join([f'{e:.2f}' for e in eigenvalues[:10]])}")
+            print(f"    Variance explained: PC1={var_explained[0]:.3f}, PC5={var_explained[min(4,len(var_explained)-1)]:.3f}, PC10={var_explained[min(9,len(var_explained)-1)]:.3f}, PC20={var_explained[min(19,len(var_explained)-1)]:.3f}")
+            print(f"    Spectral gap: largest at PC{gap_idx+1}/{gap_idx+2} (ratio={gap_ratio:.2f})")
+
+            # --- Correct vs Incorrect on the PCs ---
+            PCs = Vt[:n_components]  # (n_components, d_model)
+
+            proj_correct, proj_incorrect = None, None
+            if len(V_correct) > 5:
+                V_c_centered = V_correct - np.mean(V_all, axis=0)
+                proj_correct = V_c_centered @ PCs.T  # (n_correct_vels, n_components)
+
+            if len(V_incorrect) > 5:
+                V_i_centered = V_incorrect - np.mean(V_all, axis=0)
+                proj_incorrect = V_i_centered @ PCs.T  # (n_incorrect_vels, n_components)
+
+            if proj_correct is not None and proj_incorrect is not None:
+                print(f"\n    Correct vs Incorrect projections onto top PCs:")
+                print(f"    {'PC':>4s}  {'Correct var':>12s}  {'Incorrect var':>14s}  {'Ratio':>8s}  {'Mean diff':>10s}")
+                pc_comparison = []
+                for pc_i in range(min(10, n_components)):
+                    var_c = float(np.var(proj_correct[:, pc_i]))
+                    var_i = float(np.var(proj_incorrect[:, pc_i]))
+                    ratio = var_c / (var_i + 1e-10)
+                    mean_diff = float(np.mean(proj_correct[:, pc_i]) - np.mean(proj_incorrect[:, pc_i]))
+                    print(f"    PC{pc_i+1:2d}  {var_c:12.4f}  {var_i:14.4f}  {ratio:8.3f}  {mean_diff:10.4f}")
+                    pc_comparison.append({
+                        "pc": pc_i + 1,
+                        "var_correct": var_c,
+                        "var_incorrect": var_i,
+                        "var_ratio": float(ratio),
+                        "mean_diff": mean_diff,
+                    })
+
+                # Statistical test: are projections separable?
+                if HAS_SKLEARN and len(proj_correct) > 10 and len(proj_incorrect) > 10:
+                    # Use top-k PCs as features for correctness classification
+                    for k in [3, 5, 10]:
+                        if k > n_components:
+                            break
+                        X_pc = np.vstack([proj_correct[:, :k], proj_incorrect[:, :k]])
+                        y_pc = np.array([1] * len(proj_correct) + [0] * len(proj_incorrect))
+
+                        # Subsample if too many velocity vectors (keep balanced)
+                        max_per_class = 5000
+                        if len(proj_correct) > max_per_class or len(proj_incorrect) > max_per_class:
+                            idx_c = np.random.choice(len(proj_correct), min(max_per_class, len(proj_correct)), replace=False)
+                            idx_i = np.random.choice(len(proj_incorrect), min(max_per_class, len(proj_incorrect)), replace=False)
+                            X_pc = np.vstack([proj_correct[idx_c, :k], proj_incorrect[idx_i, :k]])
+                            y_pc = np.array([1] * len(idx_c) + [0] * len(idx_i))
+
+                        try:
+                            cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+                            clf = LogisticRegression(max_iter=1000, random_state=42)
+                            aucs = cross_val_score(clf, X_pc, y_pc, cv=cv, scoring="roc_auc")
+                            print(f"    Velocity PC{k} → correctness AUC: {np.mean(aucs):.3f} +/- {np.std(aucs):.3f}")
+                        except Exception as e:
+                            print(f"    Velocity PC{k} classification failed: {e}")
+
+            # --- Separate PCA for correct vs incorrect ---
+            if len(V_correct) > 50 and len(V_incorrect) > 50:
+                print(f"\n    Separate PCA: correct vs incorrect")
+                n_sub = min(20, len(V_correct) - 1, len(V_incorrect) - 1)
+
+                V_c_c = V_correct - np.mean(V_correct, axis=0)
+                _, S_c, Vt_c = np.linalg.svd(V_c_c, full_matrices=False)
+                eig_c = (S_c ** 2) / (len(V_correct) - 1)
+                eig_c = eig_c[:n_sub]
+                var_c = np.cumsum(eig_c) / np.sum(eig_c)
+
+                V_i_c = V_incorrect - np.mean(V_incorrect, axis=0)
+                _, S_i, Vt_i = np.linalg.svd(V_i_c, full_matrices=False)
+                eig_i = (S_i ** 2) / (len(V_incorrect) - 1)
+                eig_i = eig_i[:n_sub]
+                var_i = np.cumsum(eig_i) / np.sum(eig_i)
+
+                print(f"    Correct  spectrum (top 5): {', '.join([f'{e:.2f}' for e in eig_c[:5]])}")
+                print(f"    Incorrect spectrum (top 5): {', '.join([f'{e:.2f}' for e in eig_i[:5]])}")
+                print(f"    Correct  var explained: PC1={var_c[0]:.3f}, PC5={var_c[min(4,len(var_c)-1)]:.3f}, PC10={var_c[min(9,len(var_c)-1)]:.3f}")
+                print(f"    Incorrect var explained: PC1={var_i[0]:.3f}, PC5={var_i[min(4,len(var_i)-1)]:.3f}, PC10={var_i[min(9,len(var_i)-1)]:.3f}")
+
+                # PC alignment: cosine sim between top PCs of correct vs incorrect
+                PCs_c = Vt_c[:n_sub]
+                PCs_i = Vt_i[:n_sub]
+                alignment = np.abs(PCs_c @ PCs_i.T)  # (n_sub, n_sub) cosine similarities
+
+                # Diagonal = alignment of matched PCs
+                diag_alignment = np.diag(alignment)
+                print(f"    PC alignment (correct↔incorrect): PC1={diag_alignment[0]:.3f}, PC2={diag_alignment[1]:.3f}, PC3={diag_alignment[2]:.3f}, PC5={diag_alignment[min(4,len(diag_alignment)-1)]:.3f}")
+
+                # Effective dimensionality via participation ratio
+                pr_c = np.sum(eig_c) ** 2 / (np.sum(eig_c ** 2) + 1e-10)
+                pr_i = np.sum(eig_i) ** 2 / (np.sum(eig_i ** 2) + 1e-10)
+                print(f"    Participation ratio: correct={pr_c:.1f}, incorrect={pr_i:.1f}")
+
+                task_results[f"{model}/separate_pca"] = {
+                    "correct_eigenvalues": eig_c.tolist(),
+                    "incorrect_eigenvalues": eig_i.tolist(),
+                    "correct_var_explained": var_c.tolist(),
+                    "incorrect_var_explained": var_i.tolist(),
+                    "pc_alignment_diag": diag_alignment.tolist(),
+                    "participation_ratio_correct": float(pr_c),
+                    "participation_ratio_incorrect": float(pr_i),
+                }
+
+            task_results[model] = {
+                "n_samples": n_samples_used,
+                "n_velocity_vectors": len(V_all),
+                "n_correct_vels": len(V_correct),
+                "n_incorrect_vels": len(V_incorrect),
+                "eigenvalues": eigenvalues.tolist(),
+                "var_explained": var_explained.tolist(),
+                "spectral_gap_idx": gap_idx,
+                "spectral_gap_ratio": gap_ratio,
+                "pc_comparison": pc_comparison if proj_correct is not None and proj_incorrect is not None else None,
+            }
+
+        # --- Cross-model PC alignment ---
+        if len(model_velocities) == 2 and all(m in model_velocities for m in models):
+            print(f"\n  Cross-model velocity PC alignment ({models[0]} vs {models[1]}):")
+            for label in ["all", "correct", "incorrect"]:
+                V0 = model_velocities[models[0]][label]
+                V1 = model_velocities[models[1]][label]
+                if len(V0) < 50 or len(V1) < 50:
+                    continue
+
+                n_sub = min(10, len(V0) - 1, len(V1) - 1)
+
+                V0_c = V0 - np.mean(V0, axis=0)
+                _, _, Vt0 = np.linalg.svd(V0_c, full_matrices=False)
+                PCs0 = Vt0[:n_sub]
+
+                V1_c = V1 - np.mean(V1, axis=0)
+                _, _, Vt1 = np.linalg.svd(V1_c, full_matrices=False)
+                PCs1 = Vt1[:n_sub]
+
+                alignment = np.abs(PCs0 @ PCs1.T)
+                diag = np.diag(alignment)
+
+                # Also: subspace overlap (Grassmann distance proxy)
+                # How much of model0's top-k subspace is captured by model1's top-k
+                for k in [3, 5, 10]:
+                    if k > n_sub:
+                        break
+                    overlap = np.trace(PCs0[:k] @ PCs1[:k].T @ PCs1[:k] @ PCs0[:k].T)
+                    overlap /= k  # Normalize to [0,1]
+                    print(f"    {label}: top-{k} subspace overlap = {overlap:.3f}")
+
+                print(f"    {label}: PC alignment = [{', '.join([f'{d:.3f}' for d in diag[:5]])}]")
+
+                task_results[f"cross_model/{label}"] = {
+                    "pc_alignment_diag": diag.tolist(),
+                }
+
+        results[task] = task_results
+
+    return results
+
+
+# =============================================================================
 # Main
 # =============================================================================
 
@@ -609,6 +887,9 @@ def main():
 
     if "c" in args.phases.lower():
         all_results["phase_c"] = phase_c_divergence(args.data_dir, tasks)
+
+    if "d" in args.phases.lower():
+        all_results["phase_d"] = phase_d_velocity_pca(args.data_dir, models, tasks)
 
     # Save results
     output_path = Path(args.output_dir) / "generation_dynamics_results.json"
