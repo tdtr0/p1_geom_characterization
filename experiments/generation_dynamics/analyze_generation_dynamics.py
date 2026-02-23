@@ -860,6 +860,281 @@ def phase_d_velocity_pca(data_dir, models, tasks, max_steps=300, layer_idx=-1):
 
 
 # =============================================================================
+# Phase E: Probe-Informed CKA
+# =============================================================================
+
+def _train_probe(data_dir, model, task, layer_idx=-1, max_steps=300):
+    """Train correctness probe on mean-pooled generation hidden states. Return (probe, scaler, w, auc)."""
+    path = Path(data_dir) / model / f"{task}_generation.h5"
+    X, y = [], []
+    with h5py.File(path, "r") as f:
+        for key in sorted(k for k in f.keys() if k.startswith("sample_")):
+            g = f[key]
+            if "hidden_states" not in g or int(g.attrs.get("gen_len", 0)) < 3:
+                continue
+            hs = g["hidden_states"][:max_steps, layer_idx, :].astype(np.float32)
+            valid = np.any(hs != 0, axis=1)
+            hs = hs[valid]
+            if len(hs) > 0:
+                X.append(np.mean(hs, axis=0))
+                y.append(int(g.attrs.get("is_correct", False)))
+
+    X, y = np.array(X, dtype=np.float32), np.array(y)
+    scaler = StandardScaler()
+    X_s = scaler.fit_transform(X)
+
+    clf = LogisticRegression(max_iter=1000, random_state=42, C=0.1)
+    cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+    aucs = cross_val_score(clf, X_s, y, cv=cv, scoring="roc_auc")
+    clf.fit(X_s, y)
+
+    w = clf.coef_[0].copy()
+    w = w / (np.linalg.norm(w) + 1e-10)
+
+    return clf, scaler, w, float(np.mean(aucs)), X_s, y
+
+
+def phase_e_probe_informed_cka(data_dir, tasks, layer_idx=-1, max_steps=300):
+    """Phase E: Probe-Informed CKA — is divergence concentrated in correctness subspace?
+
+    E1: Probe-score tracking — w·hidden at each generation step, by outcome
+    E2: Subspace cos_sim — raw vs probe-direction vs complement
+    E3: Probe transfer — base probe applied to rl_zero per step
+    """
+    if not HAS_SKLEARN:
+        print("\nSkipping Phase E (sklearn not available)")
+        return {}
+
+    print("\n" + "=" * 60)
+    print("  PHASE E: PROBE-INFORMED CKA")
+    print("=" * 60)
+
+    results = {}
+    models = ["olmo3_base", "olmo3_rl_zero"]
+
+    for task in tasks:
+        print(f"\n--- {task} ---")
+        task_results = {}
+
+        # === Step 1: Train probes on each model ===
+        probes = {}
+        for model in models:
+            path = Path(data_dir) / model / f"{task}_generation.h5"
+            if not path.exists():
+                continue
+            clf, scaler, w, auc, X_s, y = _train_probe(data_dir, model, task, layer_idx, max_steps)
+            probes[model] = {"clf": clf, "scaler": scaler, "w": w, "auc": auc}
+            print(f"  {model} probe AUC: {auc:.3f} (w norm in scaled space: {np.linalg.norm(clf.coef_[0]):.3f})")
+
+        if len(probes) < 2:
+            print(f"  Need both models for CKA analysis")
+            continue
+
+        w_base = probes["olmo3_base"]["w"]
+        w_rlz = probes["olmo3_rl_zero"]["w"]
+        scaler_base = probes["olmo3_base"]["scaler"]
+
+        # Probe direction alignment
+        probe_cos = float(np.abs(np.dot(w_base, w_rlz)))
+        print(f"  Probe direction alignment (base↔rl_zero): {probe_cos:.4f}")
+
+        task_results["probe_alignment"] = probe_cos
+        task_results["base_probe_auc"] = probes["olmo3_base"]["auc"]
+        task_results["rlz_probe_auc"] = probes["olmo3_rl_zero"]["auc"]
+
+        # === Step 2: Stream matched samples, compute per-step metrics ===
+        base_path = Path(data_dir) / "olmo3_base" / f"{task}_generation.h5"
+        rlz_path = Path(data_dir) / "olmo3_rl_zero" / f"{task}_generation.h5"
+
+        # Load metadata for outcome classification
+        base_meta = load_generation_data(data_dir, "olmo3_base", task)
+        rlz_meta = load_generation_data(data_dir, "olmo3_rl_zero", task)
+        if not base_meta or not rlz_meta:
+            continue
+
+        base_by_key = {s["key"]: s for s in base_meta}
+        rlz_by_key = {s["key"]: s for s in rlz_meta}
+        common_keys = sorted(set(base_by_key) & set(rlz_by_key))
+
+        # Per-step accumulators by outcome
+        step_data = {
+            outcome: {"base_probe_scores": defaultdict(list),
+                       "rlz_probe_scores": defaultdict(list),
+                       "raw_cos": defaultdict(list),
+                       "probe_cos": defaultdict(list),
+                       "complement_cos": defaultdict(list)}
+            for outcome in ["both_correct", "rlz_wins", "base_wins", "both_wrong"]
+        }
+
+        # Build complement projection (random 64D orthogonal to w_base)
+        rng = np.random.RandomState(42)
+        n_comp = 64
+        random_dirs = rng.randn(n_comp, len(w_base))
+        random_dirs -= (random_dirs @ w_base[:, None]) * w_base[None, :]
+        Q, _ = np.linalg.qr(random_dirs.T)
+        P_complement = Q[:, :n_comp].T  # (n_comp, d_model)
+
+        print(f"  Streaming {len(common_keys)} matched samples...")
+        n_processed = 0
+
+        with h5py.File(base_path, "r") as fb, h5py.File(rlz_path, "r") as fr:
+            for key in common_keys:
+                if key not in fb or key not in fr:
+                    continue
+                gb, gr = fb[key], fr[key]
+                if "hidden_states" not in gb or "hidden_states" not in gr:
+                    continue
+
+                bc = base_by_key[key]["is_correct"]
+                rc = rlz_by_key[key]["is_correct"]
+                if bc and rc:
+                    outcome = "both_correct"
+                elif rc and not bc:
+                    outcome = "rlz_wins"
+                elif bc and not rc:
+                    outcome = "base_wins"
+                else:
+                    outcome = "both_wrong"
+
+                bh = gb["hidden_states"][:max_steps, layer_idx, :].astype(np.float32)
+                rh = gr["hidden_states"][:max_steps, layer_idx, :].astype(np.float32)
+
+                min_len = min(len(bh), len(rh))
+                if min_len < 3:
+                    continue
+
+                bh, rh = bh[:min_len], rh[:min_len]
+
+                # Filter zero rows
+                valid = np.any(bh != 0, axis=1) & np.any(rh != 0, axis=1)
+                if valid.sum() < 3:
+                    continue
+
+                sd = step_data[outcome]
+
+                for t in range(min_len):
+                    if not valid[t]:
+                        continue
+
+                    b_vec = bh[t]  # (d_model,)
+                    r_vec = rh[t]
+
+                    # E1: Probe scores (dot product with probe direction)
+                    b_score = float(np.dot(w_base, b_vec))
+                    r_score = float(np.dot(w_base, r_vec))
+                    sd["base_probe_scores"][t].append(b_score)
+                    sd["rlz_probe_scores"][t].append(r_score)
+
+                    # E2: Cosine similarity decomposition
+                    # Raw cos
+                    cos_raw = float(np.dot(b_vec, r_vec) / (np.linalg.norm(b_vec) * np.linalg.norm(r_vec) + 1e-10))
+                    sd["raw_cos"][t].append(cos_raw)
+
+                    # Probe-direction cos (1D)
+                    b_proj = np.dot(w_base, b_vec)
+                    r_proj = np.dot(w_base, r_vec)
+                    # Sign agreement = cosine in 1D
+                    if abs(b_proj) > 1e-8 and abs(r_proj) > 1e-8:
+                        cos_probe = float(np.sign(b_proj) * np.sign(r_proj))
+                    else:
+                        cos_probe = 0.0
+                    sd["probe_cos"][t].append(cos_probe)
+
+                    # Complement cos (64D)
+                    b_comp = P_complement @ b_vec
+                    r_comp = P_complement @ r_vec
+                    cos_comp = float(np.dot(b_comp, r_comp) / (np.linalg.norm(b_comp) * np.linalg.norm(r_comp) + 1e-10))
+                    sd["complement_cos"][t].append(cos_comp)
+
+                n_processed += 1
+
+        print(f"  Processed {n_processed} matched pairs")
+
+        # === Summarize per-step results ===
+        step_bins = [0, 5, 10, 20, 50, 100, 200]
+
+        print(f"\n  E1: Probe Score Tracking (base probe applied to both models)")
+        print(f"  {'Outcome':>15s}  {'Step':>5s}  {'Base score':>12s}  {'RLZ score':>12s}  {'Diff':>8s}  {'n':>5s}")
+        for outcome in ["both_correct", "rlz_wins", "base_wins", "both_wrong"]:
+            sd = step_data[outcome]
+            for t in step_bins:
+                b_scores = sd["base_probe_scores"].get(t, [])
+                r_scores = sd["rlz_probe_scores"].get(t, [])
+                if b_scores and r_scores:
+                    bm, rm = np.mean(b_scores), np.mean(r_scores)
+                    print(f"  {outcome:>15s}  {t:>5d}  {bm:>12.4f}  {rm:>12.4f}  {rm-bm:>8.4f}  {len(b_scores):>5d}")
+
+            e1_data = {}
+            for t in sorted(sd["base_probe_scores"].keys()):
+                if sd["base_probe_scores"][t]:
+                    e1_data[str(t)] = {
+                        "base_mean": float(np.mean(sd["base_probe_scores"][t])),
+                        "rlz_mean": float(np.mean(sd["rlz_probe_scores"][t])),
+                        "n": len(sd["base_probe_scores"][t]),
+                    }
+            task_results[f"e1/{outcome}"] = e1_data
+
+        print(f"\n  E2: Subspace Cosine Similarity Decomposition")
+        print(f"  {'Outcome':>15s}  {'Step':>5s}  {'Raw cos':>10s}  {'Probe sign':>11s}  {'Compl cos':>10s}  {'n':>5s}")
+        for outcome in ["both_correct", "rlz_wins", "base_wins", "both_wrong"]:
+            sd = step_data[outcome]
+            for t in step_bins:
+                raw = sd["raw_cos"].get(t, [])
+                probe = sd["probe_cos"].get(t, [])
+                comp = sd["complement_cos"].get(t, [])
+                if raw and probe and comp:
+                    print(f"  {outcome:>15s}  {t:>5d}  {np.mean(raw):>10.4f}  {np.mean(probe):>11.4f}  {np.mean(comp):>10.4f}  {len(raw):>5d}")
+
+            e2_data = {}
+            for t in sorted(sd["raw_cos"].keys()):
+                if sd["raw_cos"][t]:
+                    e2_data[str(t)] = {
+                        "raw_cos": float(np.mean(sd["raw_cos"][t])),
+                        "probe_cos": float(np.mean(sd["probe_cos"][t])),
+                        "complement_cos": float(np.mean(sd["complement_cos"][t])),
+                        "n": len(sd["raw_cos"][t]),
+                    }
+            task_results[f"e2/{outcome}"] = e2_data
+
+        # === E3: Probe transfer — base probe correctness AUC at each step ===
+        print(f"\n  E3: Per-Step Probe Transfer (base probe → rl_zero correctness)")
+        e3_results = {}
+        with h5py.File(rlz_path, "r") as fr:
+            keys = sorted(k for k in fr.keys() if k.startswith("sample_"))
+            # Collect per-step scores
+            step_scores = defaultdict(lambda: {"scores": [], "labels": []})
+            for key in keys:
+                g = fr[key]
+                if "hidden_states" not in g or int(g.attrs.get("gen_len", 0)) < 3:
+                    continue
+                label = int(g.attrs.get("is_correct", False))
+                hs = g["hidden_states"][:max_steps, layer_idx, :].astype(np.float32)
+                valid = np.any(hs != 0, axis=1)
+                for t in range(len(hs)):
+                    if valid[t]:
+                        score = float(np.dot(w_base, hs[t]))
+                        step_scores[t]["scores"].append(score)
+                        step_scores[t]["labels"].append(label)
+
+        for t in step_bins:
+            ss = step_scores.get(t)
+            if ss and len(ss["scores"]) > 20 and sum(ss["labels"]) > 3:
+                scores_arr = np.array(ss["scores"])
+                labels_arr = np.array(ss["labels"])
+                try:
+                    auc = roc_auc_score(labels_arr, scores_arr)
+                    print(f"    Step {t:>5d}: AUC = {auc:.3f} (n={len(scores_arr)}, {sum(labels_arr)} correct)")
+                    e3_results[str(t)] = {"auc": float(auc), "n": len(scores_arr)}
+                except Exception:
+                    pass
+        task_results["e3_transfer"] = e3_results
+
+        results[task] = task_results
+
+    return results
+
+
+# =============================================================================
 # Main
 # =============================================================================
 
@@ -890,6 +1165,9 @@ def main():
 
     if "d" in args.phases.lower():
         all_results["phase_d"] = phase_d_velocity_pca(args.data_dir, models, tasks)
+
+    if "e" in args.phases.lower():
+        all_results["phase_e"] = phase_e_probe_informed_cka(args.data_dir, tasks)
 
     # Save results
     output_path = Path(args.output_dir) / "generation_dynamics_results.json"
