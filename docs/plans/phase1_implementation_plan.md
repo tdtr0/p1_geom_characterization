@@ -1,5 +1,79 @@
 # Phase 1 Implementation Plan: Geometric Characterization
 
+---
+
+## 📊 PROGRESS TRACKER (Last Updated: 2026-01-10)
+
+### Completed ✅
+
+| Task | Status | Notes |
+|------|--------|-------|
+| Environment setup | ✅ Done | conda env `geometric_transfer` on eyecog |
+| Model download/verification | ✅ Done | 4 OLMo models (Base, SFT, RL-Zero, Think) |
+| Activation collection pipeline | ✅ Done | With checkpointing, error handling |
+| Task data preparation | ✅ Done | GSM8K (500), HumanEval (164), LogiQA (500) |
+| Data collection | ✅ Done | 12 files, 4 models × 3 tasks, 0% NaN |
+| Core geometric measures | ✅ Done | Effective rank, spectral decay, subspace preservation |
+| Analysis pipeline | ✅ Done | `scripts/run_analysis.py` |
+| Statistical tests | ✅ Done | t-tests, Cohen's d, Mann-Whitney U |
+| Curvature analysis | ✅ Done | Local manifold curvature estimation |
+
+### Key Results 🔬
+
+**Subspace Preservation vs Base Model:**
+| Model | Training | GSM8K | HumanEval | LogiQA |
+|-------|----------|-------|-----------|--------|
+| RL-Zero | Pure RL (no SFT) | **98.6% ± 1.1%** | **97.4% ± 2.9%** | **96.0% ± 4.1%** |
+| SFT | Supervised fine-tuning | 52.4% ± 12.6% | 50.3% ± 15.5% | 39.6% ± 17.7% |
+| Think | SFT + DPO + RLVR | 50.4% ± 12.9% | 49.7% ± 16.0% | 39.0% ± 18.0% |
+
+**Statistical Tests (RL-Zero vs SFT):**
+| Task | Welch t | p-value | Cohen's d | Effect |
+|------|---------|---------|-----------|--------|
+| GSM8K | 20.74 | 6.5e-20 | 5.19 | Huge |
+| HumanEval | 16.93 | 7.2e-18 | 4.23 | Huge |
+| LogiQA | 17.62 | 9.1e-19 | 4.41 | Huge |
+
+**Curvature Analysis (layer 15, higher = more curved):**
+| Model | GSM8K | HumanEval |
+|-------|-------|-----------|
+| Base | 0.626 ± 0.027 | 0.582 ± 0.052 |
+| RL-Zero | 0.624 ± 0.027 | 0.576 ± 0.053 |
+| SFT | 0.644 ± 0.025 | 0.597 ± 0.045 |
+| Think | 0.643 ± 0.026 | 0.597 ± 0.045 |
+
+**Interpretation:**
+- **RL-Zero preserves >96% of base geometry across all 3 tasks**
+- **SFT preserves <53% on all tasks** - dramatic geometric reshaping
+- Pure RL makes minimal geometric changes while achieving fine-tuning
+- Adding DPO+RLVR to SFT doesn't further change geometry (Think ≈ SFT)
+- Curvature: RL-Zero maintains base curvature, SFT slightly increases it
+- All effects are huge (Cohen's d > 4.0) with p < 10^-17
+
+### Storage Status for Phase 2
+
+**Current Usage (Phase 1 - last_token only):**
+- Total: 1.1 GB (4 models × 3 tasks)
+- Per model: ~269 MB
+
+**Phase 2 Requirements (full trajectories):**
+- Estimated: ~112 GB compressed (gzip)
+- Available space: 122 GB
+- Margin: ~10 GB (tight)
+- **Recommendation**: Clean up space or collect trajectories in batches
+
+### Decision Point Assessment
+
+Based on success criteria in Section 5.3:
+- ✅ **RL-Zero shows higher preservation**: 96-98% vs 40-53%
+- ✅ **Effect size**: Huge (Cohen's d > 4.0 for all tasks)
+- ✅ **p-value**: p < 10^-17 for all tasks
+- ✅ **Consistent across tasks**: GSM8K, HumanEval, LogiQA all show same pattern
+
+**✅ PHASE 1 COMPLETE - Strong signal confirmed across all measures**
+
+---
+
 ## What We're Actually Doing (And Why)
 
 ### The Core Question
@@ -28,10 +102,16 @@ When a transformer processes a prompt, each layer produces an activation vector 
 | Model | Training | Why It Matters |
 |-------|----------|----------------|
 | OLMo 3-Base 7B | Pretraining only | Baseline—no post-training signal |
-| OLMo 3-Instruct 7B | Base + SFT | Standard instruction tuning |
-| OLMo 3-RL-Zero 7B | Base + RL (no SFT) | Pure RL effect isolated |
+| OLMo 3-Think-SFT 7B | Base + SFT | SFT on Dolci-Think dataset |
+| OLMo 3-RL-Zero 7B | Base + RL (no SFT) | **Pure RL effect isolated** |
+| OLMo 3-Think 7B | Base + SFT + DPO + RLVR | Full training pipeline |
 
 This is rare: most RLHF models are SFT→RL, confounding the two signals. OLMo 3-RL-Zero goes directly Base→RL, letting us isolate RL's geometric effect.
+
+**Experimental Design:**
+- **SFT vs RL-Zero**: Does pure RL differ from pure SFT? → **YES, dramatically!**
+- **SFT vs Think**: What does adding DPO+RLVR do? → Minimal additional geometric change
+- **RL-Zero vs Think**: How does pure RL compare to full pipeline? → Very different
 
 **DeepSeek family** (secondary) provides scale but less control:
 - V3-Base, V3, R1-Zero, R1 span the full training trajectory
@@ -908,7 +988,7 @@ def plot_effective_rank_heatmap(df: pd.DataFrame, output_path: str):
 ### End of Week 2: Go/No-Go on Data Collection
 
 **Requirements to proceed:**
-- [ ] All three OLMo models load and generate coherent text
+- [x] All three OLMo models load and generate coherent text
 - [ ] Activation extraction produces expected shapes
 - [ ] Storage pipeline works without data corruption
 - [ ] Test collection on 10 samples completes in < 5 minutes
@@ -1007,6 +1087,18 @@ If Phase 1 shows signal (geometric differences exist and are statistically signi
 
 1. **Phase 2**: Implement path signature analysis on full trajectories
 2. **Phase 2**: Compute local Jacobian sensitivity measures
+
+Note: 
+Full Trajectory Storage Estimates
+Dataset	Avg Tokens	Samples	Per Model (raw)	Per Model (gzip)
+GSM8K	72	500	~9.4 GB	~3-4 GB
+HumanEval	121	164	~5.2 GB	~2-2.5 GB
+Total per model			~14.6 GB	~5-6 GB
+Full collection (4 models × 2 tasks):
+
+Raw: ~58 GB
+Compressed: ~20-25 GB
+Which isnt too much - but lets see. this is only for the 7b models - we might have to scale up to show perf on the bigger models. 
 3. **Phase 3**: Correlate geometric measures with actual transfer performance
 
 If Phase 1 shows no signal:

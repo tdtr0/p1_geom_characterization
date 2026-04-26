@@ -1,0 +1,214 @@
+{
+  "timestamp": "2026-01-25T18:40:56.194564",
+  "config": {
+    "data_dir": "/home/ttdo/maniver/ManiVer/data/trajectories_0shot",
+    "models": [
+      "olmo3_rl_zero",
+      "olmo3_think",
+      "olmo3_sft"
+    ],
+    "task": "gsm8k",
+    "max_samples": 200
+  },
+  "per_model": {
+    "olmo3_rl_zero": {
+      "model": "olmo3_rl_zero",
+      "n_samples": 200,
+      "n_correct": 36,
+      "n_incorrect": 164,
+      "probe_auc": 0.6588753387533874,
+      "metrics": {
+        "smoothness": {
+          "d": 1.7205825981117173,
+          "p": 1.934203505741917e-17,
+          "correct_mean": 40321954.278336935,
+          "incorrect_mean": 1829357.4084755494,
+          "correct_std": 45079826.15893735,
+          "incorrect_std": 12576587.69652831
+        },
+        "accumulation_rate": {
+          "d": -0.30723431755810016,
+          "p": 0.09664319641245897,
+          "correct_mean": 0.0055294803597337105,
+          "incorrect_mean": 0.011680441144264243,
+          "correct_std": 0.01215504955160566,
+          "incorrect_std": 0.021248098764440858
+        },
+        "final_belief": {
+          "d": 0.515289651149966,
+          "p": 0.0056216301754313065,
+          "correct_mean": 1.0,
+          "incorrect_mean": 0.829112539166223,
+          "correct_std": 0.0,
+          "incorrect_std": 0.36439251498004316
+        },
+        "n_clauses": {
+          "d": -0.039737572605717836,
+          "p": 0.829285291383722,
+          "correct_mean": 30.166666666666668,
+          "incorrect_mean": 30.329268292682926,
+          "correct_std": 3.157882553582736,
+          "incorrect_std": 4.245671764620657
+        }
+      }
+    },
+    "olmo3_think": {
+      "model": "olmo3_think",
+      "n_samples": 200,
+      "n_correct": 88,
+      "n_incorrect": 112,
+      "probe_auc": 0.6221590909090909,
+      "metrics": {
+        "smoothness": {
+          "d": -1.046342649958849,
+          "p": 5.23879028539694e-12,
+          "correct_mean": 2246357.999024444,
+          "incorrect_mean": 41667220.14868381,
+          "correct_std": 14711483.03348507,
+          "incorrect_std": 48365727.93136769
+        },
+        "accumulation_rate": {
+          "d": -0.5361215368323868,
+          "p": 0.00022066869577828021,
+          "correct_mean": -0.015819092896926165,
+          "incorrect_mean": -0.00652835361790071,
+          "correct_std": 0.02142041532498069,
+          "incorrect_std": 0.01305365032441108
+        },
+        "final_belief": {
+          "d": 0.28179683692845087,
+          "p": 0.0492922843036577,
+          "correct_mean": 0.03389277826274225,
+          "incorrect_mean": 1.2714380336094002e-12,
+          "correct_std": 0.18041070988002056,
+          "incorrect_std": 1.339543082448076e-11
+        },
+        "n_clauses": {
+          "d": -0.9794951457123384,
+          "p": 7.856539927696194e-11,
+          "correct_mean": 28.15909090909091,
+          "incorrect_mean": 34.294642857142854,
+          "correct_std": 7.025742218371542,
+          "incorrect_std": 5.530174359265497
+        }
+      }
+    },
+    "olmo3_sft": {
+      "model": "olmo3_sft",
+      "n_samples": 200,
+      "n_correct": 119,
+      "n_incorrect": 81,
+      "probe_auc": 0.5654113497250752,
+      "metrics": {
+        "smoothness": {
+          "d": -0.9025967913818612,
+          "p": 2.266329382683533e-09,
+          "correct_mean": 6727480.161914625,
+          "incorrect_mean": 39289105.12186109,
+          "correct_std": 24389929.889668465,
+          "incorrect_std": 48034966.082402095
+        },
+        "accumulation_rate": {
+          "d": -0.08982584915741573,
+          "p": 0.533611593574435,
+          "correct_mean": -0.010312319461847299,
+          "incorrect_mean": -0.008490941515001297,
+          "correct_std": 0.022646676553478344,
+          "incorrect_std": 0.015860273456639387
+        },
+        "final_belief": {
+          "d": 0.3445235850828161,
+          "p": 0.017702958597429395,
+          "correct_mean": 0.0642304193182276,
+          "incorrect_mean": 3.7387982026999674e-15,
+          "correct_std": 0.24048108012172656,
+          "incorrect_std": 3.304019274285088e-14
+        },
+        "n_clauses": {
+          "d": -0.607909118111281,
+          "p": 3.714658144890675e-05,
+          "correct_mean": 25.81512605042017,
+          "incorrect_mean": 30.580246913580247,
+          "correct_std": 8.474347238493657,
+          "incorrect_std": 6.684908741135161
+        }
+      }
+    }
+  },
+  "transfer_matrix": {
+    "olmo3_rl_zero_to_olmo3_rl_zero": 1.0,
+    "olmo3_rl_zero_to_olmo3_think": 0.6056209415584416,
+    "olmo3_rl_zero_to_olmo3_sft": 0.6188401286440501,
+    "olmo3_think_to_olmo3_rl_zero": 0.565379403794038,
+    "olmo3_think_to_olmo3_think": 1.0,
+    "olmo3_think_to_olmo3_sft": 0.6808797593111319,
+    "olmo3_sft_to_olmo3_rl_zero": 0.6587059620596206,
+    "olmo3_sft_to_olmo3_think": 0.6834415584415586,
+    "olmo3_sft_to_olmo3_sft": 1.0
+  },
+  "transfer_details": [
+    {
+      "train_model": "olmo3_rl_zero",
+      "test_model": "olmo3_rl_zero",
+      "auc": 1.0,
+      "n_train": 200,
+      "n_test": 200
+    },
+    {
+      "train_model": "olmo3_rl_zero",
+      "test_model": "olmo3_think",
+      "auc": 0.6056209415584416,
+      "n_train": 200,
+      "n_test": 200
+    },
+    {
+      "train_model": "olmo3_rl_zero",
+      "test_model": "olmo3_sft",
+      "auc": 0.6188401286440501,
+      "n_train": 200,
+      "n_test": 200
+    },
+    {
+      "train_model": "olmo3_think",
+      "test_model": "olmo3_rl_zero",
+      "auc": 0.565379403794038,
+      "n_train": 200,
+      "n_test": 200
+    },
+    {
+      "train_model": "olmo3_think",
+      "test_model": "olmo3_think",
+      "auc": 1.0,
+      "n_train": 200,
+      "n_test": 200
+    },
+    {
+      "train_model": "olmo3_think",
+      "test_model": "olmo3_sft",
+      "auc": 0.6808797593111319,
+      "n_train": 200,
+      "n_test": 200
+    },
+    {
+      "train_model": "olmo3_sft",
+      "test_model": "olmo3_rl_zero",
+      "auc": 0.6587059620596206,
+      "n_train": 200,
+      "n_test": 200
+    },
+    {
+      "train_model": "olmo3_sft",
+      "test_model": "olmo3_think",
+      "auc": 0.6834415584415586,
+      "n_train": 200,
+      "n_test": 200
+    },
+    {
+      "train_model": "olmo3_sft",
+      "test_model": "olmo3_sft",
+      "auc": 1.0,
+      "n_train": 200,
+      "n_test": 200
+    }
+  ]
+}

@@ -1,28 +1,35 @@
 # Model configurations for geometric analysis
 
-# Primary comparison (OLMo 3 family - cleanest controlled comparison)
+# Primary comparison (OLMo 3 family - clean SFT vs RL-Zero comparison)
+# Comparing: Base, SFT-only, and RL-Zero (pure RL without SFT)
 primary:
   olmo3_base:
-    model_name: "allenai/OLMo-3-7B"
-    description: "Base model (pretraining only)"
+    model_name: "allenai/Olmo-3-1025-7B"
+    description: "Base pretrained model (Oct 2025 checkpoint)"
     training_paradigm: "base"
 
-  olmo3_instruct:
-    model_name: "allenai/OLMo-3-7B-Instruct"
-    description: "Base + SFT"
+  olmo3_sft:
+    model_name: "allenai/Olmo-3-7B-Think-SFT"
+    description: "Base + SFT on Dolci-Think (math, code, chat, knowledge)"
     training_paradigm: "sft"
 
   olmo3_rl_zero:
-    model_name: "allenai/OLMo-3-7B-RL-Zero"
-    description: "Base + RL (no SFT) - key model for isolating RL effect"
+    model_name: "allenai/Olmo-3-7B-RL-Zero-General"
+    description: "Base + RL-Zero (pure RL without SFT) - general mix"
+    training_paradigm: "rl_zero"
+
+  olmo3_think:
+    model_name: "allenai/OLMo-3-7B-Think"
+    description: "Base + SFT + DPO + RLVR (full Think pipeline)"
     training_paradigm: "rlvr"
 
 # Secondary comparison (DeepSeek distilled)
 secondary:
-  deepseek_r1_8b:
+  deepseek_r1:
     model_name: "deepseek-ai/DeepSeek-R1-Distill-Llama-8B"
-    description: "DeepSeek R1 distilled to 8B"
+    description: "DeepSeek R1 distilled to 8B (for verification)"
     training_paradigm: "rlvr_distilled"
+    vram_gb: 24  # Fits in 24GB
 
   # deepseek_v3_8b:
   #   model_name: "deepseek-ai/DeepSeek-V3-8B"  # Check actual name

@@ -1,0 +1,10 @@
+{
+  "model": "olmo3_think",
+  "task": "humaneval",
+  "samples_completed": 164,
+  "total_samples": 164,
+  "last_sample_idx": 163,
+  "output_file": "data/activations/olmo3_think/humaneval.h5",
+  "timestamp": 1767981699.064418,
+  "status": "completed"
+}

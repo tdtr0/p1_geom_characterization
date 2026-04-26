@@ -1,0 +1,7 @@
+model,task,method,max_lyap_d,max_lyap_p,mean_lyap_d,mean_lyap_p,width_d,width_p,delta_max_lyap_d,n_correct,n_incorrect
+olmo3_base,gsm8k,true_jacobian,0.284,0.395,-0.395,0.0,0.0,0.0,0.406,10,90
+olmo3_base,logiqa,true_jacobian,-0.242,0.326,-0.236,0.0,0.0,0.0,-0.399,21,79
+olmo3_sft,gsm8k,true_jacobian,0.239,0.238,-0.08,0.0,0.0,0.0,-0.226,56,44
+olmo3_sft,logiqa,true_jacobian,-0.035,0.865,0.028,0.0,0.0,0.0,0.311,37,63
+olmo3_rl_zero,gsm8k,true_jacobian,0.152,0.568,-0.125,0.0,0.0,0.0,0.732,17,83
+olmo3_rl_zero,logiqa,true_jacobian,-0.05715044974717629,0.8002397033674562,0.06394900425743014,0.7770801130267625,-0.057097415420655606,0.800421099702312,0.05019988595620047,27,73

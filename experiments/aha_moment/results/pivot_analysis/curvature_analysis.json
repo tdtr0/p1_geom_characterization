@@ -1,0 +1,22 @@
+{
+  "model": "olmo3_think",
+  "n_samples": 200,
+  "n_samples_with_pivots": 60,
+  "total_pivots": 212,
+  "menger_curvature": {
+    "pivot_mean": 0.11138552641671784,
+    "pivot_std": 0.01039986612095145,
+    "random_mean": 0.10941721272285816,
+    "random_std": 0.012711420961893748,
+    "effect_size_d": 0.16948789953421028,
+    "p_value": 0.08243618928653715
+  },
+  "gaussian_curvature_proxy": {
+    "pivot_mean": 0.7566841607386211,
+    "pivot_std": 0.03352518743856451,
+    "random_mean": 0.7681027808279361,
+    "random_std": 0.039312355114682576,
+    "effect_size_d": -0.31255167999357486,
+    "p_value": 0.0014272317565741728
+  }
+}

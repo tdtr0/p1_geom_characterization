@@ -1,0 +1,106 @@
+{
+  "model": "think",
+  "n_pairs": 50,
+  "layers": [
+    0,
+    2,
+    4,
+    6,
+    8,
+    10,
+    12,
+    14,
+    16,
+    18,
+    20,
+    22,
+    24,
+    26,
+    28,
+    30
+  ],
+  "layer_stats": {
+    "0": {
+      "mean_recovery": 97.94818949337204,
+      "std_recovery": 14.36267354639566,
+      "n_samples": 50
+    },
+    "2": {
+      "mean_recovery": 97.92548704165114,
+      "std_recovery": 14.521590708442057,
+      "n_samples": 50
+    },
+    "4": {
+      "mean_recovery": 97.91508897216063,
+      "std_recovery": 14.594377194875516,
+      "n_samples": 50
+    },
+    "6": {
+      "mean_recovery": 97.88096499316606,
+      "std_recovery": 14.833245047837659,
+      "n_samples": 50
+    },
+    "8": {
+      "mean_recovery": 97.88080804117374,
+      "std_recovery": 14.834343711783827,
+      "n_samples": 50
+    },
+    "10": {
+      "mean_recovery": 97.87157403229288,
+      "std_recovery": 14.898981773949892,
+      "n_samples": 50
+    },
+    "12": {
+      "mean_recovery": 97.9317912800089,
+      "std_recovery": 14.477461039937744,
+      "n_samples": 50
+    },
+    "14": {
+      "mean_recovery": 97.96634687698233,
+      "std_recovery": 14.235571861123645,
+      "n_samples": 50
+    },
+    "16": {
+      "mean_recovery": 97.95893089534573,
+      "std_recovery": 14.287483732579965,
+      "n_samples": 50
+    },
+    "18": {
+      "mean_recovery": 97.98539038538254,
+      "std_recovery": 14.102267302322236,
+      "n_samples": 50
+    },
+    "20": {
+      "mean_recovery": 98.01089508413281,
+      "std_recovery": 13.923734411070345,
+      "n_samples": 50
+    },
+    "22": {
+      "mean_recovery": 97.96324707513422,
+      "std_recovery": 14.257270474060414,
+      "n_samples": 50
+    },
+    "24": {
+      "mean_recovery": 97.93554504849162,
+      "std_recovery": 14.451184660558619,
+      "n_samples": 50
+    },
+    "26": {
+      "mean_recovery": 97.92807674952424,
+      "std_recovery": 14.503462753330323,
+      "n_samples": 50
+    },
+    "28": {
+      "mean_recovery": 98.05818995114869,
+      "std_recovery": 13.592670341959153,
+      "n_samples": 50
+    },
+    "30": {
+      "mean_recovery": 98.03231903108302,
+      "std_recovery": 13.77376678241876,
+      "n_samples": 50
+    }
+  },
+  "best_layer": 28,
+  "best_recovery": 98.05818995114869
+}

@@ -1,0 +1,140 @@
+{
+  "olmo3_base": {
+    "model": "olmo3_base",
+    "n_samples": 500,
+    "accuracy": 0.126,
+    "probe_accuracy": 0.874,
+    "n_samples_with_correction": 18,
+    "n_samples_with_deliberation": 190,
+    "total_correction_tokens": 20,
+    "total_deliberation_tokens": 721,
+    "correction_deltas": [],
+    "correction_deltas_correct": [],
+    "correction_deltas_incorrect": [],
+    "deliberation_deltas": [],
+    "deliberation_deltas_correct": [],
+    "deliberation_deltas_incorrect": [],
+    "correction_stats": {
+      "mean": 0.012420808561777083,
+      "std": 0.01970574216032519,
+      "n": 2
+    },
+    "correction_correct_stats": {
+      "mean": 0,
+      "std": 0,
+      "n": 0
+    },
+    "correction_incorrect_stats": {
+      "mean": 0.012420808561777083,
+      "std": 0.01970574216032519,
+      "n": 2
+    },
+    "deliberation_stats": {
+      "mean": -0.0023479269319789603,
+      "std": 0.06332465856874096,
+      "n": 182
+    },
+    "deliberation_correct_stats": {
+      "mean": -0.009476386386412884,
+      "std": 0.0640127937083854,
+      "n": 13
+    },
+    "deliberation_incorrect_stats": {
+      "mean": -0.0017995838970225049,
+      "std": 0.06323814077098934,
+      "n": 169
+    }
+  },
+  "olmo3_sft": {
+    "model": "olmo3_sft",
+    "n_samples": 500,
+    "accuracy": 0.594,
+    "probe_accuracy": 0.624,
+    "n_samples_with_correction": 78,
+    "n_samples_with_deliberation": 480,
+    "total_correction_tokens": 219,
+    "total_deliberation_tokens": 2493,
+    "correction_deltas": [],
+    "correction_deltas_correct": [],
+    "correction_deltas_incorrect": [],
+    "deliberation_deltas": [],
+    "deliberation_deltas_correct": [],
+    "deliberation_deltas_incorrect": [],
+    "correction_stats": {
+      "mean": 0.0008761600773986404,
+      "std": 0.04244124305165317,
+      "n": 8
+    },
+    "correction_correct_stats": {
+      "mean": -0.013941116779892807,
+      "std": 0.0009218073109512961,
+      "n": 2
+    },
+    "correction_incorrect_stats": {
+      "mean": 0.005815252363162456,
+      "std": 0.04799809415338618,
+      "n": 6
+    },
+    "deliberation_stats": {
+      "mean": -0.03622774653139965,
+      "std": 0.08038588974778033,
+      "n": 413
+    },
+    "deliberation_correct_stats": {
+      "mean": -0.03992709309869082,
+      "std": 0.08416293602782113,
+      "n": 218
+    },
+    "deliberation_incorrect_stats": {
+      "mean": -0.032092066779248515,
+      "std": 0.07572762670395641,
+      "n": 195
+    }
+  },
+  "olmo3_rl_zero": {
+    "model": "olmo3_rl_zero",
+    "n_samples": 500,
+    "accuracy": 0.14,
+    "probe_accuracy": 0.86,
+    "n_samples_with_correction": 21,
+    "n_samples_with_deliberation": 157,
+    "total_correction_tokens": 21,
+    "total_deliberation_tokens": 745,
+    "correction_deltas": [],
+    "correction_deltas_correct": [],
+    "correction_deltas_incorrect": [],
+    "deliberation_deltas": [],
+    "deliberation_deltas_correct": [],
+    "deliberation_deltas_incorrect": [],
+    "correction_stats": {
+      "mean": -0.061293063852218,
+      "std": 0.08968643844537696,
+      "n": 3
+    },
+    "correction_correct_stats": {
+      "mean": 0,
+      "std": 0,
+      "n": 0
+    },
+    "correction_incorrect_stats": {
+      "mean": -0.061293063852218,
+      "std": 0.08968643844537696,
+      "n": 3
+    },
+    "deliberation_stats": {
+      "mean": 0.003925586941319306,
+      "std": 0.07850291212371094,
+      "n": 132
+    },
+    "deliberation_correct_stats": {
+      "mean": 0.013345740803228414,
+      "std": 0.09734176446521067,
+      "n": 13
+    },
+    "deliberation_incorrect_stats": {
+      "mean": 0.0028964945026233526,
+      "std": 0.07609245084239064,
+      "n": 119
+    }
+  }
+}

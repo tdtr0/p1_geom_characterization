@@ -1,0 +1,56 @@
+{
+  "n_files": 2,
+  "file_results": {
+    "gsm8k_trajectories.h5": {
+      "n_samples_with_pivots": 146,
+      "n_correct": 0,
+      "n_incorrect": 0
+    },
+    "humaneval_trajectories.h5": {
+      "n_samples_with_pivots": 147,
+      "n_correct": 0,
+      "n_incorrect": 0
+    }
+  },
+  "n_total_samples": 293,
+  "n_correct": 0,
+  "n_incorrect": 0,
+  "tests_all": {
+    "velocity": {
+      "pivot_mean": 59.865274575463914,
+      "pivot_std": 131.91799132639946,
+      "random_mean": 94.35290796895899,
+      "random_std": 159.76210021164297,
+      "t_statistic": -7.691164041452727,
+      "p_value": 1.6685383435755828e-14,
+      "effect_size_d": -0.21586867815113406,
+      "n_pivot": 1527,
+      "n_random": 5140
+    },
+    "direction_change": {
+      "pivot_mean": 1.0731686042293145,
+      "pivot_std": 0.16692953199040933,
+      "random_mean": 1.1132535448050098,
+      "random_std": 0.19916947603616694,
+      "t_statistic": -7.152465839736993,
+      "p_value": 9.433416409187054e-13,
+      "effect_size_d": -0.2012604509528953,
+      "n_pivot": 1527,
+      "n_random": 5140
+    },
+    "lyapunov": {
+      "pivot_mean": -Infinity,
+      "pivot_std": NaN,
+      "random_mean": -Infinity,
+      "random_std": NaN,
+      "t_statistic": NaN,
+      "p_value": NaN,
+      "effect_size_d": NaN,
+      "n_pivot": 1524,
+      "n_random": 5140
+    }
+  },
+  "tests_correct": {},
+  "tests_incorrect": {},
+  "window_size": 5
+}

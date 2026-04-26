@@ -8,6 +8,7 @@ Supports multiple aggregation strategies and efficient HDF5 storage.
 import torch
 import h5py
 import numpy as np
+import gc
 from typing import List, Dict, Optional, Literal
 from pathlib import Path
 from tqdm import tqdm
@@ -25,6 +26,11 @@ class ActivationCollector:
       3. Sufficient for geometric analysis
     - Store both pre-MLP and post-MLP for each layer to capture full trajectory
     - Use float16 to halve storage (precision sufficient for SVD)
+
+    Hook points available (TransformerLens):
+    - 'pre': hook_resid_pre - BEFORE LayerNorm (raw input to layer)
+    - 'mid': hook_resid_mid - After attention+residual, before MLP LayerNorm
+    - 'post': hook_resid_post - After full layer (MLP+residual)
     """
 
     def __init__(
@@ -32,7 +38,8 @@ class ActivationCollector:
         model_name: str,
         device: str = "cuda",
         dtype: torch.dtype = torch.float16,
-        use_transformer_lens: bool = True
+        use_transformer_lens: bool = True,
+        hook_point: str = "post"  # 'pre', 'mid', or 'post'
     ):
         """
         Initialize activation collector with a model.
@@ -42,11 +49,19 @@ class ActivationCollector:
             device: Device to load model on
             dtype: Data type for model weights
             use_transformer_lens: Whether to use TransformerLens (recommended)
+            hook_point: Which hook point to collect from:
+                - 'pre': Before LayerNorm (raw input to layer)
+                - 'mid': After attention+residual, before MLP LayerNorm
+                - 'post': After full layer (MLP+residual) [default]
         """
         self.model_name = model_name
         self.device = device
         self.dtype = dtype
         self.use_transformer_lens = use_transformer_lens
+        self.hook_point = hook_point
+
+        if hook_point not in ('pre', 'mid', 'post'):
+            raise ValueError(f"hook_point must be 'pre', 'mid', or 'post', got '{hook_point}'")
 
         print(f"Loading model: {model_name}")
 
@@ -71,29 +86,51 @@ class ActivationCollector:
 
         if not self.use_transformer_lens:
             from transformers import AutoModelForCausalLM, AutoTokenizer
+            # Use auto device mapping when device is "cuda" to handle memory efficiently
+            # This will split model across available GPU memory if needed
+            device_map_arg = "auto" if device == "cuda" else device
+
             self.model = AutoModelForCausalLM.from_pretrained(
                 model_name,
                 torch_dtype=dtype,
-                device_map=device,
+                device_map=device_map_arg,
+                low_cpu_mem_usage=True,  # Reduce CPU memory usage during loading
             )
             self.model.eval()
             self.tokenizer = AutoTokenizer.from_pretrained(model_name)
             self.n_layers = self.model.config.num_hidden_layers
             self.d_model = self.model.config.hidden_size
             print(f"✓ Loaded via transformers: {self.n_layers} layers, d_model={self.d_model}")
+            if device_map_arg == "auto":
+                print(f"  Device map: {self.model.hf_device_map}")
 
-    def get_hook_names(self) -> List[str]:
-        """Return hook names for residual stream at each layer."""
+    def get_hook_names(self, layers: Optional[List[int]] = None) -> List[str]:
+        """Return hook names for residual stream at each layer.
+
+        Args:
+            layers: Optional list of layer indices. If None, use all layers.
+
+        Returns:
+            List of hook names based on self.hook_point setting.
+        """
         if not self.use_transformer_lens:
             warnings.warn("Hook names only available for TransformerLens models")
             return []
 
+        if layers is None:
+            layers = list(range(self.n_layers))
+
+        # Map hook_point to TransformerLens hook name suffix
+        hook_suffix_map = {
+            'pre': 'hook_resid_pre',    # Before LayerNorm
+            'mid': 'hook_resid_mid',    # After attention, before MLP
+            'post': 'hook_resid_post',  # After full layer
+        }
+        suffix = hook_suffix_map[self.hook_point]
+
         hooks = []
-        for layer in range(self.n_layers):
-            # Post-attention, pre-MLP
-            hooks.append(f"blocks.{layer}.hook_resid_mid")
-            # Post-MLP (full layer output)
-            hooks.append(f"blocks.{layer}.hook_resid_post")
+        for layer in layers:
+            hooks.append(f"blocks.{layer}.{suffix}")
         return hooks
 
     def collect_activations(
@@ -122,7 +159,7 @@ class ActivationCollector:
                 - "all_tokens": (n_texts, max_seq_len, d_model)
         """
         if not self.use_transformer_lens:
-            raise NotImplementedError("Activation collection currently requires TransformerLens")
+            return self._collect_with_hooks(texts, aggregation, batch_size, max_length)
 
         hook_names = self.get_hook_names()
         all_activations = {name: [] for name in hook_names}
@@ -180,6 +217,109 @@ class ActivationCollector:
             all_activations[name] = np.stack(all_activations[name])
 
         return all_activations
+
+    def _collect_with_hooks(
+        self,
+        texts: List[str],
+        aggregation: Literal["last_token", "mean", "all_tokens"],
+        batch_size: int,
+        max_length: Optional[int]
+    ) -> Dict[str, np.ndarray]:
+        """Collect activations using PyTorch hooks for transformers models."""
+        # Storage for all activations
+        all_layer_acts = {f"layer_{i}": [] for i in range(self.n_layers)}
+
+        with torch.no_grad():
+            for i in tqdm(range(0, len(texts), batch_size), desc="Collecting activations"):
+                batch_texts = texts[i:i+batch_size]
+
+                for text_idx_in_batch, text in enumerate(batch_texts):
+                    text_global_idx = i + text_idx_in_batch
+                    # Tokenize
+                    tokens = self.tokenizer(
+                        text,
+                        return_tensors="pt",
+                        truncation=True if max_length else False,
+                        max_length=max_length
+                    )
+
+                    # Move to appropriate device (first device in device map)
+                    device = next(self.model.parameters()).device
+                    tokens = {k: v.to(device) for k, v in tokens.items()}
+
+                    # Hook storage for this sample
+                    layer_outputs = {}
+
+                    def make_hook(layer_idx):
+                        def hook(_module, _input, output):
+                            # Extract hidden states from output
+                            # For most models, output is either a tensor or tuple where first element is hidden states
+                            if isinstance(output, tuple):
+                                hidden_states = output[0]
+                            else:
+                                hidden_states = output
+
+                            # Move to CPU and store
+                            layer_outputs[f"layer_{layer_idx}"] = hidden_states.detach().cpu()
+                        return hook
+
+                    # Register hooks
+                    handles = []
+                    for layer_idx in range(self.n_layers):
+                        layer = self.model.model.layers[layer_idx]
+                        handle = layer.register_forward_hook(make_hook(layer_idx))
+                        handles.append(handle)
+
+                    try:
+                        # Forward pass
+                        _ = self.model(**tokens)
+
+                        # Aggregate and store activations
+                        for layer_idx in range(self.n_layers):
+                            key = f"layer_{layer_idx}"
+                            hidden = layer_outputs[key]
+
+                            if aggregation == "last_token":
+                                # Use last token
+                                act = hidden[0, -1, :].numpy().astype(np.float16)
+                            elif aggregation == "mean":
+                                # Mean across sequence
+                                act = hidden[0].mean(dim=0).numpy().astype(np.float16)
+                            else:  # all_tokens
+                                act = hidden[0].numpy().astype(np.float16)
+
+                            all_layer_acts[key].append(act)
+
+                    except Exception as e:
+                        import traceback
+                        print(f"\n⚠ FAILED sample {text_global_idx}:")
+                        print(f"  Error: {type(e).__name__}: {e}")
+                        print(f"  Text length: {len(text)} chars")
+                        print(f"  Text preview: {text[:100]}...")
+                        if len(text) > 1000:
+                            print(f"  (Long text warning)")
+                        print(f"  Traceback: {traceback.format_exc()}")
+                        # Store NaN for failed samples
+                        for layer_idx in range(self.n_layers):
+                            if aggregation == "all_tokens":
+                                all_layer_acts[f"layer_{layer_idx}"].append(
+                                    np.full((max_length or 512, self.d_model), np.nan, dtype=np.float16)
+                                )
+                            else:
+                                all_layer_acts[f"layer_{layer_idx}"].append(
+                                    np.full(self.d_model, np.nan, dtype=np.float16)
+                                )
+
+                    finally:
+                        # Remove hooks
+                        for handle in handles:
+                            handle.remove()
+
+        # Convert to arrays
+        return {
+            name: np.stack(acts, axis=0)
+            for name, acts in all_layer_acts.items()
+        }
 
     def save_to_hdf5(
         self,
